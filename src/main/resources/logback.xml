@@ -1,0 +1,31 @@
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <root level="trace">
+        <appender-ref ref="STDOUT"/>
+    </root>
+    <logger name="org.eclipse.jetty" level="OFF"/>
+    <logger name="io.netty" level="OFF"/>
+    <logger name="org.apache.catalina.core" level="OFF" />
+    <logger name="org.apache.catalina.core" level="OFF" />
+    <logger name="reactor.util" level="OFF" />
+    <logger name="reactor.util.Loggers" level="OFF" />
+    <logger name="io.r2dbc.postgresql" level="OFF" />
+    <logger name="i.n.u.i.l" level="OFF" />
+    <logger name="i.n.util" level="OFF" />
+    <logger name="i.n.util.internal" level="OFF" />
+    <logger name="r.netty" level="OFF" />
+    <logger name="r.netty.channel" level="OFF" />
+    <logger name="reactor.netty.tcp" level="OFF" />
+    <logger name="r.netty.resources" level="OFF" />
+    <logger name="r.n.resources" level="OFF" />
+    <logger name="reactor.netty" level="OFF" />
+    <logger name="reactor.netty.ReactorNetty" level="OFF" />
+    <logger name="i.k.s.p.c" level="OFF" />
+    <logger name="io.ktor.routing" level="OFF" />
+
+    <logger name="org.komapper" level="DEBUG" />
+</configuration>
