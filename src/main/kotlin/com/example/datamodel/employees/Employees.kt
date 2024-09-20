@@ -1,6 +1,5 @@
 package com.example.datamodel.employees
 
-import com.example.datamodel.IntCoreModel
 import com.example.plugins.db
 import kotlinx.serialization.Serializable
 import org.komapper.annotation.KomapperAutoIncrement
@@ -71,16 +70,13 @@ data class Employees(
     @KomapperVersion
     val version: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
-) : IntCoreModel<Employees> {
+) {
 
     companion object {
         val tbl_employees = Meta.employees
     }
 
-    override suspend fun create() = db.runQuery { QueryDsl.insert(tbl_employees).single(this@Employees) }
-    override suspend fun update() = db.runQuery { QueryDsl.update(tbl_employees).single(this@Employees) }
-    override suspend fun delete() = db.runQuery { QueryDsl.delete(tbl_employees).single(this@Employees) }
-    override suspend fun isDuplicate(declaration: WhereDeclaration): Boolean {
+    suspend fun isDuplicate(declaration: WhereDeclaration): Boolean {
         return db.runQuery { QueryDsl.from(tbl_employees).where(declaration).select(count()) } == 0L
     }
 }

@@ -1,9 +1,11 @@
 package com.example.datamodel.clients
 
+import com.example.datamodel.create
 import com.example.datamodel.clients.Clients.Companion.tbl_clients
-import com.example.getData
-import com.example.getDataOne
-import com.example.getSize
+import com.example.datamodel.delete
+import com.example.datamodel.getData
+import com.example.datamodel.getDataOne
+import com.example.datamodel.getSize
 import com.example.printCallLog
 import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
@@ -22,26 +24,18 @@ fun Application.configureClients() {
         route("/clients") {
             get {
                 printCallLog(call)
-                val tasks = Clients().getData()
-                call.respond(tasks)
+                call.respond(Clients().getData())
             }
 
             get("/{id}") {
                 printCallLog(call)
                 val id = call.parameters["id"]
-                if (id == null) {
-                    //Проверка на отсутствие параметра id в запросе
-                    call.respond(HttpStatusCode.BadRequest, "Not found parameter 'id'")
-                    return@get
-                }
-                if (!id.toIntPossible()) {
-                    //Проверка на тип параметра (должен быть Integer)
+                if (id == null || !id.toIntPossible()) {
                     call.respond(HttpStatusCode.BadRequest, "Incorrect parameter 'id'($id). This parameter must be 'Int' type")
                     return@get
                 }
                 val client = Clients().getDataOne({ tbl_clients.id eq id.toInt()})
                 if (client == null) {
-                    //Если не найден клиент по id
                     call.respond(HttpStatusCode.NotFound, "Not found Client with id $id")
                     return@get
                 }
@@ -56,23 +50,20 @@ fun Application.configureClients() {
 
                 if (param1 == null) { call.respond(HttpStatusCode.BadRequest, "Not found parameter with name 'name'") ; return@get }
                 if (param2 == null) { call.respond(HttpStatusCode.BadRequest, "Not found parameter with name 'password'") ; return@get }
-//                if (param3 == null) { call.respond(HttpStatusCode.BadRequest, "Not found parameter with name 'phone'") ; return@get }
 
                 if (Clients().getSize { tbl_clients.name eq param1; tbl_clients.password eq param2 } != 0L) {
-                    //Если клиент по имени и паролю уже существует - нелзя создавать дубль
                     call.respond(HttpStatusCode.Conflict, "User with requested 'name' and 'password' already exists")
                     return@get
                 }
 
-                val newClient = Clients(name = param1, password = param2, phone = param3?:"").create()
+                val newClient = Clients(name = param1, password = param2, phone = param3?:"").create(null).result
                 call.respond(HttpStatusCode.Created, "Client with id ${newClient.id} successfully created")
             }
 
             post {
                 printCallLog(call)
                 try {
-                    val task = call.receive<Clients>()
-                    val newUser = task.create()
+                    val newUser = call.receive<Clients>().create(null).result
                     call.respond(HttpStatusCode.Created, "Successfully created Client with id ${newUser.id}")
                 } catch (e: Exception) {
                     call.respond(HttpStatusCode.BadRequest, e.localizedMessage)
@@ -81,25 +72,18 @@ fun Application.configureClients() {
 
             delete {
                 printCallLog(call)
-                val name = call.parameters["id"]
-                if (name == null) {
-                    //Проверка на отсутствие параметра id в запросе
-                    call.respond(HttpStatusCode.BadRequest, "Not found parameter 'id'")
+                val id = call.parameters["id"]
+                if (id == null || !id.toIntPossible()) {
+                    call.respond(HttpStatusCode.BadRequest, "Incorrect parameter 'id'($id). This parameter must be 'Int' type")
                     return@delete
                 }
-                if (!name.toIntPossible()) {
-                    //Проверка на тип параметра (должен быть Integer)
-                    call.respond(HttpStatusCode.BadRequest, "Incorrect parameter 'id'($name). This parameter must be 'Int' type")
-                    return@delete
-                }
-                val findedClient = Clients().getDataOne({ tbl_clients.id eq name.toInt() })
+                val findedClient = Clients().getDataOne({ tbl_clients.id eq id.toInt() })
                 if (findedClient == null) {
-                    //Проверка клиента на наличие в базе
-                    call.respond(HttpStatusCode.NotFound, "Not found Client with id $name")
+                    call.respond(HttpStatusCode.NotFound, "Not found Client with id $id")
                     return@delete
                 }
                 findedClient.delete()
-                call.respond(HttpStatusCode.NoContent, "Client with id $name successfully deleted")
+                call.respond(HttpStatusCode.NoContent, "Client with id $id successfully deleted")
             }
         }
     }

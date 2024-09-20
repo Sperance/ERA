@@ -23,7 +23,7 @@ private val connectionFactory: ConnectionFactoryOptions = ConnectionFactoryOptio
 
 val db = R2dbcDatabase(connectionFactory, executionOptions = ExecutionOptions(suppressLogging = true))
 
-fun Application.creatingDatabases() {
+fun Application.configureDatabases() {
     launch(Dispatchers.IO) {
         db.withTransaction {
             db.runQuery { QueryDsl.create(tbl_clients) }
