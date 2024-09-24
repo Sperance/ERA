@@ -25,7 +25,9 @@
     <logger name="reactor.netty" level="OFF" />
     <logger name="reactor.netty.ReactorNetty" level="OFF" />
     <logger name="i.k.s.p.c" level="OFF" />
+    <logger name="i.k.s.p.c.ContentNegotiation" level="OFF" />
     <logger name="io.ktor.routing" level="OFF" />
 
     <logger name="org.komapper" level="DEBUG" />
+    <logger name="ktor.application" level="INFO" />
 </configuration>

@@ -9,6 +9,7 @@ plugins {
     id("io.ktor.plugin") version "2.3.12"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.20"
     id("com.google.devtools.ksp") version "2.0.20-1.0.24"
+    id("org.jetbrains.dokka") version "1.9.20"
 }
 
 group = "com.example"
@@ -35,10 +36,11 @@ tasks.test {
     }
 }
 
-val komapperVersion = "2.2.2"
+val komapperVersion = "3.0.0"
 
 dependencies {
     implementation("io.ktor:ktor-server-core-jvm")
+    implementation("io.ktor:ktor-server-cors-jvm")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm")
     implementation("io.ktor:ktor-server-content-negotiation-jvm")
     implementation("io.ktor:ktor-server-netty-jvm")
@@ -55,10 +57,12 @@ dependencies {
     implementation("org.komapper:komapper-tx-core:$komapperVersion")
     implementation("org.komapper:komapper-template:$komapperVersion")
     implementation("org.komapper:komapper-starter-r2dbc:$komapperVersion")
+    runtimeOnly("org.komapper:komapper-datetime-r2dbc:$komapperVersion")
     implementation("org.komapper:komapper-dialect-postgresql-r2dbc")
     ksp("org.komapper:komapper-processor")
 
     testImplementation(platform("org.junit:junit-bom:5.11.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.2")
 }

@@ -4,6 +4,8 @@ import com.example.datamodel.employees.Employees.Companion.tbl_employees
 import com.example.datamodel.employees.configureEmployees
 import com.example.datamodel.clients.Clients.Companion.tbl_clients
 import com.example.datamodel.clients.configureClients
+import com.example.datamodel.services.Services.Companion.tbl_services
+import com.example.datamodel.services.configureServices
 import io.ktor.server.application.*
 import io.r2dbc.spi.ConnectionFactoryOptions
 import kotlinx.coroutines.Dispatchers
@@ -28,8 +30,10 @@ fun Application.configureDatabases() {
         db.withTransaction {
             db.runQuery { QueryDsl.create(tbl_clients) }
             db.runQuery { QueryDsl.create(tbl_employees) }
+            db.runQuery { QueryDsl.create(tbl_services) }
         }
         configureClients()
         configureEmployees()
+        configureServices()
     }
 }

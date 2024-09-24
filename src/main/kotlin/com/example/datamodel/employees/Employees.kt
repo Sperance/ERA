@@ -1,6 +1,9 @@
 package com.example.datamodel.employees
 
+import com.example.currectDatetime
+import com.example.nullDatetime
 import com.example.plugins.db
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import org.komapper.annotation.KomapperAutoIncrement
 import org.komapper.annotation.KomapperColumn
@@ -13,29 +16,34 @@ import org.komapper.core.dsl.QueryDsl
 import org.komapper.core.dsl.expression.WhereDeclaration
 import org.komapper.core.dsl.operator.count
 
+/**
+ * Список работников.
+ */
 @Serializable
 @KomapperEntity
 @KomapperTable("tbl_employees")
 data class Employees(
+    /**
+     * Идентификатор сотрудника в БД (заполняется автоматически)
+     */
     @KomapperId
     @KomapperAutoIncrement
     @KomapperColumn(name = "employee_id")
     val id: Int = 0,
-
     /**
-     * Имя сотрудника
+     * Имя сотрудника (обязательно к заполнению)
      */
-    var name: String = "",
+    var firstName: String = "",
     /**
-     * Фамилия сотрудника
+     * Фамилия сотрудника (обязательно к заполнению)
      */
-    var surname: String = "",
+    var lastName: String = "",
     /**
      * Отчество сотрудника (при наличии)
      */
     var patronymic: String = "",
     /**
-     * Пароль в личный кабинет сотрудника
+     * Пароль в личный кабинет сотрудника (обязательно к заполнению)
      */
     var password: String = "",
     /**
@@ -43,21 +51,25 @@ data class Employees(
      */
     var phone: String = "",
     /**
-     * Дата рождения сотрудника
+     * Дата рождения сотрудника (вида "2000-01-01T00:00")
      */
-    var dateBirthday: Long = 0L,
+    var dateBirthday: LocalDateTime = LocalDateTime.nullDatetime(),
     /**
-     * Дата принятия на работу сотрудника
+     * Дата принятия на работу сотрудника (вида "2000-01-01T00:00")
      */
-    var dateWorkIn: Long = 0L,
+    var dateWorkIn: LocalDateTime = LocalDateTime.nullDatetime(),
     /**
-     * Дата увольнения сотрудника
+     * Дата увольнения сотрудника (вида "2000-01-01T00:00")
      */
-    var dateWorkOut: Long = 0L,
+    var dateWorkOut: LocalDateTime = LocalDateTime.nullDatetime(),
     /**
      * Ссылка на картинку работника (аватарка)
      */
     var imageProfileLink: String = "",
+    /**
+     * Должность
+     */
+    var position: String = "",
     /**
      * Оклад сотрудника
      */
@@ -66,16 +78,25 @@ data class Employees(
      * Уволен ли сотрудник
      */
     var isFired: Boolean = false,
-
+    /**
+     * Версия обновлений записи сотрудника (заполняется автоматически)
+     */
     @KomapperVersion
     val version: Int = 0,
-    val createdAt: Long = System.currentTimeMillis(),
+    /**
+     * Дата создания записи (заполняется автоматически)
+     */
+    val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) {
 
     companion object {
         val tbl_employees = Meta.employees
     }
 
+    /**
+     * Задаётся условие [declaration] для поиска записей по нему в БД.
+     * @return нашлась ли хотя бы одна запись с заданным условием.
+     */
     suspend fun isDuplicate(declaration: WhereDeclaration): Boolean {
         return db.runQuery { QueryDsl.from(tbl_employees).where(declaration).select(count()) } == 0L
     }

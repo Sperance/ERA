@@ -21,7 +21,7 @@ import io.ktor.server.routing.routing
 fun Application.configureEmployees() {
     routing {
         route("/employees") {
-            get {
+            get("/all") {
                 printCallLog(call)
                 call.respond(Employees().getData())
             }

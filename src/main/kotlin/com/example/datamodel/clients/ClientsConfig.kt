@@ -22,7 +22,8 @@ import io.ktor.server.routing.routing
 fun Application.configureClients() {
     routing {
         route("/clients") {
-            get {
+
+            get("/all") {
                 printCallLog(call)
                 call.respond(Clients().getData())
             }
@@ -42,29 +43,33 @@ fun Application.configureClients() {
                 call.respond(client)
             }
 
-            get("/create") {
-                printCallLog(call)
-                val param1 = call.request.queryParameters["name"]
-                val param2 = call.request.queryParameters["password"]
-                val param3 = call.request.queryParameters["phone"]
-
-                if (param1 == null) { call.respond(HttpStatusCode.BadRequest, "Not found parameter with name 'name'") ; return@get }
-                if (param2 == null) { call.respond(HttpStatusCode.BadRequest, "Not found parameter with name 'password'") ; return@get }
-
-                if (Clients().getSize { tbl_clients.name eq param1; tbl_clients.password eq param2 } != 0L) {
-                    call.respond(HttpStatusCode.Conflict, "User with requested 'name' and 'password' already exists")
-                    return@get
-                }
-
-                val newClient = Clients(name = param1, password = param2, phone = param3?:"").create(null).result
-                call.respond(HttpStatusCode.Created, "Client with id ${newClient.id} successfully created")
-            }
-
             post {
                 printCallLog(call)
                 try {
-                    val newUser = call.receive<Clients>().create(null).result
-                    call.respond(HttpStatusCode.Created, "Successfully created Client with id ${newUser.id}")
+                    val newUser = call.receive<Clients>()
+                    if (newUser.firstName.isBlank()) {
+                        call.respond(HttpStatusCode(433, "firstName must be selected"), "Необходимо указать Имя пользователя"); return@post
+                    }
+                    if (newUser.lastName.isBlank()) {
+                        call.respond(HttpStatusCode(434, "lastName must be selected"), "Необходимо указать Фамилию пользователя"); return@post
+                    }
+                    if (newUser.phone.isBlank()) {
+                        call.respond(HttpStatusCode(435, "phone must be selected"), "Необходимо указать Телефон пользователя"); return@post
+                    }
+                    if (newUser.login.isBlank()) {
+                        call.respond(HttpStatusCode(436, "login must be selected"), "Необходимо указать Логин пользователя"); return@post
+                    }
+                    if (newUser.gender == (-1).toByte()) {
+                        call.respond(HttpStatusCode(437, "gender must be selected"), "Необходимо указать Гендер пользователя"); return@post
+                    }
+                    if (newUser.isDuplicate { tbl_clients.login eq newUser.login }) {
+                        call.respond(HttpStatusCode(431, "Login already exists"), "Клиент с логином ${newUser.login} уже существует"); return@post
+                    }
+                    if (newUser.isDuplicate { tbl_clients.phone eq newUser.phone }) {
+                        call.respond(HttpStatusCode(432, "Phone already exists"), "Клиент с номером телефона ${newUser.phone} уже существует"); return@post
+                    }
+                    val created = newUser.create(null).result
+                    call.respond(HttpStatusCode.Created, "Successfully created Client with id ${created.id}")
                 } catch (e: Exception) {
                     call.respond(HttpStatusCode.BadRequest, e.localizedMessage)
                 }
