@@ -11,15 +11,14 @@ import org.komapper.core.dsl.operator.count
 import org.komapper.core.dsl.query.singleOrNull
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.createInstance
+import kotlin.reflect.jvm.kotlinProperty
 
 fun Any.getField(name: String) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name }?.get(this)
+fun Any.putField(name: String, value: Any) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name }?.set(this, value)
 
 @Suppress("UNCHECKED_CAST")
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.update() : TYPE {
     val metaTable = getInstanceClassForTbl(this) as META
-    val before = db.runQuery { QueryDsl.from(metaTable).where { metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> eq this@update.getField("id") as Int }.singleOrNull() }
-    if (before == this) return before as TYPE
-    if (before == null) throw IllegalArgumentException("In table for name tbl_${this::class.java.simpleName.lowercase()}) in Meta ${metaTable.javaClass.simpleName} don`t find object with id ${this@update.getField("id")}. Object: $this")
     return db.runQuery { QueryDsl.update(metaTable).single(this@update) } as TYPE
 }
 

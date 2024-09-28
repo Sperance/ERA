@@ -1,7 +1,15 @@
 package com.example
 
+import com.example.datamodel.IntBaseData
+import com.example.datamodel.ResultResponse
+import com.example.datamodel.employees.EmployeesNullable
+import com.example.datamodel.getField
+import com.example.datamodel.putField
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.logging.toLogString
+import io.ktor.server.request.receiveText
+import io.ktor.server.request.uri
+import io.ktor.server.response.respond
 import io.ktor.server.util.toLocalDateTime
 import io.ktor.util.InternalAPI
 import kotlinx.datetime.LocalDateTime
@@ -26,6 +34,32 @@ fun LocalDateTime.Companion.currectDatetime() = Date().toLocalDateTime().toKotli
 fun printCallLog(call: ApplicationCall) {
     val curDTime = System.currentTimeMillis().toFormatDateTime()
     println("$curDTime [${call.request.local.remoteAddress}::${call.request.local.remotePort}][${call.request.toLogString()}] params: ${call.parameters.entries()}")
+}
+
+suspend fun ApplicationCall.respond(response: ResultResponse) {
+    printTextLog("[ApplicationCall::respond] ${response::class.simpleName} code: ${response.status}")
+    when(response) {
+        is ResultResponse.Error -> respond(status = response.status, message = response.message)
+        is ResultResponse.Success -> respond(status = response.status, message = response.data)
+    }
+}
+
+fun <T: Any> IntBaseData.updateFromNullable(nullable: T) : Int {
+    var counterUpdated = 0
+    nullable::class.java.declaredFields.filter { !it.name.lowercase().contains("companion") }.forEach {
+        it.isAccessible = true
+        val value = it.get(nullable)
+        if (value != null && this.getField(it.name) != value) {
+            counterUpdated++
+            this.putField(it.name, value)
+        }
+    }
+    return counterUpdated
+}
+
+fun printTextLog(text: String) {
+    val curDTime = System.currentTimeMillis().toFormatDateTime()
+    println("$curDTime $text")
 }
 
 fun Long.toFormatDateTime() : String {
