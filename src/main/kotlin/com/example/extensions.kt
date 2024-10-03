@@ -2,13 +2,10 @@ package com.example
 
 import com.example.datamodel.IntBaseData
 import com.example.datamodel.ResultResponse
-import com.example.datamodel.employees.EmployeesNullable
 import com.example.datamodel.getField
 import com.example.datamodel.putField
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.logging.toLogString
-import io.ktor.server.request.receiveText
-import io.ktor.server.request.uri
 import io.ktor.server.response.respond
 import io.ktor.server.util.toLocalDateTime
 import io.ktor.util.InternalAPI
@@ -17,10 +14,23 @@ import kotlinx.datetime.toKotlinLocalDateTime
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.reflect.full.declaredMemberProperties
 
 fun String?.toIntPossible() : Boolean {
     if (this == null) return false
     return this.toIntOrNull() != null
+}
+
+fun Number?.isNullOrZero() : Boolean {
+    if (this == null) return true
+    if (this == 0) return true
+    return false
+}
+
+fun LocalDateTime?.isNullOrEmpty() : Boolean {
+    if (this == null) return true
+    if (this == LocalDateTime.nullDatetime()) return true
+    return false
 }
 
 fun LocalDateTime.Companion.nullDatetime() = LocalDateTime(2000, 1, 1, 0, 0, 0)
@@ -44,9 +54,22 @@ suspend fun ApplicationCall.respond(response: ResultResponse) {
     }
 }
 
-fun <T: Any> IntBaseData.updateFromNullable(nullable: T) : Int {
+fun IntBaseData<*>.nulling() {
+    this::class.declaredMemberProperties.forEach {
+        if (SYS_FIELDS_ARRAY.contains(it.name.lowercase())) return@forEach
+        if (!it.returnType.isMarkedNullable) return@forEach
+        this.putField(it.name, null)
+    }
+}
+
+fun <T: Any> IntBaseData<*>.updateFromNullable(nullable: T) : Int {
     var counterUpdated = 0
     nullable::class.java.declaredFields.filter { !it.name.lowercase().contains("companion") }.forEach {
+
+        if (it.name.lowercase() == "id") return@forEach
+        if (it.name.lowercase() == "version") return@forEach
+        if (it.name.lowercase() == "createdat") return@forEach
+
         it.isAccessible = true
         val value = it.get(nullable)
         if (value != null && this.getField(it.name) != value) {

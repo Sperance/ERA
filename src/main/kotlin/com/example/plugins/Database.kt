@@ -1,9 +1,11 @@
 package com.example.plugins
 
-import com.example.datamodel.employees.Employees.Companion.tbl_employees
-import com.example.datamodel.employees.configureEmployees
 import com.example.datamodel.clients.Clients.Companion.tbl_clients
 import com.example.datamodel.clients.configureClients
+import com.example.datamodel.feedbacks.FeedBacks.Companion.tbl_feedbacks
+import com.example.datamodel.feedbacks.configureFeedbacks
+import com.example.datamodel.records.Records.Companion.tbl_records
+import com.example.datamodel.records.configureRecords
 import com.example.datamodel.services.Services.Companion.tbl_services
 import com.example.datamodel.services.configureServices
 import io.ktor.server.application.*
@@ -29,11 +31,13 @@ fun Application.configureDatabases() {
     launch(Dispatchers.IO) {
         db.withTransaction {
             db.runQuery { QueryDsl.create(tbl_clients) }
-            db.runQuery { QueryDsl.create(tbl_employees) }
             db.runQuery { QueryDsl.create(tbl_services) }
+            db.runQuery { QueryDsl.create(tbl_feedbacks) }
+            db.runQuery { QueryDsl.create(tbl_records) }
         }
         configureClients()
-        configureEmployees()
         configureServices()
+        configureFeedbacks()
+        configureRecords()
     }
 }

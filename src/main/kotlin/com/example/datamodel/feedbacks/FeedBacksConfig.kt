@@ -1,4 +1,4 @@
-package com.example.datamodel.employees
+package com.example.datamodel.feedbacks
 
 import com.example.printCallLog
 import com.example.respond
@@ -10,32 +10,32 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 
-fun Application.configureEmployees() {
+fun Application.configureFeedbacks() {
     routing {
-        route("/employees") {
+        route("/feedbacks") {
             get("/all") {
                 printCallLog(call)
-                call.respond(Employees().get(call))
+                call.respond(FeedBacks().get(call, ArrayList()))
             }
 
             get("/{id}") {
                 printCallLog(call)
-                call.respond(Employees().getId(call))
+                call.respond(FeedBacks().getId(call, ArrayList()))
             }
 
             post("/update") {
                 printCallLog(call)
-                call.respond(Employees().update(call, EmployeesNullable::class))
+                call.respond(FeedBacks().update(call, ArrayList()))
             }
 
             post {
                 printCallLog(call)
-                call.respond(Employees().post(call))
+                call.respond(FeedBacks().post(call, ArrayList()))
             }
 
             delete {
                 printCallLog(call)
-                call.respond(Employees().delete(call))
+                call.respond(FeedBacks().delete(call, ArrayList()))
             }
         }
     }

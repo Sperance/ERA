@@ -1,52 +1,42 @@
-package com.example.datamodel.clients
+package com.example.datamodel.records
 
+import com.example.datamodel.feedbacks.FeedBacks
 import com.example.printCallLog
 import com.example.respond
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
-import io.ktor.server.http.content.staticFiles
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import java.io.File
 
-fun Application.configureClients() {
+fun Application.configureRecords() {
     routing {
-
-        staticFiles("/files/clients", File("files/clients"))
-
-        route("/clients") {
-
+        route("/records") {
             get("/all") {
                 printCallLog(call)
-                call.respond(Clients().get(call, ArrayList()))
+                call.respond(Records().get(call, ArrayList()))
             }
 
             get("/{id}") {
                 printCallLog(call)
-                call.respond(Clients().getId(call, ArrayList()))
-            }
-
-            post("/auth") {
-                printCallLog(call)
-                call.respond(Clients().auth(call))
+                call.respond(Records().getId(call, ArrayList()))
             }
 
             post("/update") {
                 printCallLog(call)
-                call.respond(Clients().update(call, ArrayList()))
+                call.respond(Records().update(call, ArrayList()))
             }
 
             post {
                 printCallLog(call)
-                call.respond(Clients().post(call, ArrayList()))
+                call.respond(Records().post(call, ArrayList()))
             }
 
             delete {
                 printCallLog(call)
-                call.respond(Clients().delete(call, ArrayList()))
+                call.respond(Records().delete(call, ArrayList()))
             }
         }
     }

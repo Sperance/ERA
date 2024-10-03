@@ -23,19 +23,19 @@ import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
 import kotlin.reflect.KClass
 
-@Serializable
-@Suppress
-data class ServicesNullable(
-    val id: Int? = null,
-    var name: String? = null,
-    var description: String? = null,
-    var category: String? = null,
-    var priceLow: Double? = null,
-    var priceMax: Double? = null,
-    var duration: Byte? = null,
-    var gender: Byte? = null,
-    var imageLink: String? = null
-)
+//@Serializable
+//@Suppress
+//data class ServicesNullable(
+//    val id: Int? = null,
+//    var name: String? = null,
+//    var description: String? = null,
+//    var category: String? = null,
+//    var priceLow: Double? = null,
+//    var priceMax: Double? = null,
+//    var duration: Byte? = null,
+//    var gender: Byte? = null,
+//    var imageLink: String? = null
+//)
 
 /**
  * Список услуг.
@@ -55,35 +55,35 @@ data class Services(
     /**
      * Наименование услуги (обязательно к заполнению)
      */
-    var name: String = "",
+    var name: String? = null,
     /**
      * Описание услуги
      */
-    var description: String = "",
+    var description: String? = null,
     /**
      * Категория, к которой относится услуга
      */
-    var category: String = "",
+    var category: String? = null,
     /**
      * Минимальная стоимость услуги в рублях
      */
-    var priceLow: Double = 0.0,
+    var priceLow: Double? = null,
     /**
      * Максимальная стоимость услуги в рублях
      */
-    var priceMax: Double = 0.0,
+    var priceMax: Double? = null,
     /**
      * Продолжительность услуги (1 пункт = 15 мин, например если услуга длится 60 мин - то поле в будет 4)
      */
-    var duration: Byte = 0,
+    var duration: Byte? = null,
     /**
      * К какому полу относится услуга ("-1" - к любому, "0" - к мужскому, "1" - к женскому) [по умолчанию -1]
      */
-    var gender: Byte = -1,
+    var gender: Byte? = null,
     /**
      * Ссылка на изображение услуги
      */
-    var imageLink: String = "",
+    var imageLink: String? = null,
     /**
      * Версия обновлений записи услуги (заполняется автоматически)
      */
@@ -99,126 +99,12 @@ data class Services(
         val tbl_services = Meta.services
     }
 
-    /**
-     * Метод на получение всех записей [Services]
-     *
-     * <b>Sample usage</b>
-     * ```
-     * GET : /services/all
-     * ```
-     *
-     * <b>Return codes</b>
-     *
-     * 400 при возникновении необработанной ошибки
-     *
-     * @return 200 при успешной отправке ответа
-     */
-    override suspend fun get(call: ApplicationCall): ResultResponse {
-        return super.get(call)
-    }
-
-    /**
-     * Метод на получение записи [Services] по параметру [id]
-     *
-     * <b>Sample usage</b>
-     * ```
-     * GET : /services/1
-     * ```
-     *
-     * <b>Return codes</b>
-     *
-     * 400 при ошибке входящего параметра [id]
-     *
-     * 404 если запись [Services] по запрашиваемоу [id] не найдена в БД
-     *
-     * @return 200 при успешной отправке ответа
-     */
-    override suspend fun getId(call: ApplicationCall): ResultResponse {
-        return super.getId(call)
-    }
-
-    /**
-     * Метод на создание записи класса [Services]
-     *
-     * <b>Return codes</b>
-     *
-     * 430 Необходимо указать Наименование [Services.name]
-     *
-     * 431 Необходимо указать Стоимость [Services.price] (не должна быть меньше 0.1)
-     *
-     * 432 Необходимо указать Категорию [Services.category]
-     *
-     * 433 Необходимо указать Продолжительность [Services.duration] (1пункт = 15минут, 60мин = 4пункта)
-     *
-     * 400 при возникновении необработанной ошибки
-     *
-     * @return 201 при успешном создании объекта
-     */
-    override suspend fun post(call: ApplicationCall): ResultResponse {
-        try {
-            val newService = call.receive<Services>()
-            if (newService.name.isBlank())
-                return ResultResponse.Error(HttpStatusCode(430, "name must be initialized"), "Необходимо указать Наименование")
-
-            if (newService.priceLow < 0.1)
-                return ResultResponse.Error(HttpStatusCode(431, "priceLow must be initialized"), "Необходимо указать Стоимость мин")
-
-            if (newService.priceMax < 0.1)
-                return ResultResponse.Error(HttpStatusCode(431, "priceMax must be initialized"), "Необходимо указать Стоимость макс")
-
-            if (newService.category.isBlank())
-                return ResultResponse.Error(HttpStatusCode(432, "category must be initialized"), "Необходимо указать Категорию")
-
-            if (newService.duration == 0.toByte())
-                return ResultResponse.Error(HttpStatusCode(433, "duration must be initialized"), "Необходимо указать Продолжительность (1пункт = 15минут, 60мин = 4пункта)")
-
-            val finish = newService.create(null).result
-            return ResultResponse.Success(HttpStatusCode.Created, "Successfully created Service with id ${finish.id}")
-        } catch (e: Exception) {
-            return ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
-        }
-    }
-
-    /**
-     * Метод на обновление объекта записи [Services] по параметру [id]
-     *
-     * Обязательно наличие поля [id] в запросе. Обновление записи происходит по нему.
-     * Далее передавайте только те поля "ключ:значение" - которые необходимо обновить.
-     * Другие поля которые вы не указывали в запросе - обновлены не будут
-     *
-     * <b>Return codes</b>
-     *
-     * 400 при ошибке входящего параметра [id]
-     *
-     * 404 если запись [Services] по запрашиваемоу [id] не найдена в БД
-     *
-     * 400 при возникновении необработанной ошибки
-     *
-     * @return 200 при успешном обновлении объекта
-     */
-    override suspend fun update(call: ApplicationCall, kclass: KClass<*>): ResultResponse {
-        return super.update(call, kclass)
-    }
-
-    /**
-     * Метод на удаление объекта записи [Services] по параметру [id]
-     *
-     * <b>Sample usage</b>
-     * ```
-     * DELETE : /services?id=1
-     * ```
-     *
-     * <b>Return codes</b>
-     *
-     * 400 при ошибке входящего параметра [id]
-     *
-     * 404 если запись [Services] по запрашиваемоу [id] не найдена в БД
-     *
-     * 400 при возникновении необработанной ошибки
-     *
-     * @return 204 при успешном удалении объекта
-     */
-    override suspend fun delete(call: ApplicationCall): ResultResponse {
-        return super.delete(call)
+    override suspend fun post(call: ApplicationCall, checkings: ArrayList<suspend (Services) -> CheckObj>): ResultResponse {
+        checkings.add { CheckObj(it.name.isNullOrEmpty(), 431, "Необходимо указать Наименование услуги") }
+        checkings.add { CheckObj((it.priceLow ?: 0.0) < 1, 432, "Необходимо указать Минимальную стоимость услуги") }
+        checkings.add { CheckObj((it.priceMax ?: 0.0 )< 1, 433, "Необходимо указать Максимальную стоимость услуги") }
+        checkings.add { CheckObj(it.category.isNullOrEmpty(), 434, "Необходимо указать Категорию услуги") }
+        checkings.add { CheckObj(it.duration == 0.toByte(), 435, "Необходимо указать Продолжительность услуги") }
+        return super.post(call, checkings)
     }
 }

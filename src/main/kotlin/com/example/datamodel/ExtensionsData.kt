@@ -1,6 +1,7 @@
 package com.example.datamodel
 
 import com.example.plugins.db
+import com.example.printTextLog
 import org.komapper.core.dsl.QueryDsl
 import org.komapper.core.dsl.expression.SortExpression
 import org.komapper.core.dsl.expression.WhereDeclaration
@@ -11,10 +12,9 @@ import org.komapper.core.dsl.operator.count
 import org.komapper.core.dsl.query.singleOrNull
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.createInstance
-import kotlin.reflect.jvm.kotlinProperty
 
 fun Any.getField(name: String) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name }?.get(this)
-fun Any.putField(name: String, value: Any) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name }?.set(this, value)
+fun Any.putField(name: String, value: Any?) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name }?.set(this, value)
 
 @Suppress("UNCHECKED_CAST")
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.update() : TYPE {
@@ -27,6 +27,11 @@ data class CoreResult <T> (
     val bit: Boolean,
     val result: T
 )
+
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.isDuplicate(declaration: WhereDeclaration): Boolean {
+    val metaTable = getInstanceClassForTbl(this) as META
+    return db.runQuery { QueryDsl.from(metaTable).where(declaration).select(count()) } != 0L
+}
 
 @Suppress("UNCHECKED_CAST")
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.create(kProperty1: KMutableProperty1<TYPE, *>?): CoreResult<TYPE> {
@@ -77,4 +82,12 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.getSize(dec
     val metaTable = getInstanceClassForTbl(this) as META
     val whereExpr: WhereDeclaration = declaration ?: {metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> greaterEq 0}
     return db.runQuery { QueryDsl.from(metaTable).where(whereExpr).select(count()) }?:0L
+}
+
+@Suppress("UNCHECKED_CAST")
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.isHaveData(dataId: Int) : Boolean {
+    val metaTable = getInstanceClassForTbl(this) as META
+    val whereExpr: WhereDeclaration = {metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> eq dataId}
+    val result = (db.runQuery { QueryDsl.from(metaTable).where(whereExpr).select(count()) } ?: 0L) == 0L
+    return result
 }

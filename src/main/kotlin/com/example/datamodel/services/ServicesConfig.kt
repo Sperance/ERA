@@ -16,27 +16,27 @@ fun Application.configureServices() {
 
             get("/all") {
                 printCallLog(call)
-                call.respond(Services().get(call))
+                call.respond(Services().get(call, ArrayList()))
             }
 
             get("/{id}") {
                 printCallLog(call)
-                call.respond(Services().getId(call))
+                call.respond(Services().getId(call, ArrayList()))
             }
 
             post("/update") {
                 printCallLog(call)
-                call.respond(Services().update(call, ServicesNullable::class))
+                call.respond(Services().update(call, ArrayList()))
             }
 
             post {
                 printCallLog(call)
-                call.respond(Services().post(call))
+                call.respond(Services().post(call, ArrayList()))
             }
 
             delete {
                 printCallLog(call)
-                call.respond(Services().delete(call))
+                call.respond(Services().delete(call, ArrayList()))
             }
         }
     }
