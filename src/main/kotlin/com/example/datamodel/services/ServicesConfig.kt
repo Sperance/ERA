@@ -1,5 +1,6 @@
 package com.example.datamodel.services
 
+import com.example.datamodel.IntBaseDataImpl
 import com.example.printCallLog
 import com.example.respond
 import io.ktor.server.application.Application
@@ -16,27 +17,27 @@ fun Application.configureServices() {
 
             get("/all") {
                 printCallLog(call)
-                call.respond(Services().get(call, ArrayList()))
+                call.respond(Services().get(call, IntBaseDataImpl.RequestParams()))
             }
 
             get("/{id}") {
                 printCallLog(call)
-                call.respond(Services().getId(call, ArrayList()))
+                call.respond(Services().getId(call, IntBaseDataImpl.RequestParams()))
             }
 
             post("/update") {
                 printCallLog(call)
-                call.respond(Services().update(call, ArrayList()))
+                call.respond(Services().update(call, IntBaseDataImpl.RequestParams()))
             }
 
             post {
                 printCallLog(call)
-                call.respond(Services().post(call, ArrayList()))
+                call.respond(Services().post(call, IntBaseDataImpl.RequestParams()))
             }
 
             delete {
                 printCallLog(call)
-                call.respond(Services().delete(call, ArrayList()))
+                call.respond(Services().delete(call, IntBaseDataImpl.RequestParams()))
             }
         }
     }

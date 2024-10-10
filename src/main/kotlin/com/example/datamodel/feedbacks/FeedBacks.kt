@@ -17,6 +17,9 @@ import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
 
+/**
+ * Список отзывов о сотрудниках
+ */
 @Serializable
 @KomapperEntity
 @KomapperTable("tbl_feedbacks")
@@ -31,19 +34,19 @@ data class FeedBacks(
     /**
      * Идентификатор клиента оставившего отзыв
      */
-    val id_client_from: Int? = null,
+    var id_client_from: Int? = null,
     /**
      * Идентификатор сотрудника кому оставили отзыв
      */
-    val id_client_to: Int? = null,
+    var id_client_to: Int? = null,
     /**
      * Сам текст отзыва
      */
-    val text: String? = null,
+    var text: String? = null,
     /**
      * Оценка для сотрудника по отзыву
      */
-    val value: Byte? = null,
+    var value: Byte? = null,
     /**
      * Версия обновлений записи услуги (заполняется автоматически)
      */
@@ -59,13 +62,17 @@ data class FeedBacks(
         val tbl_feedbacks = Meta.feedBacks
     }
 
-    override suspend fun post(call: ApplicationCall, checkings: ArrayList<suspend (FeedBacks) -> CheckObj>): ResultResponse {
-        checkings.add { CheckObj(it.text.isNullOrEmpty(), 431, "Необходимо указать Текст отзыва") }
-        checkings.add { CheckObj(it.value.isNullOrZero(), 432, "Необходимо указать Оценку отзыва") }
-        checkings.add { CheckObj(it.id_client_from.isNullOrZero(), 433, "Необходимо указать id Клиента который оставляет отзыв") }
-        checkings.add { CheckObj(it.id_client_to.isNullOrZero(), 434, "Необходимо указать id Клиента, которому составляется отзыв") }
-        checkings.add { CheckObj(Clients().isHaveData(it.id_client_from!!), 435, "Не существует Клиента с id ${it.id_client_from}") }
-        checkings.add { CheckObj(Clients().isHaveData(it.id_client_to!!), 436, "Не существует Клиента с id ${it.id_client_to}") }
-        return super.post(call, checkings)
+    override suspend fun post(call: ApplicationCall, params: RequestParams<FeedBacks>): ResultResponse {
+        params.checkings.add { CheckObj(it.text.isNullOrEmpty(), 431, "Необходимо указать Текст отзыва") }
+        params.checkings.add { CheckObj(it.value.isNullOrZero(), 432, "Необходимо указать Оценку отзыва") }
+        params.checkings.add { CheckObj(it.id_client_from.isNullOrZero(), 433, "Необходимо указать id Клиента который оставляет отзыв") }
+        params.checkings.add { CheckObj(it.id_client_to.isNullOrZero(), 434, "Необходимо указать id Клиента, которому составляется отзыв") }
+        params.checkings.add { CheckObj(it.value!! < 0, 435, "Оценка не может быть меньше 0") }
+        params.checkings.add { CheckObj(Clients().isHaveData(it.id_client_from!!), 435, "Не существует Клиента с id ${it.id_client_from}") }
+        params.checkings.add { CheckObj(Clients().isHaveData(it.id_client_to!!), 436, "Не существует Клиента с id ${it.id_client_to}") }
+
+        params.defaults.add { it::value to 0.toByte() }
+
+        return super.post(call, params)
     }
 }

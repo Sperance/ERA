@@ -54,6 +54,15 @@ suspend fun ApplicationCall.respond(response: ResultResponse) {
     }
 }
 
+fun Any?.isAllNullOrEmpty() : Boolean {
+    if (this == null) return true
+    when (this) {
+        is String -> { return this.isEmpty() }
+        is Number -> { return this.isNullOrZero() }
+    }
+    return false
+}
+
 fun IntBaseData<*>.nulling() {
     this::class.declaredMemberProperties.forEach {
         if (SYS_FIELDS_ARRAY.contains(it.name.lowercase())) return@forEach

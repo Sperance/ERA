@@ -1,5 +1,6 @@
 package com.example.datamodel.records
 
+import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.feedbacks.FeedBacks
 import com.example.printCallLog
 import com.example.respond
@@ -16,27 +17,27 @@ fun Application.configureRecords() {
         route("/records") {
             get("/all") {
                 printCallLog(call)
-                call.respond(Records().get(call, ArrayList()))
+                call.respond(Records().get(call, IntBaseDataImpl.RequestParams()))
             }
 
             get("/{id}") {
                 printCallLog(call)
-                call.respond(Records().getId(call, ArrayList()))
+                call.respond(Records().getId(call, IntBaseDataImpl.RequestParams()))
             }
 
             post("/update") {
                 printCallLog(call)
-                call.respond(Records().update(call, ArrayList()))
+                call.respond(Records().update(call, IntBaseDataImpl.RequestParams()))
             }
 
             post {
                 printCallLog(call)
-                call.respond(Records().post(call, ArrayList()))
+                call.respond(Records().post(call, IntBaseDataImpl.RequestParams()))
             }
 
             delete {
                 printCallLog(call)
-                call.respond(Records().delete(call, ArrayList()))
+                call.respond(Records().delete(call, IntBaseDataImpl.RequestParams()))
             }
         }
     }

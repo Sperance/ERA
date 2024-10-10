@@ -1,9 +1,27 @@
 package com.example
 
+import com.example.datamodel.clients.Clients
+import com.example.datamodel.clients.Clients.Companion.tbl_clients
 import com.example.datamodel.putField
+import com.example.datamodel.records.Records
+import com.example.datamodel.records.Records.Companion.tbl_records
+import com.example.datamodel.services.Services
+import com.example.plugins.db
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
+import kotlinx.serialization.Serializable
 import org.junit.Test
+import org.komapper.core.dsl.QueryDsl
+import kotlin.reflect.KMutableProperty0
 import kotlin.reflect.full.declaredMemberProperties
+
+@Serializable
+data class Recordsdata (
+    var clientFrom: Clients?,
+    var clientTo: Clients?,
+    var service: Services?,
+    var record: Records?
+)
 
 class AppTest {
 
@@ -42,5 +60,37 @@ class AppTest {
         println(objClass)
         objClass.nulling()
         println(objClass)
+    }
+
+    @Test
+    fun test_get_all_json() {
+        runBlocking {
+            val result = db.runQuery {
+                QueryDsl.from(tbl_records)
+                    .leftJoin(tbl_clients) { tbl_clients.id eq tbl_records.id_client_from }
+//                    .innerJoin(tbl_services) { tbl_services.id eq Meta.records.id_service }
+                    .selectAsEntity(tbl_records)
+            }
+            println("RES: $result")
+        }
+    }
+
+    @Test
+    fun test_reflect() {
+
+        val defaults: ArrayList<(Clients) -> KMutableProperty0<*>> = ArrayList()
+
+        val clie = Clients(clientType = "asd")
+        println("type1: ${clie.clientType}")
+
+        defaults.add { it::clientType }
+
+        defaults.forEach { def ->
+            val res = def.invoke(clie) as KMutableProperty0<Any?>
+            println("res: ${res.get()}")
+            res.set("newSet444te333d")
+        }
+
+        println("type2: ${clie.clientType}")
     }
 }

@@ -20,6 +20,9 @@ fun Application.configureSerialization() {
         // Разрешить необходимые методы
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Head)
+        allowMethod(HttpMethod.Options)
+        allowMethod(HttpMethod.Patch)
         allowMethod(HttpMethod.Put)
         allowMethod(HttpMethod.Delete)
         // Разрешить необходимые заголовки

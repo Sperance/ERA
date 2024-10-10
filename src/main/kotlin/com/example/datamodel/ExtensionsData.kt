@@ -22,27 +22,21 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.update() : 
     return db.runQuery { QueryDsl.update(metaTable).single(this@update) } as TYPE
 }
 
-data class CoreResult <T> (
-    val message: String = "",
-    val bit: Boolean,
-    val result: T
-)
-
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.isDuplicate(declaration: WhereDeclaration): Boolean {
     val metaTable = getInstanceClassForTbl(this) as META
     return db.runQuery { QueryDsl.from(metaTable).where(declaration).select(count()) } != 0L
 }
 
 @Suppress("UNCHECKED_CAST")
-suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.create(kProperty1: KMutableProperty1<TYPE, *>?): CoreResult<TYPE> {
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.create(kProperty1: KMutableProperty1<TYPE, *>?): TYPE {
     val metaTable = getInstanceClassForTbl(this) as META
     if (kProperty1 != null) {
         val metaProperty = metaTable.properties().find { it.name == kProperty1.name } as PropertyMetamodel<Any, Any, META>
         val already = db.runQuery { QueryDsl.from(metaTable).where { metaProperty eq kProperty1.get(this@create) }.singleOrNull() }
-        if (already != null) return CoreResult(bit = false, result = already as TYPE)
+        if (already != null) return already as TYPE
     }
     val result = db.runQuery { QueryDsl.insert(metaTable).single(this@create) }
-    return CoreResult(bit = true, result = result as TYPE)
+    return result as TYPE
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -90,4 +84,13 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.isHaveData(
     val whereExpr: WhereDeclaration = {metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> eq dataId}
     val result = (db.runQuery { QueryDsl.from(metaTable).where(whereExpr).select(count()) } ?: 0L) == 0L
     return result
+}
+
+@Suppress("UNCHECKED_CAST")
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.getFromId(id: Int?) : TYPE? {
+    if (id == null) return null
+    val metaTable = getInstanceClassForTbl(this) as META
+    val whereExpr: WhereDeclaration = {metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> eq id}
+    val result = db.runQuery { QueryDsl.from(metaTable).where(whereExpr).singleOrNull() }
+    return result as TYPE?
 }

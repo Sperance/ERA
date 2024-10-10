@@ -1,5 +1,6 @@
 package com.example.datamodel.clients
 
+import com.example.datamodel.IntBaseDataImpl
 import com.example.printCallLog
 import com.example.respond
 import io.ktor.server.application.Application
@@ -21,12 +22,17 @@ fun Application.configureClients() {
 
             get("/all") {
                 printCallLog(call)
-                call.respond(Clients().get(call, ArrayList()))
+                call.respond(Clients().get(call, IntBaseDataImpl.RequestParams()))
+            }
+
+            get("/all/{clientType}") {
+                printCallLog(call)
+                call.respond(Clients().getFromType(call))
             }
 
             get("/{id}") {
                 printCallLog(call)
-                call.respond(Clients().getId(call, ArrayList()))
+                call.respond(Clients().getId(call, IntBaseDataImpl.RequestParams()))
             }
 
             post("/auth") {
@@ -36,17 +42,17 @@ fun Application.configureClients() {
 
             post("/update") {
                 printCallLog(call)
-                call.respond(Clients().update(call, ArrayList()))
+                call.respond(Clients().update(call, IntBaseDataImpl.RequestParams()))
             }
 
             post {
                 printCallLog(call)
-                call.respond(Clients().post(call, ArrayList()))
+                call.respond(Clients().post(call, IntBaseDataImpl.RequestParams()))
             }
 
             delete {
                 printCallLog(call)
-                call.respond(Clients().delete(call, ArrayList()))
+                call.respond(Clients().delete(call, IntBaseDataImpl.RequestParams()))
             }
         }
     }

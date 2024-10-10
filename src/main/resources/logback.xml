@@ -23,6 +23,8 @@
     <logger name="r.netty.resources" level="OFF" />
     <logger name="r.n.resources" level="OFF" />
     <logger name="reactor.netty" level="OFF" />
+    <logger name="reactor.core.publisher" level="OFF" />
+    <logger name="reactor.core" level="OFF" />
     <logger name="reactor.netty.ReactorNetty" level="OFF" />
     <logger name="i.k.s.p.c" level="OFF" />
     <logger name="i.k.s.p.c.ContentNegotiation" level="OFF" />

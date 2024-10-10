@@ -3,6 +3,7 @@ package com.example.datamodel.clients
 import com.example.currectDatetime
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
+import com.example.datamodel.getData
 import com.example.datamodel.getDataOne
 import com.example.datamodel.isDuplicate
 import com.example.isNullOrZero
@@ -37,59 +38,59 @@ data class Clients(
     /**
      * Имя клиента (обязательно к заполнению)
      */
-    val firstName: String? = null,
+    var firstName: String? = null,
     /**
      * Фамилия клиента (обязательно к заполнению)
      */
-    val lastName: String? = null,
+    var lastName: String? = null,
     /**
      * Отчество клиента (при наличии)
      */
-    val patronymic: String? = null,
+    var patronymic: String? = null,
     /**
      * Логин от личного кабинета клиента (обязательно к заполнению)
      */
-    val login: String? = null,
+    var login: String? = null,
     /**
      * Пароль от личного кабинета клиента
      */
-    val password: String? = null,
+    var password: String? = null,
     /**
      * Контактный телефон клиента (обязательно к заполнению)
      */
-    val phone: String? = null,
+    var phone: String? = null,
     /**
      * Почта клиента
      */
-    val email: String? = null,
+    var email: String? = null,
     /**
      * Дата рождения клиента (вида "2000-01-01T00:00")
      */
-    val dateBirthday: LocalDateTime? = null,
+    var dateBirthday: LocalDateTime? = null,
     /**
      * Дата принятия на работу сотрудника (вида "2000-01-01T00:00")
      */
-    val dateWorkIn: LocalDateTime? = null,
+    var dateWorkIn: LocalDateTime? = null,
     /**
      * Дата увольнения сотрудника (вида "2000-01-01T00:00")
      */
-    val dateWorkOut: LocalDateTime? = null,
+    var dateWorkOut: LocalDateTime? = null,
     /**
      * Должность
      */
-    val position: String? = null,
+    var position: String? = null,
     /**
      * Описание сотрудника
      */
-    val description: String? = null,
+    var description: String? = null,
     /**
      * Тип клиента
      */
-    val clientType: String? = null,
+    var clientType: String? = null,
     /**
      * Пол клиента (0 - Мужской, 1 - Женский) (обязательно к заполнению)
      */
-    val gender: Byte? = null,
+    var gender: Byte? = null,
     /**
      * Версия обновлений записи клиента (заполняется автоматически)
      */
@@ -103,6 +104,19 @@ data class Clients(
 
     companion object {
         val tbl_clients = Meta.clients
+    }
+
+    suspend fun getFromType(call: ApplicationCall): ResultResponse {
+        try {
+            val clientType = call.parameters["clientType"]
+
+            if (clientType.isNullOrEmpty())
+                return ResultResponse.Error(HttpStatusCode(431, ""), "Необходимо указать Тип клиента")
+
+            return ResultResponse.Success(HttpStatusCode.OK, getData({ tbl_clients.clientType eq clientType}))
+        } catch (e: Exception) {
+            return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
+        }
     }
 
     suspend fun auth(call: ApplicationCall): ResultResponse {
@@ -125,17 +139,22 @@ data class Clients(
         }
     }
 
-    override suspend fun post(call: ApplicationCall, checkings: ArrayList<suspend (Clients) -> CheckObj>): ResultResponse {
-        checkings.add { CheckObj(it.firstName.isNullOrEmpty(), 431, "Необходимо указать Имя") }
-        checkings.add { CheckObj(it.lastName.isNullOrEmpty(), 432, "Необходимо указать Фамилию") }
-        checkings.add { CheckObj(it.phone.isNullOrEmpty(), 433, "Необходимо указать Телефон") }
-        checkings.add { CheckObj(it.login.isNullOrEmpty(), 434, "Необходимо указать Логин") }
-        checkings.add { CheckObj(it.password.isNullOrEmpty(), 435, "Необходимо указать Пароль") }
-        checkings.add { CheckObj(it.email.isNullOrEmpty(), 436, "Необходимо указать Email") }
-        checkings.add { CheckObj(it.gender.isNullOrZero(), 437, "Необходимо указать Пол") }
-        checkings.add { CheckObj(it.isDuplicate { tbl_clients.login eq it.login }, 441, "Клиент с указанным Логином уже существует") }
-        checkings.add { CheckObj(it.isDuplicate { tbl_clients.phone eq it.phone }, 442, "Клиент с указанным Номером телефона уже существует") }
-        checkings.add { CheckObj(it.isDuplicate { tbl_clients.email eq it.email }, 443, "Клиент с указанным Почтовым адресом уже существует") }
-        return super.post(call, checkings)
+    override suspend fun post(call: ApplicationCall, params: RequestParams<Clients>): ResultResponse {
+        params.checkings.add { CheckObj(it.firstName.isNullOrEmpty(), 431, "Необходимо указать Имя") }
+        params.checkings.add { CheckObj(it.lastName.isNullOrEmpty(), 432, "Необходимо указать Фамилию") }
+        params.checkings.add { CheckObj(it.phone.isNullOrEmpty(), 433, "Необходимо указать Телефон") }
+        params.checkings.add { CheckObj(it.login.isNullOrEmpty(), 434, "Необходимо указать Логин") }
+        params.checkings.add { CheckObj(it.password.isNullOrEmpty(), 435, "Необходимо указать Пароль") }
+        params.checkings.add { CheckObj(it.email.isNullOrEmpty(), 436, "Необходимо указать Email") }
+        params.checkings.add { CheckObj(it.gender.isNullOrZero(), 437, "Необходимо указать Пол") }
+        params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.login eq it.login }, 441, "Клиент с указанным Логином уже существует") }
+        params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.phone eq it.phone }, 442, "Клиент с указанным Номером телефона уже существует") }
+        params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.email eq it.email }, 443, "Клиент с указанным Почтовым адресом уже существует") }
+
+        params.defaults.add { it::dateBirthday to LocalDateTime.nullDatetime() }
+        params.defaults.add { it::dateWorkIn to LocalDateTime.nullDatetime() }
+        params.defaults.add { it::dateWorkOut to LocalDateTime.nullDatetime() }
+
+        return super.post(call, params)
     }
 }
