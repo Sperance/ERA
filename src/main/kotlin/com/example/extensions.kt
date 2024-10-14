@@ -11,6 +11,7 @@ import io.ktor.server.util.toLocalDateTime
 import io.ktor.util.InternalAPI
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toKotlinLocalDateTime
+import java.lang.reflect.Field
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -121,4 +122,10 @@ inline fun <reified T> Any.listFields() : ArrayList<T> {
         if (itField is T) array.add(itField as T)
     }
     return array
+}
+
+fun Field?.getCommentFieldAnnotation(): String {
+    val ann = this?.getAnnotation(CommentField::class.java)
+    if (ann == null) return ""
+    return "{ ${ann.name}; обязательное: ${ann.required} }"
 }

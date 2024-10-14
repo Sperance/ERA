@@ -1,5 +1,6 @@
 package com.example.datamodel.services
 
+import com.example.CommentField
 import com.example.currectDatetime
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
@@ -23,53 +24,28 @@ import org.komapper.core.dsl.Meta
 @KomapperEntity
 @KomapperTable("tbl_services")
 data class Services(
-    /**
-     * Идентификатор услуги в БД (заполняется автоматически)
-     */
     @KomapperId
     @KomapperAutoIncrement
     @KomapperColumn(name = "services_id")
     val id: Int = 0,
-    /**
-     * Наименование услуги (обязательно к заполнению)
-     */
+    @CommentField("Наименование услуги", true)
     var name: String? = null,
-    /**
-     * Описание услуги
-     */
+    @CommentField("Описание услуги", false)
     var description: String? = null,
-    /**
-     * Категория, к которой относится услуга
-     */
+    @CommentField("Категория услуги", false)
     var category: String? = null,
-    /**
-     * Минимальная стоимость услуги в рублях
-     */
+    @CommentField("Минимальная стоимость", true)
     var priceLow: Double? = null,
-    /**
-     * Максимальная стоимость услуги в рублях
-     */
+    @CommentField("Максимальная стоимость", false)
     var priceMax: Double? = null,
-    /**
-     * Продолжительность услуги (1 пункт = 15 мин, например если услуга длится 60 мин - то поле в будет 4)
-     */
+    @CommentField("Продолжительность услуги (1 пункт = 15 мин, т.е. если услуга длится 60 мин, то необходимо указать (60 / 15) = 4 пункта)", true)
     var duration: Byte? = null,
-    /**
-     * К какому полу относится услуга ("-1" - к любому, "0" - к мужскому, "1" - к женскому) [по умолчанию -1]
-     */
+    @CommentField("К какому полу относится услуга (по умолчанию -1 (к любому полу))", false)
     var gender: Byte? = null,
-    /**
-     * Ссылка на изображение услуги
-     */
+    @CommentField("Ссылка на изображение услуги", false)
     var imageLink: String? = null,
-    /**
-     * Версия обновлений записи услуги (заполняется автоматически)
-     */
     @KomapperVersion
     val version: Int = 0,
-    /**
-     * Дата создания услуги (заполняется автоматически)
-     */
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Services>() {
 

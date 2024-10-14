@@ -25,19 +25,6 @@ data class Recordsdata (
 
 class AppTest {
 
-    data class Nulling(
-        var id: Int,
-        var nonnull: String,
-        var name: String?,
-        var price: Int? = null,
-        var date: LocalDateTime? = LocalDateTime.nullDatetime(),
-        var category: String? = "Client"
-    ) {
-        override fun toString(): String {
-            return "Nulling(id=$id, nonnull='$nonnull', name=$name, price=$price, date=$date, category=$category)"
-        }
-    }
-
     private fun Any.nulling() {
         this::class.declaredMemberProperties.forEach {
             if (listOf("companion", "id", "version", "createdAt").contains(it.name.lowercase())) return@forEach
@@ -72,6 +59,32 @@ class AppTest {
                     .selectAsEntity(tbl_records)
             }
             println("RES: $result")
+        }
+    }
+
+    data class Nulling(
+        var id: Int,
+        @CommentField("НОН НУЛЛ парент", true)
+        var nonnull: String,
+        var name: String?,
+        var price: Int? = null,
+        var date: LocalDateTime? = LocalDateTime.nullDatetime(),
+        var category: String? = "Client"
+    ) {
+        fun testFun() {
+            println("textfff")
+        }
+
+        override fun toString(): String {
+            return "Nulling(id=$id, nonnull='$nonnull', name=$name, price=$price, date=$date, category=$category)"
+        }
+    }
+
+    @Test
+    fun test_structure() {
+        val printer = Nulling(id = 0, nonnull = "123", name = "Name")
+        printer::class.java.declaredFields.forEach {
+            println("ann: ${it.getCommentFieldAnnotation()}")
         }
     }
 

@@ -1,6 +1,9 @@
 package com.example.datamodel
 
+import com.example.SYS_FIELDS_ARRAY
 import com.example.datamodel.IntBaseDataImpl.RequestParams
+import com.example.datamodel.clients.Clients
+import com.example.getCommentFieldAnnotation
 import com.example.isAllNullOrEmpty
 import com.example.toIntPossible
 import com.example.updateFromNullable
@@ -28,6 +31,15 @@ interface IntBaseData<T> {
 
 @Suppress("UNCHECKED_CAST")
 abstract class IntBaseDataImpl <T> : IntBaseData<T> {
+
+    fun getCommentArray(): String {
+        var textFields = ""
+        this::class.java.declaredFields.forEach {
+            if (SYS_FIELDS_ARRAY.contains(it.name.lowercase())) return@forEach
+            textFields += "'${it.name}' ${it.type.simpleName} ${it.getCommentFieldAnnotation()}\n"
+        }
+        return textFields
+    }
 
     override suspend fun get(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
         try {

@@ -1,5 +1,6 @@
 package com.example.datamodel.clients
 
+import com.example.CommentField
 import com.example.currectDatetime
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
@@ -28,77 +29,40 @@ import org.komapper.core.dsl.Meta
 @KomapperEntity
 @KomapperTable("tbl_clients")
 data class Clients(
-    /**
-     * Идентификатор клиента в БД (заполняется автоматически)
-     */
     @KomapperId
     @KomapperAutoIncrement
     @KomapperColumn(name = "client_id")
     val id: Int = 0,
-    /**
-     * Имя клиента (обязательно к заполнению)
-     */
+    @CommentField("Имя клиента", true)
     var firstName: String? = null,
-    /**
-     * Фамилия клиента (обязательно к заполнению)
-     */
+    @CommentField("Фамилия клиента", true)
     var lastName: String? = null,
-    /**
-     * Отчество клиента (при наличии)
-     */
+    @CommentField("Отчество клиента", false)
     var patronymic: String? = null,
-    /**
-     * Логин от личного кабинета клиента (обязательно к заполнению)
-     */
+    @CommentField("Логин от личного кабинета", true)
     var login: String? = null,
-    /**
-     * Пароль от личного кабинета клиента
-     */
+    @CommentField("Пароль от личного кабинета", true)
     var password: String? = null,
-    /**
-     * Контактный телефон клиента (обязательно к заполнению)
-     */
+    @CommentField("Контактный телефон", true)
     var phone: String? = null,
-    /**
-     * Почта клиента
-     */
+    @CommentField("Почтовый адрес", true)
     var email: String? = null,
-    /**
-     * Дата рождения клиента (вида "2000-01-01T00:00")
-     */
+    @CommentField("Дата рождения", false)
     var dateBirthday: LocalDateTime? = null,
-    /**
-     * Дата принятия на работу сотрудника (вида "2000-01-01T00:00")
-     */
+    @CommentField("Дата принятия на работу сотрудника", false)
     var dateWorkIn: LocalDateTime? = null,
-    /**
-     * Дата увольнения сотрудника (вида "2000-01-01T00:00")
-     */
+    @CommentField("Дата увольнения сотрудника", false)
     var dateWorkOut: LocalDateTime? = null,
-    /**
-     * Должность
-     */
+    @CommentField("Должность сотрудника", false)
     var position: String? = null,
-    /**
-     * Описание сотрудника
-     */
+    @CommentField("Описание сотрудника", false)
     var description: String? = null,
-    /**
-     * Тип клиента
-     */
+    @CommentField("Тип клиента", false)
     var clientType: String? = null,
-    /**
-     * Пол клиента (0 - Мужской, 1 - Женский) (обязательно к заполнению)
-     */
+    @CommentField("Пол клиента", true)
     var gender: Byte? = null,
-    /**
-     * Версия обновлений записи клиента (заполняется автоматически)
-     */
     @KomapperVersion
     val version: Int = 0,
-    /**
-     * Дата создания записи (заполняется автоматически)
-     */
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Clients>() {
 

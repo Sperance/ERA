@@ -1,5 +1,6 @@
 package com.example.datamodel.feedbacks
 
+import com.example.CommentField
 import com.example.currectDatetime
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
@@ -24,37 +25,20 @@ import org.komapper.core.dsl.Meta
 @KomapperEntity
 @KomapperTable("tbl_feedbacks")
 data class FeedBacks(
-    /**
-     * Идентификатор услуги в БД (заполняется автоматически)
-     */
     @KomapperId
     @KomapperAutoIncrement
     @KomapperColumn(name = "feedback_id")
     val id: Int = 0,
-    /**
-     * Идентификатор клиента оставившего отзыв
-     */
+    @CommentField("Идентификатор клиента оставившего отзыв", true)
     var id_client_from: Int? = null,
-    /**
-     * Идентификатор сотрудника кому оставили отзыв
-     */
+    @CommentField("Идентификатор сотрудника кому оставили отзыв", true)
     var id_client_to: Int? = null,
-    /**
-     * Сам текст отзыва
-     */
+    @CommentField("Текст отзыва", true)
     var text: String? = null,
-    /**
-     * Оценка для сотрудника по отзыву
-     */
+    @CommentField("Поставленная оценка сотруднику", true)
     var value: Byte? = null,
-    /**
-     * Версия обновлений записи услуги (заполняется автоматически)
-     */
     @KomapperVersion
     val version: Int = 0,
-    /**
-     * Дата создания услуги (заполняется автоматически)
-     */
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<FeedBacks>() {
 

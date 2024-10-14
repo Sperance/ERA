@@ -1,5 +1,6 @@
 package com.example.datamodel.records
 
+import com.example.CommentField
 import com.example.Recordsdata
 import com.example.currectDatetime
 import com.example.datamodel.IntBaseDataImpl
@@ -38,57 +39,30 @@ import java.util.UUID
 @KomapperEntity
 @KomapperTable("tbl_records")
 data class Records(
-    /**
-     * Идентификатор записи в БД (заполняется автоматически)
-     */
     @KomapperId
     @KomapperAutoIncrement
     @KomapperColumn(name = "record_id")
     val id: Int = 0,
-    /**
-     * Идентификатор клиента создавшего запись
-     */
+    @CommentField("Идентификатор клиента который записался на приём", true)
     var id_client_from: Int? = null,
-    /**
-     * Идентификатор сотрудника записи
-     */
+    @CommentField("Идентификатор сотрудника, к которому записались на приём", true)
     var id_client_to: Int? = null,
-    /**
-     * Идентификатор услуги на которую записался клиент
-     */
+    @CommentField("Идентификатор услуги", true)
     var id_service: Int? = null,
-    /**
-     * Номер записи для отображения клиенту
-     */
+    @CommentField("Номер заказа (генерируется автоматически)", false)
     var number: String? = null,
-    /**
-     * Дата время на какое число создана запись
-     */
+    @CommentField("Дата и время на которую записан клиент", true)
     var dateRecord: LocalDateTime? = null,
-    /**
-     * Статус записи
-     */
+    @CommentField("Статус записи (по умолчанию 'Создана')", false)
     var status: String? = null,
-    /**
-     * Окончательная стоимость записи
-     */
+    @CommentField("Стоимость записи", false)
     var price: Double? = null,
-    /**
-     * Тип оплаты
-     */
+    @CommentField("Тип оплаты", false)
     var payType: String? = null,
-    /**
-     * Статус оплаты
-     */
+    @CommentField("Статус оплаты", false)
     var payStatus: Int? = null,
-    /**
-     * Версия обновлений записи (заполняется автоматически)
-     */
     @KomapperVersion
     val version: Int = 0,
-    /**
-     * Дата создания записи (заполняется автоматически)
-     */
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Records>() {
 
@@ -103,12 +77,13 @@ data class Records(
         
         val listResults = ArrayList<Recordsdata>()
         val listClients = Clients().getData()
+        val listServices = Services().getData()
 
         getData().forEach {
             listResults.add(Recordsdata(
                 clientFrom = listClients.find { f -> f.id == it.id_client_from },
                 clientTo = listClients.find { f -> f.id == it.id_client_to },
-                service = Services().getFromId(it.id_service),
+                service = listServices.find { f -> f.id == it.id_service },
                 record = it))
         }
 

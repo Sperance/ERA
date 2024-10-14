@@ -9,6 +9,9 @@ import com.example.datamodel.records.configureRecords
 import com.example.datamodel.services.Services.Companion.tbl_services
 import com.example.datamodel.services.configureServices
 import io.ktor.server.application.*
+import io.ktor.server.routing.get
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
 import io.r2dbc.spi.ConnectionFactoryOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
