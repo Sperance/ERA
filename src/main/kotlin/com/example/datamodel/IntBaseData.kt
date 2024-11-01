@@ -2,7 +2,6 @@ package com.example.datamodel
 
 import com.example.SYS_FIELDS_ARRAY
 import com.example.datamodel.IntBaseDataImpl.RequestParams
-import com.example.datamodel.clients.Clients
 import com.example.getCommentFieldAnnotation
 import com.example.isAllNullOrEmpty
 import com.example.toIntPossible
@@ -21,18 +20,10 @@ sealed class ResultResponse {
     class Error(override val status: HttpStatusCode, val message: String) : ResultResponse()
 }
 
-interface IntBaseData<T> {
-    suspend fun get(call: ApplicationCall, params: RequestParams<T>) : ResultResponse
-    suspend fun getId(call: ApplicationCall, params: RequestParams<T>) : ResultResponse
-    suspend fun post(call: ApplicationCall, params: RequestParams<T>) : ResultResponse
-    suspend fun delete(call: ApplicationCall, params: RequestParams<T>) : ResultResponse
-    suspend fun update(call: ApplicationCall, params: RequestParams<T>) : ResultResponse
-}
-
 @Suppress("UNCHECKED_CAST")
-abstract class IntBaseDataImpl <T> : IntBaseData<T> {
+abstract class IntBaseDataImpl <T> {
 
-    fun getCommentArray(): String {
+    open fun getCommentArray(): String {
         var textFields = ""
         this::class.java.declaredFields.forEach {
             if (SYS_FIELDS_ARRAY.contains(it.name.lowercase())) return@forEach
@@ -41,7 +32,7 @@ abstract class IntBaseDataImpl <T> : IntBaseData<T> {
         return textFields
     }
 
-    override suspend fun get(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
+    open suspend fun get(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
         try {
             params.checkings.forEach { check ->
                 val res = check.invoke(this as T)
@@ -61,7 +52,7 @@ abstract class IntBaseDataImpl <T> : IntBaseData<T> {
         }
     }
 
-    override suspend fun getId(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
+    open suspend fun getId(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
         try {
             val id = call.parameters["id"]
 
@@ -102,7 +93,35 @@ abstract class IntBaseDataImpl <T> : IntBaseData<T> {
 
     data class CheckObj(val result: Boolean, var errorCode: Int, var errorText: String)
 
-    override suspend fun post(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
+    open suspend fun postArray(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
+        try {
+            val newRecord = call.receive<List<T>>()
+            var coutner = 0
+            newRecord.forEach { record ->
+                params.checkings.forEach { check ->
+                    val res = check.invoke(record)
+                    if (res.result) return ResultResponse.Error(HttpStatusCode(res.errorCode, ""), "Record: $record - ${res.errorText}")
+                }
+
+                params.defaults.forEach let@ { def ->
+                    val res = def.invoke(record)
+                    val property = res.first as KMutableProperty0<Any?>
+                    if (!property.get().isAllNullOrEmpty()) return@let
+                    val value = res.second
+                    property.set(value)
+                }
+
+                record?.create(null)
+                coutner++
+            }
+
+            return ResultResponse.Success(HttpStatusCode.Created, "Successfully created $coutner objects")
+        } catch (e: Exception) {
+            return ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage?:"Smart error")
+        }
+    }
+
+    open suspend fun post(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
         try {
             val newRecord = call.receive(this::class)
 
@@ -128,7 +147,7 @@ abstract class IntBaseDataImpl <T> : IntBaseData<T> {
         }
     }
 
-    override suspend fun delete(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
+    open suspend fun delete(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
         try {
             val id = call.parameters["id"]
             if (id == null || !id.toIntPossible()) {
@@ -163,7 +182,7 @@ abstract class IntBaseDataImpl <T> : IntBaseData<T> {
         }
     }
 
-    override suspend fun update(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
+    open suspend fun update(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
         try {
             val newRecord = call.receive(this::class)
             val newRecordId = newRecord.getField("id") as Int?

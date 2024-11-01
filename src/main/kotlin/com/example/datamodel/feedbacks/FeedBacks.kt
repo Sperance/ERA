@@ -5,11 +5,18 @@ import com.example.currectDatetime
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.clients.Clients
+import com.example.datamodel.getData
 import com.example.datamodel.isHaveData
+import com.example.datamodel.records.Records
+import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.isNullOrZero
+import com.example.toDateTimePossible
+import com.example.toIntPossible
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import org.komapper.annotation.KomapperAutoIncrement
 import org.komapper.annotation.KomapperColumn
 import org.komapper.annotation.KomapperEntity
@@ -37,13 +44,29 @@ data class FeedBacks(
     var text: String? = null,
     @CommentField("Поставленная оценка сотруднику", true)
     var value: Byte? = null,
+    @Transient
     @KomapperVersion
     val version: Int = 0,
+    @Transient
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<FeedBacks>() {
 
     companion object {
         val tbl_feedbacks = Meta.feedBacks
+    }
+
+    suspend fun getFromId(call: ApplicationCall) : ResultResponse {
+        try {
+            val _clientId = call.parameters["clientId"]
+
+            if (_clientId == null || !_clientId.toIntPossible())
+                return ResultResponse.Error(HttpStatusCode(431, ""), "Incorrect parameter 'clientId'($_clientId). This parameter must be 'Int' type")
+
+            val id = _clientId.toInt()
+            return ResultResponse.Success(HttpStatusCode.OK, getData({ tbl_feedbacks.id_client_to eq id }))
+        } catch (e: Exception) {
+            return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
+        }
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<FeedBacks>): ResultResponse {

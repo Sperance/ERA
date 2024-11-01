@@ -9,6 +9,7 @@ import com.example.isNullOrZero
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import org.komapper.annotation.KomapperAutoIncrement
 import org.komapper.annotation.KomapperColumn
 import org.komapper.annotation.KomapperEntity
@@ -44,8 +45,10 @@ data class Services(
     var gender: Byte? = null,
     @CommentField("Ссылка на изображение услуги", false)
     var imageLink: String? = null,
+    @Transient
     @KomapperVersion
     val version: Int = 0,
+    @Transient
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Services>() {
 

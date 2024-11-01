@@ -1,6 +1,6 @@
 package com.example
 
-import com.example.datamodel.IntBaseData
+import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.getField
 import com.example.datamodel.putField
@@ -10,16 +10,38 @@ import io.ktor.server.response.respond
 import io.ktor.server.util.toLocalDateTime
 import io.ktor.util.InternalAPI
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toKotlinLocalDateTime
+import kotlinx.datetime.toLocalDateTime
 import java.lang.reflect.Field
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.reflect.full.declaredMemberProperties
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 fun String?.toIntPossible() : Boolean {
     if (this == null) return false
     return this.toIntOrNull() != null
+}
+
+fun LocalDateTime.plus(duration: Duration) : LocalDateTime {
+    return this.toInstant(TimeZone.UTC).plus(duration).toLocalDateTime(TimeZone.UTC)
+}
+
+fun LocalDateTime.minus(duration: Duration) : LocalDateTime {
+    return this.toInstant(TimeZone.UTC).minus(duration).toLocalDateTime(TimeZone.UTC)
+}
+
+fun String?.toDateTimePossible() : Boolean {
+    if (this == null) return false
+    return try {
+        LocalDateTime.parse(this)
+        true
+    } catch (_: Exception) {
+        false
+    }
 }
 
 fun Number?.isNullOrZero() : Boolean {
@@ -35,6 +57,11 @@ fun LocalDateTime?.isNullOrEmpty() : Boolean {
 }
 
 fun LocalDateTime.Companion.nullDatetime() = LocalDateTime(2000, 1, 1, 0, 0, 0)
+
+fun LocalDateTime.Companion.currentZeroDate() : LocalDateTime {
+    val curDate = currectDatetime()
+    return LocalDateTime(curDate.year, curDate.monthNumber, curDate.dayOfMonth, 0, 0)
+}
 
 @OptIn(InternalAPI::class)
 fun LocalDateTime.Companion.currectDatetime() = Date().toLocalDateTime().toKotlinLocalDateTime()
@@ -64,15 +91,7 @@ fun Any?.isAllNullOrEmpty() : Boolean {
     return false
 }
 
-fun IntBaseData<*>.nulling() {
-    this::class.declaredMemberProperties.forEach {
-        if (SYS_FIELDS_ARRAY.contains(it.name.lowercase())) return@forEach
-        if (!it.returnType.isMarkedNullable) return@forEach
-        this.putField(it.name, null)
-    }
-}
-
-fun <T: Any> IntBaseData<*>.updateFromNullable(nullable: T) : Int {
+fun <T: Any> IntBaseDataImpl<*>.updateFromNullable(nullable: T) : Int {
     var counterUpdated = 0
     nullable::class.java.declaredFields.filter { !it.name.lowercase().contains("companion") }.forEach {
 

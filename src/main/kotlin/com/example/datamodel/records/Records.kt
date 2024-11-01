@@ -20,6 +20,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import org.komapper.annotation.KomapperAutoIncrement
 import org.komapper.annotation.KomapperColumn
 import org.komapper.annotation.KomapperEntity
@@ -61,8 +62,10 @@ data class Records(
     var payType: String? = null,
     @CommentField("Статус оплаты", false)
     var payStatus: Int? = null,
+    @Transient
     @KomapperVersion
     val version: Int = 0,
+    @Transient
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Records>() {
 

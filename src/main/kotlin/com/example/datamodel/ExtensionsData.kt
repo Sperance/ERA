@@ -63,6 +63,11 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.getData(dec
     else db.runQuery { QueryDsl.from(metaTable).where(whereExpr).orderBy(sortExpression) } as List<TYPE>
 }
 
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.clearTable() {
+    val metaTable = getInstanceClassForTbl(this) as META
+    db.runQuery { QueryDsl.delete(metaTable).all() }
+}
+
 @Suppress("UNCHECKED_CAST")
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.getDataOne(declaration: WhereDeclaration? = null, sortExpression: SortExpression? = null) : TYPE? {
     val metaTable = getInstanceClassForTbl(this) as META

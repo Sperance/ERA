@@ -2,6 +2,8 @@ package com.example.datamodel.services
 
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
+import com.example.datamodel.clearTable
+import com.example.datamodel.clients.Clients
 import com.example.getCommentFieldAnnotation
 import com.example.printCallLog
 import com.example.respond
@@ -21,6 +23,12 @@ fun Application.configureServices() {
             get("/structure") {
                 printCallLog(call)
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, Services().getCommentArray()))
+            }
+
+            get("/clearTable") {
+                printCallLog(call)
+                Services().clearTable()
+                call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 
             get("/all") {

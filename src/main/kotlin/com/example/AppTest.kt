@@ -7,13 +7,20 @@ import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.services.Services
 import com.example.plugins.db
+import io.ktor.server.util.toLocalDateTime
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import org.junit.Test
 import org.komapper.core.dsl.QueryDsl
+import java.util.Date
 import kotlin.reflect.KMutableProperty0
 import kotlin.reflect.full.declaredMemberProperties
+import kotlin.time.Duration.Companion.minutes
+
 
 @Serializable
 data class Recordsdata (
@@ -62,6 +69,42 @@ class AppTest {
         }
     }
 
+    @Test
+    fun test_range(){
+        val stockPeriod = 30
+        val blockSlots = 6 * stockPeriod
+
+        val servDate = LocalDateTime(2024, 10, 16, 17, 0)
+        val servDateBeg = servDate.minus((blockSlots - 1).minutes)
+        val servDateTime = servDate.plus((4 * stockPeriod - 1).minutes)
+
+        val servDate2 = LocalDateTime(2024, 10, 16, 11, 0)
+        val servDate2Beg = servDate2.minus((blockSlots - 1).minutes)
+        val servDateTime2 = servDate2.plus((6 * stockPeriod - 1).minutes)
+
+        val arrayClosed = ArrayList<ClosedRange<LocalDateTime>>()
+        arrayClosed.add(servDateBeg..servDateTime)
+        arrayClosed.add(servDate2Beg..servDateTime2)
+
+        println("New service length: $blockSlots min")
+        println("service 1: Start $servDate End $servDateTime")
+        println("service 2: Start $servDate2 End $servDateTime2")
+        val araResult = ArrayList<LocalDateTime>()
+
+        var stockDate = LocalDateTime(2024, 10, 16, 9, 0)
+        val maxDateTime = LocalDateTime(2024, 10, 16, 23, 0).minus((blockSlots - 1).minutes)
+        while (true) {
+            if (stockDate >= maxDateTime) break
+            val finded = arrayClosed.find { ar -> stockDate in ar }
+            if (finded == null) {
+                araResult.add(stockDate)
+            }
+            stockDate = stockDate.toInstant(TimeZone.UTC).plus((stockPeriod).minutes).toLocalDateTime(TimeZone.UTC)
+        }
+
+        araResult.forEach(::println)
+    }
+
     data class Nulling(
         var id: Int,
         @CommentField("НОН НУЛЛ парент", true)
@@ -82,10 +125,7 @@ class AppTest {
 
     @Test
     fun test_structure() {
-        val printer = Nulling(id = 0, nonnull = "123", name = "Name")
-        printer::class.java.declaredFields.forEach {
-            println("ann: ${it.getCommentFieldAnnotation()}")
-        }
+        val testDate = LocalDateTime.currectDatetime()
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.example
 
+import com.example.datamodel.configureTests
 import com.example.plugins.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.embeddedServer
@@ -14,4 +15,5 @@ fun main() {
 fun Application.module() {
     configureSerialization()
     configureDatabases()
+    configureTests()
 }

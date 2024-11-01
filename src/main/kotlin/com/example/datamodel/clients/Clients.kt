@@ -7,13 +7,22 @@ import com.example.datamodel.ResultResponse
 import com.example.datamodel.getData
 import com.example.datamodel.getDataOne
 import com.example.datamodel.isDuplicate
+import com.example.datamodel.records.Records
+import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.isNullOrZero
 import com.example.nullDatetime
+import com.example.toDateTimePossible
+import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
+import io.ktor.server.util.toLocalDateTime
+import io.ktor.util.InternalAPI
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import org.komapper.annotation.KomapperAutoIncrement
 import org.komapper.annotation.KomapperColumn
 import org.komapper.annotation.KomapperEntity
@@ -21,6 +30,7 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
+import java.util.Date
 
 /**
  * Список клиентов.
@@ -61,13 +71,41 @@ data class Clients(
     var clientType: String? = null,
     @CommentField("Пол клиента", true)
     var gender: Byte? = null,
+    @Transient
     @KomapperVersion
     val version: Int = 0,
+    @Transient
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Clients>() {
 
     companion object {
         val tbl_clients = Meta.clients
+    }
+
+    suspend fun getSlots(call: ApplicationCall): ResultResponse {
+        try {
+            val _id = call.parameters["id"]
+            val _data = call.parameters["data"]
+
+            if (_id == null || !_id.toIntPossible())
+                return ResultResponse.Error(HttpStatusCode(431, ""), "Incorrect parameter 'id'($_id). This parameter must be 'Int' type")
+            if (_data.isNullOrEmpty())
+                return ResultResponse.Error(HttpStatusCode(432, ""), "Необходимо указать дату")
+            if (!_data.toDateTimePossible())
+                return ResultResponse.Error(HttpStatusCode(433, ""), "Неверный формат даты")
+
+            val id = _id.toInt()
+            val data = LocalDateTime.parse(_data)
+
+            val dateStart = LocalDateTime(data.year, data.monthNumber, data.dayOfMonth, 0, 0, 0)
+            val dateEnd = LocalDateTime(data.year, data.monthNumber, data.dayOfMonth, 23, 59, 0)
+
+            val currentDayRecords = Records().getData({ tbl_records.id_client_to eq id ; tbl_records.dateRecord.between(dateStart..dateEnd) })
+
+            return ResultResponse.Success(HttpStatusCode.OK, currentDayRecords)
+        } catch (e: Exception) {
+            return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
+        }
     }
 
     suspend fun getFromType(call: ApplicationCall): ResultResponse {
