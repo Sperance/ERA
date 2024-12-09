@@ -4,10 +4,10 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
+import io.ktor.server.plugins.autohead.AutoHeadResponse
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.CORS
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.server.plugins.partialcontent.PartialContent
 import kotlinx.serialization.json.Json
 
 fun Application.configureSerialization() {
@@ -38,4 +38,7 @@ fun Application.configureSerialization() {
             encodeDefaults = true
         })
     }
+
+    install(PartialContent)
+    install(AutoHeadResponse)
 }

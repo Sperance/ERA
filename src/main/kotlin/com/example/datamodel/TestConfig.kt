@@ -1,6 +1,7 @@
 package com.example.datamodel
 
 import com.example.minus
+import com.example.plugins.GMailSender
 import com.example.plus
 import com.example.printCallLog
 import com.example.toIntPossible
@@ -9,6 +10,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
+import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.datetime.LocalDateTime
@@ -20,8 +22,28 @@ import kotlin.time.Duration.Companion.minutes
 fun Application.configureTests() {
     routing {
         route("/test") {
+            post ("/emailMessage") {
+                this@configureTests.printCallLog(call)
+                val email = call.parameters["email"]
+
+                if (email.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.BadGateway, "Param email must be selected")
+                    return@post
+                }
+
+                try {
+                    GMailSender().sendMail(
+                            "Test Theme",
+                            "Test message",
+                        email)
+                }catch (e: Exception) {
+                    call.respond(HttpStatusCode.BadGateway, "Email error: ${e.localizedMessage}")
+                    return@post
+                }
+                call.respond(HttpStatusCode.OK, "Email successfully sended")
+            }
             get ("/slot_time/{serviceLength}") {
-                printCallLog(call)
+                this@configureTests.printCallLog(call)
 
                 val serviceLength = call.parameters["serviceLength"]
 

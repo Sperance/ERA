@@ -4,11 +4,20 @@ import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.getField
 import com.example.datamodel.putField
+import com.example.datamodel.routeshistory.RoutesHistory
+import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.logging.toLogString
+import io.ktor.server.plugins.origin
+import io.ktor.server.request.httpMethod
+import io.ktor.server.request.httpVersion
+import io.ktor.server.request.uri
 import io.ktor.server.response.respond
 import io.ktor.server.util.toLocalDateTime
 import io.ktor.util.InternalAPI
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -69,9 +78,13 @@ fun LocalDateTime.Companion.currectDatetime() = Date().toLocalDateTime().toKotli
 /**
  * Вывод информации по запросам на сервер в лог
  */
-fun printCallLog(call: ApplicationCall) {
+fun Application.printCallLog(call: ApplicationCall) {
     val curDTime = System.currentTimeMillis().toFormatDateTime()
     println("$curDTime [${call.request.local.remoteAddress}::${call.request.local.remotePort}][${call.request.toLogString()}] params: ${call.parameters.entries()}")
+
+    launch(Dispatchers.IO) {
+        RoutesHistory().createFromCall(call)
+    }
 }
 
 suspend fun ApplicationCall.respond(response: ResultResponse) {

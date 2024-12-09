@@ -3,8 +3,7 @@ package com.example.datamodel.services
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.clearTable
-import com.example.datamodel.clients.Clients
-import com.example.getCommentFieldAnnotation
+import com.example.datamodel.records.configureRecords
 import com.example.printCallLog
 import com.example.respond
 import io.ktor.http.HttpStatusCode
@@ -21,38 +20,38 @@ fun Application.configureServices() {
         route("/services") {
 
             get("/structure") {
-                printCallLog(call)
+                this@configureServices.printCallLog(call)
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, Services().getCommentArray()))
             }
 
             get("/clearTable") {
-                printCallLog(call)
+                this@configureServices.printCallLog(call)
                 Services().clearTable()
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 
             get("/all") {
-                printCallLog(call)
+                this@configureServices.printCallLog(call)
                 call.respond(Services().get(call, IntBaseDataImpl.RequestParams()))
             }
 
             get("/{id}") {
-                printCallLog(call)
+                this@configureServices.printCallLog(call)
                 call.respond(Services().getId(call, IntBaseDataImpl.RequestParams()))
             }
 
             post("/update") {
-                printCallLog(call)
-                call.respond(Services().update(call, IntBaseDataImpl.RequestParams()))
+                this@configureServices.printCallLog(call)
+                call.respond(Services().updateFormData(call, IntBaseDataImpl.RequestParams(), Services.serializer()))
             }
 
             post {
-                printCallLog(call)
-                call.respond(Services().post(call, IntBaseDataImpl.RequestParams()))
+                this@configureServices.printCallLog(call)
+                call.respond(Services().postFormData(call, IntBaseDataImpl.RequestParams(), Services.serializer()))
             }
 
             delete {
-                printCallLog(call)
+                this@configureServices.printCallLog(call)
                 call.respond(Services().delete(call, IntBaseDataImpl.RequestParams()))
             }
         }

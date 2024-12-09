@@ -3,6 +3,7 @@ package com.example.datamodel.feedbacks
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.clearTable
+import com.example.datamodel.clients.configureClients
 import com.example.printCallLog
 import com.example.respond
 import io.ktor.http.HttpStatusCode
@@ -19,43 +20,43 @@ fun Application.configureFeedbacks() {
         route("/feedbacks") {
 
             get("/structure") {
-                printCallLog(call)
+                this@configureFeedbacks.printCallLog(call)
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, FeedBacks().getCommentArray()))
             }
 
             get("/clearTable") {
-                printCallLog(call)
+                this@configureFeedbacks.printCallLog(call)
                 FeedBacks().clearTable()
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 
             get("/{clientId}") {
-                printCallLog(call)
+                this@configureFeedbacks.printCallLog(call)
                 call.respond(FeedBacks().getFromId(call))
             }
 
             get("/all") {
-                printCallLog(call)
+                this@configureFeedbacks.printCallLog(call)
                 call.respond(FeedBacks().get(call, IntBaseDataImpl.RequestParams()))
             }
 
             get("/{id}") {
-                printCallLog(call)
+                this@configureFeedbacks.printCallLog(call)
                 call.respond(FeedBacks().getId(call, IntBaseDataImpl.RequestParams()))
             }
 
             post("/update") {
-                printCallLog(call)
-                call.respond(FeedBacks().update(call, IntBaseDataImpl.RequestParams()))
+                this@configureFeedbacks.printCallLog(call)
+                call.respond(FeedBacks().updateFormData(call, IntBaseDataImpl.RequestParams(), FeedBacks.serializer()))
             }
 
             post {
-                printCallLog(call)
-                call.respond(FeedBacks().post(call, IntBaseDataImpl.RequestParams()))
+                this@configureFeedbacks.printCallLog(call)
+                call.respond(FeedBacks().postFormData(call, IntBaseDataImpl.RequestParams(), FeedBacks.serializer()))
             }
 
             delete {
-                printCallLog(call)
+                this@configureFeedbacks.printCallLog(call)
                 call.respond(FeedBacks().delete(call, IntBaseDataImpl.RequestParams()))
             }
         }

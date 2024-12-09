@@ -2,12 +2,13 @@ package com.example.datamodel.services
 
 import com.example.CommentField
 import com.example.currectDatetime
+import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
-import com.example.datamodel.clients.Clients
 import com.example.isNullOrZero
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import org.komapper.annotation.KomapperAutoIncrement
@@ -46,6 +47,8 @@ data class Services(
     @CommentField("Ссылка на изображение услуги", false)
     var imageLink: String? = null,
     @Transient
+    var imageFormat: String? = null,
+    @Transient
     @KomapperVersion
     val version: Int = 0,
     @Transient
@@ -54,17 +57,17 @@ data class Services(
 
     companion object {
         val tbl_services = Meta.services
+        val repo_services = BaseRepository(Services())
     }
 
-    override suspend fun post(call: ApplicationCall, params: RequestParams<Services>): ResultResponse {
+    override suspend fun postFormData(call: ApplicationCall, params: RequestParams<Services>, serializer: KSerializer<Services>): ResultResponse {
         params.checkings.add { CheckObj(it.name.isNullOrEmpty(), 431, "Необходимо указать Наименование услуги") }
         params.checkings.add { CheckObj(it.priceLow.isNullOrZero(), 432, "Необходимо указать Минимальную стоимость услуги") }
         params.checkings.add { CheckObj(it.duration.isNullOrZero(), 435, "Необходимо указать Продолжительность услуги (не может быть 0)") }
         params.checkings.add { CheckObj((it.priceLow != null && it.priceMax != null) && (it.priceMax!! < it.priceLow!!), 436, "Максимальная стоимость услуги(${it.priceMax}) не может быть меньше минимальной(${it.priceLow})") }
 
-        params.defaults.add { it::priceMax to it.priceLow }
         params.defaults.add { it::gender to -1 }
 
-        return super.post(call, params)
+        return super.postFormData(call, params, serializer)
     }
 }

@@ -13,8 +13,10 @@ import org.komapper.core.dsl.query.singleOrNull
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.createInstance
 
+fun Any.haveField(name: String) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name } != null
 fun Any.getField(name: String) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name }?.get(this)
 fun Any.putField(name: String, value: Any?) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name }?.set(this, value)
+fun Any.getMethod(name: String) = this::class.java.declaredMethods.find { it.isAccessible = true; it.name == name }?.invoke(this)
 
 @Suppress("UNCHECKED_CAST")
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.update() : TYPE {
@@ -42,8 +44,20 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.create(kPro
 @Suppress("UNCHECKED_CAST")
 suspend fun <META : EntityMetamodel<Any, Any, META>> Any.delete() {
     val metaTable = getInstanceClassForTbl(this) as META
+//    val metaRepo = getInstanceRepoFor(this)
+//    metaRepo.deleteItem(this@delete.getField("id") as Int)
     db.runQuery { QueryDsl.delete(metaTable).where { metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> eq this@delete.getField("id") as Int } }
 }
+
+//@Suppress("UNCHECKED_CAST")
+//private fun <META : EntityMetamodel<Any, Any, META>> getInstanceRepoFor(obj: Any) : BaseRepository<*> {
+//    val nameClass = "com.example.datamodel.${obj::class.java.simpleName.lowercase()}.${obj::class.java.simpleName}"
+//    val instance = Class.forName(nameClass).kotlin.createInstance()
+//    val metaTable = instance.getField("repo_${obj::class.java.simpleName.lowercase()}")
+//        ?: throw IllegalArgumentException("not finded field with name repo_${obj::class.java.simpleName.lowercase()}) in class $nameClass")
+//
+//    return metaTable as BaseRepository<*>
+//}
 
 @Suppress("UNCHECKED_CAST")
 private fun <META : EntityMetamodel<Any, Any, META>> getInstanceClassForTbl(obj: Any) : META {

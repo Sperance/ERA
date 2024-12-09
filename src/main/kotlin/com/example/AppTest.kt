@@ -2,12 +2,13 @@ package com.example
 
 import com.example.datamodel.clients.Clients
 import com.example.datamodel.clients.Clients.Companion.tbl_clients
+import com.example.datamodel.getMethod
 import com.example.datamodel.putField
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.services.Services
+import com.example.plugins.GMailSender
 import com.example.plugins.db
-import io.ktor.server.util.toLocalDateTime
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -16,7 +17,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import org.junit.Test
 import org.komapper.core.dsl.QueryDsl
-import java.util.Date
+import java.util.Properties
 import kotlin.reflect.KMutableProperty0
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.time.Duration.Companion.minutes
@@ -49,11 +50,24 @@ class AppTest {
     }
 
     @Test
+    fun sendEmail() {
+        try {
+            GMailSender().sendMail(
+                    "THEME",
+                    "message",
+                    "kaltemeis@gmail.com")
+        }catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    @Test
     fun test_null_class() {
-        val objClass = Nulling(id = 1, nonnull = "23", name = null, price = 124)
-        println(objClass)
-        objClass.nulling()
-        println(objClass)
+        println(Clients.serializer())
+        println(Clients.getMethod("serializer"))
+
+        val newObject = Clients::class.java.getField("Companion")
+        println(newObject.getMethod("serializer"))
     }
 
     @Test

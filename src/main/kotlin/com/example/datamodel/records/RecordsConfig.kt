@@ -4,6 +4,7 @@ import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.clearTable
 import com.example.datamodel.clients.Clients
+import com.example.datamodel.feedbacks.configureFeedbacks
 import com.example.getCommentFieldAnnotation
 import com.example.printCallLog
 import com.example.respond
@@ -21,38 +22,38 @@ fun Application.configureRecords() {
         route("/records") {
 
             get("/structure") {
-                printCallLog(call)
+                this@configureRecords.printCallLog(call)
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, Records().getCommentArray()))
             }
 
             get("/clearTable") {
-                printCallLog(call)
+                this@configureRecords.printCallLog(call)
                 Records().clearTable()
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 
             get("/all") {
-                printCallLog(call)
+                this@configureRecords.printCallLog(call)
                 call.respond(Records().get(call, IntBaseDataImpl.RequestParams()))
             }
 
             get("/{id}") {
-                printCallLog(call)
+                this@configureRecords.printCallLog(call)
                 call.respond(Records().getId(call, IntBaseDataImpl.RequestParams()))
             }
 
             post("/update") {
-                printCallLog(call)
-                call.respond(Records().update(call, IntBaseDataImpl.RequestParams()))
+                this@configureRecords.printCallLog(call)
+                call.respond(Records().updateFormData(call, IntBaseDataImpl.RequestParams(), Records.serializer()))
             }
 
             post {
-                printCallLog(call)
-                call.respond(Records().post(call, IntBaseDataImpl.RequestParams()))
+                this@configureRecords.printCallLog(call)
+                call.respond(Records().postFormData(call, IntBaseDataImpl.RequestParams(), Records.serializer()))
             }
 
             delete {
-                printCallLog(call)
+                this@configureRecords.printCallLog(call)
                 call.respond(Records().delete(call, IntBaseDataImpl.RequestParams()))
             }
         }

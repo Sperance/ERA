@@ -2,25 +2,28 @@ package com.example.datamodel.clients
 
 import com.example.CommentField
 import com.example.currectDatetime
+import com.example.currentZeroDate
+import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.getData
-import com.example.datamodel.getDataOne
 import com.example.datamodel.isDuplicate
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
+import com.example.datamodel.services.Services
+import com.example.datamodel.update
 import com.example.isNullOrZero
+import com.example.minus
 import com.example.nullDatetime
+import com.example.plugins.GMailSender
+import com.example.plus
 import com.example.toDateTimePossible
 import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
-import io.ktor.server.util.toLocalDateTime
-import io.ktor.util.InternalAPI
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import org.komapper.annotation.KomapperAutoIncrement
@@ -30,7 +33,9 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
-import java.util.Date
+import kotlin.random.Random
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * Список клиентов.
@@ -71,6 +76,10 @@ data class Clients(
     var clientType: String? = null,
     @CommentField("Пол клиента", true)
     var gender: Byte? = null,
+    @CommentField("Прямая ссылка на картинку", false)
+    var imageLink: String? = null,
+    @Transient
+    var imageFormat: String? = null,
     @Transient
     @KomapperVersion
     val version: Int = 0,
@@ -80,6 +89,73 @@ data class Clients(
 
     companion object {
         val tbl_clients = Meta.clients
+        val repo_clients = BaseRepository(Clients())
+    }
+
+    override suspend fun get(call: ApplicationCall, params: RequestParams<Clients>): ResultResponse {
+        if (repo_clients.isEmpty()) {
+            repo_clients.resetData()
+        } else {
+            return ResultResponse.Success(HttpStatusCode.OK, repo_clients.getData())
+        }
+        return super.get(call, params)
+    }
+
+    private fun generateEmailRecoveryCode() : String {
+        val randomSuffix = Random.nextInt(10000, 99999)
+        return "CL-$randomSuffix"
+    }
+
+    private suspend fun _getTimeSlots(clientId: Int, servceLength: Int) : ArrayList<LocalDateTime> {
+
+        val daysLoaded = 30
+        val startDate = LocalDateTime.currentZeroDate()
+        val endDate = startDate.plus((daysLoaded).days)
+
+        val currentRecords = Records().getData({ tbl_records.id_client_to eq clientId ; tbl_records.dateRecord.between(startDate..endDate) ; tbl_records.status.inList(
+            listOf("Заказ создан", "Заказ принят")
+        ) })
+        val allServices = Services().getData()
+
+        val stockPeriod = 30
+        val removePeriodMin = 1
+        val blockSlots = servceLength * stockPeriod
+
+        val arrayClosed = ArrayList<ClosedRange<LocalDateTime>>()
+        currentRecords.filter { it.dateRecord!! in startDate..endDate }.forEach {
+            val servLen = allServices.find { serv -> serv.id == it.id_service }!!
+            val servDateBegin = it.dateRecord!!.minus((blockSlots - removePeriodMin).minutes)
+            val servDateEnd = it.dateRecord!!.plus((servLen.duration!! * stockPeriod - removePeriodMin).minutes)
+            arrayClosed.add(servDateBegin..servDateEnd)
+            println("Загято: (${it.dateRecord!!}) $servDateBegin - $servDateEnd")
+        }
+
+        var stockDate = startDate
+        val maxDateTime = endDate.minus((blockSlots - removePeriodMin).minutes)
+        val araResult = ArrayList<LocalDateTime>()
+        while (true) {
+            if (stockDate >= maxDateTime) break
+            val finded = arrayClosed.find { ar -> stockDate in ar }
+            if (finded == null && stockDate.hour in 10..<20) {
+                araResult.add(stockDate)
+            }
+            stockDate = stockDate.plus((stockPeriod).minutes)
+        }
+        return araResult
+    }
+
+    suspend fun getTimeSlots(call: ApplicationCall): ResultResponse {
+        try {
+            val _clientId = call.parameters["clientId"]
+            val _servceLength = call.parameters["servceLength"]
+
+            if (_clientId == null || !_clientId.toIntPossible()) return ResultResponse.Error(HttpStatusCode(430, ""), "Incorrect parameter 'clientId'($_clientId). This parameter must be 'Int' type")
+            if (_servceLength == null || !_servceLength.toIntPossible()) return ResultResponse.Error(HttpStatusCode(431, ""), "Incorrect parameter 'servceLength'($_servceLength). This parameter must be 'Int' type")
+
+            return ResultResponse.Success(HttpStatusCode.OK, _getTimeSlots(_clientId.toInt(), _servceLength.toInt()))
+        } catch (e: Exception) {
+            return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage?:"")
+        }
     }
 
     suspend fun getSlots(call: ApplicationCall): ResultResponse {
@@ -108,14 +184,14 @@ data class Clients(
         }
     }
 
-    suspend fun getFromType(call: ApplicationCall): ResultResponse {
+    fun getFromType(call: ApplicationCall): ResultResponse {
         try {
             val clientType = call.parameters["clientType"]
 
             if (clientType.isNullOrEmpty())
                 return ResultResponse.Error(HttpStatusCode(431, ""), "Необходимо указать Тип клиента")
 
-            return ResultResponse.Success(HttpStatusCode.OK, getData({ tbl_clients.clientType eq clientType}))
+            return ResultResponse.Success(HttpStatusCode.OK, repo_clients.getData().filter { it.clientType == clientType })
         } catch (e: Exception) {
             return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
         }
@@ -131,7 +207,7 @@ data class Clients(
             if (user.password.isNullOrEmpty())
                 return ResultResponse.Error(HttpStatusCode(432, ""), "Необходимо указать Пароль")
 
-            val client = getDataOne({ tbl_clients.login eq user.login ; tbl_clients.password eq user.password})
+            val client = repo_clients.getData().find { it.login == user.login && it.password == user.password }
             if (client == null)
                 return ResultResponse.Error(HttpStatusCode.NotFound, "Не найден пользователь с указанным Логином и Паролем")
 
@@ -141,7 +217,62 @@ data class Clients(
         }
     }
 
-    override suspend fun post(call: ApplicationCall, params: RequestParams<Clients>): ResultResponse {
+    suspend fun changePasswordFromEmail(call: ApplicationCall): ResultResponse {
+        try {
+            val email = call.parameters["email"]
+            val password = call.parameters["password"]
+
+            if (email.isNullOrEmpty())
+                return ResultResponse.Error(HttpStatusCode(431, ""), "Incorrect parameter 'email'($email). This parameter must be 'String' type")
+            if (password.isNullOrEmpty())
+                return ResultResponse.Error(HttpStatusCode(432, ""), "Incorrect parameter 'password'($password). This parameter must be 'String' type")
+
+            val findedClient = repo_clients.getData().find { it.email == email }
+            if (findedClient == null)
+                return ResultResponse.Error(HttpStatusCode(433, ""), "Не найден Клиент с адресом $email")
+
+            findedClient.password = password
+            val updated = findedClient.update()
+
+            repo_clients.updateItem(updated)
+
+            return ResultResponse.Success(HttpStatusCode.OK, updated)
+        } catch (e: Exception) {
+            return ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
+        }
+    }
+
+    fun postRecoveryPassword(call: ApplicationCall): ResultResponse {
+        try {
+            val email = call.parameters["email"]
+            val send = call.parameters["send"]
+
+            if (email.isNullOrEmpty())
+                return ResultResponse.Error(HttpStatusCode(431, ""), "Incorrect parameter 'email'($email). This parameter must be 'String' type")
+
+            val findedClient = repo_clients.getData().find { it.email == email }
+            if (findedClient == null)
+                return ResultResponse.Error(HttpStatusCode(432, ""), "Не найден Клиент с адресом $email")
+
+            val generatedPassword = generateEmailRecoveryCode()
+            if (send != null) {
+                val boolSend = send.toBooleanStrictOrNull()
+                if (boolSend == null) {
+                    return ResultResponse.Error(HttpStatusCode(433, ""), "Параметр send($send) должен быть boolean")
+                }
+                if (boolSend) {
+                    GMailSender().sendMail("Восстановление пароля", "Код для восстановления пароля: $generatedPassword", email)
+                }
+            }
+
+            return ResultResponse.Success(HttpStatusCode.OK, generatedPassword)
+
+        } catch (e: Exception) {
+            return ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
+        }
+    }
+
+    override suspend fun postFormData(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<Clients>): ResultResponse {
         params.checkings.add { CheckObj(it.firstName.isNullOrEmpty(), 431, "Необходимо указать Имя") }
         params.checkings.add { CheckObj(it.lastName.isNullOrEmpty(), 432, "Необходимо указать Фамилию") }
         params.checkings.add { CheckObj(it.phone.isNullOrEmpty(), 433, "Необходимо указать Телефон") }
@@ -157,6 +288,28 @@ data class Clients(
         params.defaults.add { it::dateWorkIn to LocalDateTime.nullDatetime() }
         params.defaults.add { it::dateWorkOut to LocalDateTime.nullDatetime() }
 
-        return super.post(call, params)
+        params.onFinish = { newClient ->
+            repo_clients.addItem(newClient)
+        }
+
+        return super.postFormData(call, params, serializer)
+    }
+
+    override suspend fun delete(call: ApplicationCall, params: RequestParams<Clients>): ResultResponse {
+
+        params.onFinish = { newClient ->
+            repo_clients.deleteItem(newClient.id)
+        }
+
+        return super.delete(call, params)
+    }
+
+    override suspend fun updateFormData(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<Clients>): ResultResponse {
+
+        params.onFinish = { newClient ->
+            repo_clients.updateItem(newClient)
+        }
+
+        return super.updateFormData(call, params, serializer)
     }
 }

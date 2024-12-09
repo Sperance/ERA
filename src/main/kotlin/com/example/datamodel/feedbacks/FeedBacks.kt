@@ -2,19 +2,18 @@ package com.example.datamodel.feedbacks
 
 import com.example.CommentField
 import com.example.currectDatetime
+import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.clients.Clients
 import com.example.datamodel.getData
 import com.example.datamodel.isHaveData
-import com.example.datamodel.records.Records
-import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.isNullOrZero
-import com.example.toDateTimePossible
 import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import org.komapper.annotation.KomapperAutoIncrement
@@ -53,6 +52,7 @@ data class FeedBacks(
 
     companion object {
         val tbl_feedbacks = Meta.feedBacks
+        val repo_feedbacks = BaseRepository(FeedBacks())
     }
 
     suspend fun getFromId(call: ApplicationCall) : ResultResponse {
@@ -69,7 +69,7 @@ data class FeedBacks(
         }
     }
 
-    override suspend fun post(call: ApplicationCall, params: RequestParams<FeedBacks>): ResultResponse {
+    override suspend fun postFormData(call: ApplicationCall, params: RequestParams<FeedBacks>, serializer: KSerializer<FeedBacks>): ResultResponse {
         params.checkings.add { CheckObj(it.text.isNullOrEmpty(), 431, "Необходимо указать Текст отзыва") }
         params.checkings.add { CheckObj(it.value.isNullOrZero(), 432, "Необходимо указать Оценку отзыва") }
         params.checkings.add { CheckObj(it.id_client_from.isNullOrZero(), 433, "Необходимо указать id Клиента который оставляет отзыв") }
@@ -80,6 +80,6 @@ data class FeedBacks(
 
         params.defaults.add { it::value to 0.toByte() }
 
-        return super.post(call, params)
+        return super.postFormData(call, params, serializer)
     }
 }
