@@ -4,6 +4,7 @@ import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.clearTable
 import com.example.datamodel.clients.configureClients
+import com.example.datamodel.serverhistory.ServerHistory
 import com.example.printCallLog
 import com.example.respond
 import io.ktor.http.HttpStatusCode
@@ -27,6 +28,7 @@ fun Application.configureFeedbacks() {
             get("/clearTable") {
                 this@configureFeedbacks.printCallLog(call)
                 FeedBacks().clearTable()
+                ServerHistory.addRecord(1, "Очистка таблицы Feedbacks", "")
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 

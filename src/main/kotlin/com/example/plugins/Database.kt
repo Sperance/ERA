@@ -7,6 +7,7 @@ import com.example.datamodel.feedbacks.configureFeedbacks
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.records.configureRecords
 import com.example.datamodel.routeshistory.RoutesHistory.Companion.tbl_routeshistory
+import com.example.datamodel.serverhistory.ServerHistory.Companion.tbl_serverhistory
 import com.example.datamodel.services.Services.Companion.tbl_services
 import com.example.datamodel.services.configureServices
 import com.example.datamodel.stockfiles.Stockfiles.Companion.tbl_stockfiles
@@ -44,6 +45,7 @@ fun Application.configureDatabases() {
             db.runQuery { QueryDsl.create(tbl_records) }
             db.runQuery { QueryDsl.create(tbl_stockfiles) }
             db.runQuery { QueryDsl.create(tbl_routeshistory) }
+            db.runQuery { QueryDsl.create(tbl_serverhistory) }
         }
         routing {
             staticFiles("/files", File("files"))

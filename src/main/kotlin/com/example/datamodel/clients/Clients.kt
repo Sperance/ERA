@@ -10,6 +10,7 @@ import com.example.datamodel.getData
 import com.example.datamodel.isDuplicate
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
+import com.example.datamodel.serverhistory.ServerHistory
 import com.example.datamodel.services.Services
 import com.example.datamodel.update
 import com.example.isNullOrZero
@@ -211,6 +212,7 @@ data class Clients(
             if (client == null)
                 return ResultResponse.Error(HttpStatusCode.NotFound, "Не найден пользователь с указанным Логином и Паролем")
 
+            ServerHistory.addRecord(11, "Авторизация пользователя ${client.id}", client.toString())
             return ResultResponse.Success(HttpStatusCode.OK, client)
         } catch (e: Exception) {
             return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
@@ -236,13 +238,15 @@ data class Clients(
 
             repo_clients.updateItem(updated)
 
+            ServerHistory.addRecord(12, "Изменение пароля пользователя ${updated.id}", password)
+
             return ResultResponse.Success(HttpStatusCode.OK, updated)
         } catch (e: Exception) {
             return ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
         }
     }
 
-    fun postRecoveryPassword(call: ApplicationCall): ResultResponse {
+    suspend fun postRecoveryPassword(call: ApplicationCall): ResultResponse {
         try {
             val email = call.parameters["email"]
             val send = call.parameters["send"]
@@ -264,6 +268,8 @@ data class Clients(
                     GMailSender().sendMail("Восстановление пароля", "Код для восстановления пароля: $generatedPassword", email)
                 }
             }
+
+            ServerHistory.addRecord(13, "Отправлен запрос на $email на восстановление пароля", generatedPassword)
 
             return ResultResponse.Success(HttpStatusCode.OK, generatedPassword)
 

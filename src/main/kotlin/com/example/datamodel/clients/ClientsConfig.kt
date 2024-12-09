@@ -3,6 +3,7 @@ package com.example.datamodel.clients
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.clearTable
+import com.example.datamodel.serverhistory.ServerHistory
 import com.example.datamodel.services.Services
 import com.example.printCallLog
 import com.example.respond
@@ -34,6 +35,7 @@ fun Application.configureClients() {
             get("/clearTable") {
                 this@configureClients.printCallLog(call)
                 Clients().clearTable()
+                ServerHistory.addRecord(1, "Очистка таблицы Clients", "")
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 

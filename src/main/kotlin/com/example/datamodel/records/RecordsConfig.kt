@@ -5,6 +5,7 @@ import com.example.datamodel.ResultResponse
 import com.example.datamodel.clearTable
 import com.example.datamodel.clients.Clients
 import com.example.datamodel.feedbacks.configureFeedbacks
+import com.example.datamodel.serverhistory.ServerHistory
 import com.example.getCommentFieldAnnotation
 import com.example.printCallLog
 import com.example.respond
@@ -29,6 +30,7 @@ fun Application.configureRecords() {
             get("/clearTable") {
                 this@configureRecords.printCallLog(call)
                 Records().clearTable()
+                ServerHistory.addRecord(1, "Очистка таблицы Records", "")
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 
