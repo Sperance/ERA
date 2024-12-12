@@ -2,8 +2,6 @@ package com.example.datamodel.stockfiles
 
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
-import com.example.datamodel.clearTable
-import com.example.datamodel.services.configureServices
 import com.example.printCallLog
 import com.example.respond
 import io.ktor.http.HttpStatusCode
@@ -26,7 +24,7 @@ fun Application.configureStockfiles() {
 
             get("/clearTable") {
                 this@configureStockfiles.printCallLog(call)
-                Stockfiles().clearTable()
+                Stockfiles.repo_stockfiles.clearTable()
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 
@@ -42,12 +40,12 @@ fun Application.configureStockfiles() {
 
             post("/update") {
                 this@configureStockfiles.printCallLog(call)
-                call.respond(Stockfiles().updateFormData(call, IntBaseDataImpl.RequestParams(), Stockfiles.serializer()))
+                call.respond(Stockfiles().update(call, IntBaseDataImpl.RequestParams(), Stockfiles.serializer()))
             }
 
             post {
                 this@configureStockfiles.printCallLog(call)
-                call.respond(Stockfiles().postFormData(call, IntBaseDataImpl.RequestParams(), Stockfiles.serializer()))
+                call.respond(Stockfiles().post(call, IntBaseDataImpl.RequestParams(), Stockfiles.serializer()))
             }
 
             delete {

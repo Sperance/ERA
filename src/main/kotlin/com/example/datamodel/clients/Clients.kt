@@ -93,15 +93,6 @@ data class Clients(
         val repo_clients = BaseRepository(Clients())
     }
 
-    override suspend fun get(call: ApplicationCall, params: RequestParams<Clients>): ResultResponse {
-        if (repo_clients.isEmpty()) {
-            repo_clients.resetData()
-        } else {
-            return ResultResponse.Success(HttpStatusCode.OK, repo_clients.getData())
-        }
-        return super.get(call, params)
-    }
-
     private fun generateEmailRecoveryCode() : String {
         val randomSuffix = Random.nextInt(10000, 99999)
         return "CL-$randomSuffix"
@@ -185,12 +176,12 @@ data class Clients(
         }
     }
 
-    fun getFromType(call: ApplicationCall): ResultResponse {
+    suspend fun getFromType(call: ApplicationCall): ResultResponse {
         try {
             val clientType = call.parameters["clientType"]
 
             if (clientType.isNullOrEmpty())
-                return ResultResponse.Error(HttpStatusCode(431, ""), "Необходимо указать Тип клиента")
+                return ResultResponse.Error(HttpStatusCode(431, ""), "Необходимо указать Тип клиента (параметр clientType)")
 
             return ResultResponse.Success(HttpStatusCode.OK, repo_clients.getData().filter { it.clientType == clientType })
         } catch (e: Exception) {
@@ -203,16 +194,16 @@ data class Clients(
             val user = call.receive<Clients>()
 
             if (user.login.isNullOrEmpty())
-                return ResultResponse.Error(HttpStatusCode(431, ""), "Необходимо указать Логин")
+                return ResultResponse.Error(HttpStatusCode(431, ""), "Необходимо указать Логин(login)")
 
             if (user.password.isNullOrEmpty())
-                return ResultResponse.Error(HttpStatusCode(432, ""), "Необходимо указать Пароль")
+                return ResultResponse.Error(HttpStatusCode(432, ""), "Необходимо указать Пароль(password)")
 
             val client = repo_clients.getData().find { it.login == user.login && it.password == user.password }
             if (client == null)
                 return ResultResponse.Error(HttpStatusCode.NotFound, "Не найден пользователь с указанным Логином и Паролем")
 
-            ServerHistory.addRecord(11, "Авторизация пользователя ${client.id}", client.toString())
+            ServerHistory.addRecord(11, "Авторизация пользователя ${client.id}", client.toStringLow())
             return ResultResponse.Success(HttpStatusCode.OK, client)
         } catch (e: Exception) {
             return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
@@ -278,7 +269,7 @@ data class Clients(
         }
     }
 
-    override suspend fun postFormData(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<Clients>): ResultResponse {
+    override suspend fun post(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<Clients>): ResultResponse {
         params.checkings.add { CheckObj(it.firstName.isNullOrEmpty(), 431, "Необходимо указать Имя") }
         params.checkings.add { CheckObj(it.lastName.isNullOrEmpty(), 432, "Необходимо указать Фамилию") }
         params.checkings.add { CheckObj(it.phone.isNullOrEmpty(), 433, "Необходимо указать Телефон") }
@@ -294,28 +285,10 @@ data class Clients(
         params.defaults.add { it::dateWorkIn to LocalDateTime.nullDatetime() }
         params.defaults.add { it::dateWorkOut to LocalDateTime.nullDatetime() }
 
-        params.onFinish = { newClient ->
-            repo_clients.addItem(newClient)
-        }
-
-        return super.postFormData(call, params, serializer)
+        return super.post(call, params, serializer)
     }
 
-    override suspend fun delete(call: ApplicationCall, params: RequestParams<Clients>): ResultResponse {
-
-        params.onFinish = { newClient ->
-            repo_clients.deleteItem(newClient.id)
-        }
-
-        return super.delete(call, params)
-    }
-
-    override suspend fun updateFormData(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<Clients>): ResultResponse {
-
-        params.onFinish = { newClient ->
-            repo_clients.updateItem(newClient)
-        }
-
-        return super.updateFormData(call, params, serializer)
+    private fun toStringLow(): String {
+        return "{id=$id, firstName=$firstName, login=$login, password=$password, email=$email, clientType=$clientType}"
     }
 }

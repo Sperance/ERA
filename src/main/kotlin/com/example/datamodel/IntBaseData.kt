@@ -2,11 +2,9 @@ package com.example.datamodel
 
 import com.example.BASE_PATH
 import com.example.SYS_FIELDS_ARRAY
-import com.example.datamodel.clients.Clients
-import com.example.datamodel.services.Services
 import com.example.getCommentFieldAnnotation
+import com.example.getObjectRepository
 import com.example.isAllNullOrEmpty
-import com.example.printTextLog
 import com.example.toIntPossible
 import com.example.updateFromNullable
 import io.ktor.http.HttpStatusCode
@@ -14,7 +12,6 @@ import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
 import io.ktor.http.content.streamProvider
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.request.receive
 import io.ktor.server.request.receiveMultipart
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
@@ -58,7 +55,10 @@ abstract class IntBaseDataImpl <T> {
                 val value = res.second
                 property.set(value)
             }
-            return ResultResponse.Success(HttpStatusCode.OK, getData())
+
+            val data = getObjectRepository(this)?.getData()
+            return if (data == null) ResultResponse.Success(HttpStatusCode.OK, getData())
+            else ResultResponse.Success(HttpStatusCode.OK, data)
         } catch (e: Exception) {
             return ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
         }
@@ -102,7 +102,6 @@ abstract class IntBaseDataImpl <T> {
         var isNeedFile = false
         val checkings: ArrayList<suspend (T) -> CheckObj> = ArrayList()
         val defaults: ArrayList<suspend (T) -> Pair<KMutableProperty0<*>, Any?>> = ArrayList()
-        var onFinish: (suspend (T) -> Unit)? = null
     }
 
     data class CheckObj(val result: Boolean, var errorCode: Int, var errorText: String)
@@ -135,9 +134,7 @@ abstract class IntBaseDataImpl <T> {
 
             //Удаляем файл иконки с сервера
             getFileImageIcon(findedObj, currectObjClassName.lowercase())?.delete()
-
-            params.onFinish?.invoke(findedObj as T)
-
+            getObjectRepository(this)?.deleteItem(findedObj)
             findedObj.delete()
 
             return ResultResponse.Success(HttpStatusCode.NoContent, "$currectObjClassName with id $id successfully deleted")
@@ -146,7 +143,7 @@ abstract class IntBaseDataImpl <T> {
         }
     }
 
-    open suspend fun updateFormData(call: ApplicationCall, params: RequestParams<T>, serializer: KSerializer<T>): ResultResponse {
+    open suspend fun update(call: ApplicationCall, params: RequestParams<T>, serializer: KSerializer<T>): ResultResponse {
         try {
             val multipartData = call.receiveMultipart()
 
@@ -201,7 +198,7 @@ abstract class IntBaseDataImpl <T> {
             findedObj.updateFromNullable(newObject!!)
             val updated = findedObj.update()
 
-            params.onFinish?.invoke(updated as T)
+            getObjectRepository(this)?.updateItem(updated)
 
             return ResultResponse.Success(HttpStatusCode.OK, updated)
         } catch (e: Exception) {
@@ -216,7 +213,7 @@ abstract class IntBaseDataImpl <T> {
         return currentFile
     }
 
-    open suspend fun postFormData(call: ApplicationCall, params: RequestParams<T>, serializer: KSerializer<T>): ResultResponse {
+    open suspend fun post(call: ApplicationCall, params: RequestParams<T>, serializer: KSerializer<T>): ResultResponse {
         try {
             val multipartData = call.receiveMultipart()
 
@@ -264,7 +261,7 @@ abstract class IntBaseDataImpl <T> {
                 finish.update()
             }
 
-            params.onFinish?.invoke(finish)
+            getObjectRepository(this)?.addItem(finish as IntBaseDataImpl<T>)
 
             return ResultResponse.Success(HttpStatusCode.Created, finish)
         } catch (e: Exception) {

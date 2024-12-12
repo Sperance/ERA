@@ -92,7 +92,7 @@ data class Records(
         return ResultResponse.Success(HttpStatusCode.OK, listResults)
     }
 
-    override suspend fun postFormData(call: ApplicationCall, params: RequestParams<Records>, serializer: KSerializer<Records>): ResultResponse {
+    override suspend fun post(call: ApplicationCall, params: RequestParams<Records>, serializer: KSerializer<Records>): ResultResponse {
         params.checkings.add { CheckObj(it.id_client_from.isNullOrZero(), 430, "Необходимо указать id Клиента который записывается на услугу") }
         params.checkings.add { CheckObj(it.id_client_to.isNullOrZero(), 431, "Необходимо указать id Клиента который будет выполнять услугу") }
         params.checkings.add { CheckObj(it.id_service.isNullOrZero(), 432, "Необходимо указать id Услуги") }
@@ -107,7 +107,7 @@ data class Records(
         params.defaults.add { it::status to "Создана" }
         params.defaults.add { it::number to generateShortOrderNumber(Records().getSize()) }
 
-        return super.postFormData(call, params, serializer)
+        return super.post(call, params, serializer)
     }
 
     private fun generateShortOrderNumber(allRecords: Long): String {

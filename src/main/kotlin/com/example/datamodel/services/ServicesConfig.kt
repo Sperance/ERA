@@ -2,9 +2,6 @@ package com.example.datamodel.services
 
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
-import com.example.datamodel.clearTable
-import com.example.datamodel.records.configureRecords
-import com.example.datamodel.serverhistory.ServerHistory
 import com.example.printCallLog
 import com.example.respond
 import io.ktor.http.HttpStatusCode
@@ -27,8 +24,7 @@ fun Application.configureServices() {
 
             get("/clearTable") {
                 this@configureServices.printCallLog(call)
-                Services().clearTable()
-                ServerHistory.addRecord(1, "Очистка таблицы Services", "")
+                Services.repo_services.clearTable()
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 
@@ -44,12 +40,12 @@ fun Application.configureServices() {
 
             post("/update") {
                 this@configureServices.printCallLog(call)
-                call.respond(Services().updateFormData(call, IntBaseDataImpl.RequestParams(), Services.serializer()))
+                call.respond(Services().update(call, IntBaseDataImpl.RequestParams(), Services.serializer()))
             }
 
             post {
                 this@configureServices.printCallLog(call)
-                call.respond(Services().postFormData(call, IntBaseDataImpl.RequestParams(), Services.serializer()))
+                call.respond(Services().post(call, IntBaseDataImpl.RequestParams(), Services.serializer()))
             }
 
             delete {

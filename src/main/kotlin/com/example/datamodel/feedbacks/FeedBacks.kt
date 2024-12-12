@@ -69,7 +69,7 @@ data class FeedBacks(
         }
     }
 
-    override suspend fun postFormData(call: ApplicationCall, params: RequestParams<FeedBacks>, serializer: KSerializer<FeedBacks>): ResultResponse {
+    override suspend fun post(call: ApplicationCall, params: RequestParams<FeedBacks>, serializer: KSerializer<FeedBacks>): ResultResponse {
         params.checkings.add { CheckObj(it.text.isNullOrEmpty(), 431, "Необходимо указать Текст отзыва") }
         params.checkings.add { CheckObj(it.value.isNullOrZero(), 432, "Необходимо указать Оценку отзыва") }
         params.checkings.add { CheckObj(it.id_client_from.isNullOrZero(), 433, "Необходимо указать id Клиента который оставляет отзыв") }
@@ -80,6 +80,6 @@ data class FeedBacks(
 
         params.defaults.add { it::value to 0.toByte() }
 
-        return super.postFormData(call, params, serializer)
+        return super.post(call, params, serializer)
     }
 }

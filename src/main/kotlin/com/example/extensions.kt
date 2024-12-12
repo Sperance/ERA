@@ -1,5 +1,6 @@
 package com.example
 
+import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.getField
@@ -27,6 +28,9 @@ import java.lang.reflect.Field
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.reflect.full.companionObject
+import kotlin.reflect.full.companionObjectInstance
+import kotlin.reflect.full.declaredMembers
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
@@ -93,6 +97,13 @@ suspend fun ApplicationCall.respond(response: ResultResponse) {
         is ResultResponse.Error -> respond(status = response.status, message = response.message)
         is ResultResponse.Success -> respond(status = response.status, message = response.data)
     }
+}
+
+@Suppress("UNCHECKED_CAST")
+fun <T: Any> getObjectRepository(obj: T) : BaseRepository<T>? {
+    val simpleClass = obj::class.java
+    val instance = simpleClass.kotlin.companionObject?.declaredMembers?.find { it.name == "repo_${simpleClass.simpleName.lowercase()}" }
+    return instance?.call(simpleClass.kotlin.companionObjectInstance) as BaseRepository<T>?
 }
 
 fun Any?.isAllNullOrEmpty() : Boolean {

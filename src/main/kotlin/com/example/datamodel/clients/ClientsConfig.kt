@@ -2,21 +2,16 @@ package com.example.datamodel.clients
 
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
-import com.example.datamodel.clearTable
-import com.example.datamodel.serverhistory.ServerHistory
-import com.example.datamodel.services.Services
 import com.example.printCallLog
 import com.example.respond
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
-import io.ktor.server.http.content.staticFiles
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import java.io.File
 
 fun Application.configureClients() {
     routing {
@@ -26,16 +21,9 @@ fun Application.configureClients() {
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, Clients().getCommentArray()))
             }
 
-            get("/performReset") {
-                this@configureClients.printCallLog(call)
-                Clients.repo_clients.resetData()
-                call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно обновлена"))
-            }
-
             get("/clearTable") {
                 this@configureClients.printCallLog(call)
-                Clients().clearTable()
-                ServerHistory.addRecord(1, "Очистка таблицы Clients", "")
+                Clients.repo_clients.clearTable()
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 
@@ -71,12 +59,12 @@ fun Application.configureClients() {
 
             post("/update") {
                 this@configureClients.printCallLog(call)
-                call.respond(Clients().updateFormData(call, IntBaseDataImpl.RequestParams(), Clients.serializer()))
+                call.respond(Clients().update(call, IntBaseDataImpl.RequestParams(), Clients.serializer()))
             }
 
             post {
                 this@configureClients.printCallLog(call)
-                call.respond(Clients().postFormData(call, IntBaseDataImpl.RequestParams(), Clients.serializer()))
+                call.respond(Clients().post(call, IntBaseDataImpl.RequestParams(), Clients.serializer()))
             }
 
             post("/recoveryPassword") {

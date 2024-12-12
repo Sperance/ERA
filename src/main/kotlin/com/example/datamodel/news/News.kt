@@ -1,10 +1,11 @@
-package com.example.datamodel.stockfiles
+package com.example.datamodel.news
 
 import com.example.CommentField
 import com.example.currectDatetime
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
+import com.example.isNullOrZero
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -20,19 +21,17 @@ import org.komapper.core.dsl.Meta
 
 @Serializable
 @KomapperEntity
-@KomapperTable("tbl_stockfiles")
-data class Stockfiles(
+@KomapperTable("tbl_news")
+data class News(
     @KomapperId
     @KomapperAutoIncrement
-    @KomapperColumn(name = "stockfiles_id")
+    @KomapperColumn(name = "news_id")
     val id: Int = 0,
-    @CommentField("Ссылка на услугу", false)
-    var service: Int? = null,
-    @CommentField("Наименование файла", false)
+    @CommentField("Наименование новости", true)
     var name: String? = null,
-    @CommentField("Категория файла", true)
-    var category: String? = null,
-    @CommentField("Ссылка на файл", false)
+    @CommentField("Текст новости", true)
+    var mainText: String? = null,
+    @CommentField("Прямая ссылка на картинку", false)
     var imageLink: String? = null,
     @Transient
     var imageFormat: String? = null,
@@ -41,18 +40,16 @@ data class Stockfiles(
     val version: Int = 0,
     @Transient
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
-) : IntBaseDataImpl<Stockfiles>() {
+) : IntBaseDataImpl<News>() {
 
     companion object {
-        val tbl_stockfiles = Meta.stockfiles
-        val repo_stockfiles = BaseRepository(Stockfiles())
+        val tbl_news = Meta.news
+        val repo_news = BaseRepository(News())
     }
 
-    override suspend fun post(call: ApplicationCall, params: RequestParams<Stockfiles>, serializer: KSerializer<Stockfiles>): ResultResponse {
-
-        params.isNeedFile = true
-        params.checkings.add { CheckObj(it.category.isNullOrEmpty(), 431, "Необходимо указать Категорию файла") }
-
+    override suspend fun post(call: ApplicationCall, params: RequestParams<News>, serializer: KSerializer<News>): ResultResponse {
+        params.checkings.add { CheckObj(it.name.isNullOrEmpty(), 431, "Необходимо указать Наименование новости (name)") }
+        params.checkings.add { CheckObj(it.mainText.isNullOrEmpty(), 432, "Необходимо указать Текст новости (mainText)") }
         return super.post(call, params, serializer)
     }
 }

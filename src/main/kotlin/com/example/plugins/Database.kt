@@ -4,6 +4,8 @@ import com.example.datamodel.clients.Clients.Companion.tbl_clients
 import com.example.datamodel.clients.configureClients
 import com.example.datamodel.feedbacks.FeedBacks.Companion.tbl_feedbacks
 import com.example.datamodel.feedbacks.configureFeedbacks
+import com.example.datamodel.news.News.Companion.tbl_news
+import com.example.datamodel.news.configureNews
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.records.configureRecords
 import com.example.datamodel.routeshistory.RoutesHistory.Companion.tbl_routeshistory
@@ -46,6 +48,7 @@ fun Application.configureDatabases() {
             db.runQuery { QueryDsl.create(tbl_stockfiles) }
             db.runQuery { QueryDsl.create(tbl_routeshistory) }
             db.runQuery { QueryDsl.create(tbl_serverhistory) }
+            db.runQuery { QueryDsl.create(tbl_news) }
         }
         routing {
             staticFiles("/files", File("files"))
@@ -55,5 +58,6 @@ fun Application.configureDatabases() {
         configureFeedbacks()
         configureRecords()
         configureStockfiles()
+        configureNews()
     }
 }

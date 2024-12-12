@@ -60,7 +60,7 @@ data class Services(
         val repo_services = BaseRepository(Services())
     }
 
-    override suspend fun postFormData(call: ApplicationCall, params: RequestParams<Services>, serializer: KSerializer<Services>): ResultResponse {
+    override suspend fun post(call: ApplicationCall, params: RequestParams<Services>, serializer: KSerializer<Services>): ResultResponse {
         params.checkings.add { CheckObj(it.name.isNullOrEmpty(), 431, "Необходимо указать Наименование услуги") }
         params.checkings.add { CheckObj(it.priceLow.isNullOrZero(), 432, "Необходимо указать Минимальную стоимость услуги") }
         params.checkings.add { CheckObj(it.duration.isNullOrZero(), 435, "Необходимо указать Продолжительность услуги (не может быть 0)") }
@@ -68,6 +68,6 @@ data class Services(
 
         params.defaults.add { it::gender to -1 }
 
-        return super.postFormData(call, params, serializer)
+        return super.post(call, params, serializer)
     }
 }

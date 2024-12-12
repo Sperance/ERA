@@ -2,9 +2,6 @@ package com.example.datamodel.feedbacks
 
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
-import com.example.datamodel.clearTable
-import com.example.datamodel.clients.configureClients
-import com.example.datamodel.serverhistory.ServerHistory
 import com.example.printCallLog
 import com.example.respond
 import io.ktor.http.HttpStatusCode
@@ -27,8 +24,7 @@ fun Application.configureFeedbacks() {
 
             get("/clearTable") {
                 this@configureFeedbacks.printCallLog(call)
-                FeedBacks().clearTable()
-                ServerHistory.addRecord(1, "Очистка таблицы Feedbacks", "")
+                FeedBacks.repo_feedbacks.clearTable()
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 
@@ -49,12 +45,12 @@ fun Application.configureFeedbacks() {
 
             post("/update") {
                 this@configureFeedbacks.printCallLog(call)
-                call.respond(FeedBacks().updateFormData(call, IntBaseDataImpl.RequestParams(), FeedBacks.serializer()))
+                call.respond(FeedBacks().update(call, IntBaseDataImpl.RequestParams(), FeedBacks.serializer()))
             }
 
             post {
                 this@configureFeedbacks.printCallLog(call)
-                call.respond(FeedBacks().postFormData(call, IntBaseDataImpl.RequestParams(), FeedBacks.serializer()))
+                call.respond(FeedBacks().post(call, IntBaseDataImpl.RequestParams(), FeedBacks.serializer()))
             }
 
             delete {

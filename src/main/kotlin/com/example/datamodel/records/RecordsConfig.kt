@@ -2,11 +2,6 @@ package com.example.datamodel.records
 
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
-import com.example.datamodel.clearTable
-import com.example.datamodel.clients.Clients
-import com.example.datamodel.feedbacks.configureFeedbacks
-import com.example.datamodel.serverhistory.ServerHistory
-import com.example.getCommentFieldAnnotation
 import com.example.printCallLog
 import com.example.respond
 import io.ktor.http.HttpStatusCode
@@ -29,8 +24,7 @@ fun Application.configureRecords() {
 
             get("/clearTable") {
                 this@configureRecords.printCallLog(call)
-                Records().clearTable()
-                ServerHistory.addRecord(1, "Очистка таблицы Records", "")
+                Records.repo_records.clearTable()
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 
@@ -46,12 +40,12 @@ fun Application.configureRecords() {
 
             post("/update") {
                 this@configureRecords.printCallLog(call)
-                call.respond(Records().updateFormData(call, IntBaseDataImpl.RequestParams(), Records.serializer()))
+                call.respond(Records().update(call, IntBaseDataImpl.RequestParams(), Records.serializer()))
             }
 
             post {
                 this@configureRecords.printCallLog(call)
-                call.respond(Records().postFormData(call, IntBaseDataImpl.RequestParams(), Records.serializer()))
+                call.respond(Records().post(call, IntBaseDataImpl.RequestParams(), Records.serializer()))
             }
 
             delete {

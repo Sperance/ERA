@@ -1,12 +1,16 @@
 package com.example
 
+import com.example.datamodel.BaseRepository
+import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.clients.Clients
 import com.example.datamodel.clients.Clients.Companion.tbl_clients
+import com.example.datamodel.getField
 import com.example.datamodel.getMethod
 import com.example.datamodel.putField
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.services.Services
+import com.example.datamodel.stockfiles.Stockfiles
 import com.example.plugins.GMailSender
 import com.example.plugins.db
 import kotlinx.coroutines.runBlocking
@@ -19,7 +23,11 @@ import org.junit.Test
 import org.komapper.core.dsl.QueryDsl
 import java.util.Properties
 import kotlin.reflect.KMutableProperty0
+import kotlin.reflect.full.companionObject
+import kotlin.reflect.full.companionObjectInstance
+import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.full.declaredMembers
 import kotlin.time.Duration.Companion.minutes
 
 
@@ -31,6 +39,7 @@ data class Recordsdata (
     var record: Records?
 )
 
+@Suppress("UNCHECKED_CAST")
 class AppTest {
 
     private fun Any.nulling() {
@@ -47,6 +56,12 @@ class AppTest {
             if (!it.returnType.isMarkedNullable) return@forEach
             this.putField(it.name, null)
         }
+    }
+
+    @Test
+    fun testCompanion() {
+        val cl = Clients()
+        getObjectRepository(cl)
     }
 
     @Test
