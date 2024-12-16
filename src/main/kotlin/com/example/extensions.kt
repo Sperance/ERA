@@ -79,18 +79,6 @@ fun LocalDateTime.Companion.currentZeroDate() : LocalDateTime {
 @OptIn(InternalAPI::class)
 fun LocalDateTime.Companion.currectDatetime() = Date().toLocalDateTime().toKotlinLocalDateTime()
 
-/**
- * Вывод информации по запросам на сервер в лог
- */
-fun Application.printCallLog(call: ApplicationCall) {
-    val curDTime = System.currentTimeMillis().toFormatDateTime()
-    println("$curDTime [${call.request.local.remoteAddress}::${call.request.local.remotePort}][${call.request.toLogString()}] params: ${call.parameters.entries()}")
-
-    launch(Dispatchers.IO) {
-        RoutesHistory().createFromCall(call)
-    }
-}
-
 suspend fun ApplicationCall.respond(response: ResultResponse) {
     printTextLog("[ApplicationCall::respond] ${response::class.simpleName} code: ${response.status}")
     when(response) {

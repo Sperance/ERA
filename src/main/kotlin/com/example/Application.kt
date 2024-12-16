@@ -13,6 +13,7 @@ fun main() {
 }
 
 fun Application.module() {
+    install(LogPlugin)
     configureSerialization()
     configureDatabases()
     configureTests()

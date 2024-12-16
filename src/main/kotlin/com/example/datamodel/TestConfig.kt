@@ -3,7 +3,6 @@ package com.example.datamodel
 import com.example.minus
 import com.example.plugins.GMailSender
 import com.example.plus
-import com.example.printCallLog
 import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -23,7 +22,6 @@ fun Application.configureTests() {
     routing {
         route("/test") {
             post ("/emailMessage") {
-                this@configureTests.printCallLog(call)
                 val email = call.parameters["email"]
 
                 if (email.isNullOrEmpty()) {
@@ -43,7 +41,6 @@ fun Application.configureTests() {
                 call.respond(HttpStatusCode.OK, "Email successfully sended")
             }
             get ("/slot_time/{serviceLength}") {
-                this@configureTests.printCallLog(call)
 
                 val serviceLength = call.parameters["serviceLength"]
 

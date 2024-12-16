@@ -39,7 +39,7 @@ data class Stockfiles(
     @Transient
     @KomapperVersion
     val version: Int = 0,
-    @Transient
+    @CommentField("Дата создания строки", false)
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Stockfiles>() {
 

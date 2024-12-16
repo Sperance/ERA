@@ -4,11 +4,13 @@ import com.example.currectDatetime
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.create
 import com.example.datamodel.records.Records
+import com.example.nullDatetime
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.plugins.origin
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.httpVersion
 import io.ktor.server.request.uri
+import io.ktor.server.routing.Route
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -28,35 +30,34 @@ data class RoutesHistory(
     @KomapperAutoIncrement
     @KomapperColumn(name = "routeshistory_id")
     val id: Int = 0,
-    var parameters: String = "",
     var httpMethod: String = "",
     var uri: String = "",
+    var parameters: String = "",
+    var requestTime: LocalDateTime? = null,
     var httpVersion: String = "",
-    var host: String = "",
     var contentLength: String = "",
     var remoteAddress: String = "",
     var remoteHost: String = "",
     var remotePort: String = "",
+    var respondData: String = "",
+    var respondTime: LocalDateTime? = null,
     @Transient
     @KomapperVersion
     val version: Int = 0,
     @Transient
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) {
-
-    suspend fun createFromCall(call: ApplicationCall) {
+    fun fillFromCall(call: ApplicationCall) {
         this.parameters = call.parameters.entries().joinToString("; ")
         this.httpMethod = call.request.httpMethod.value
         this.uri = call.request.uri.substringBefore("?")
         this.httpVersion = call.request.httpVersion
-        this.host = call.request.headers["Host"]?:""
         this.contentLength = call.request.headers["Content-Length"]?:""
         this.remoteAddress = call.request.headers["X-Forwarded-For"]
             ?: call.request.headers["X-Real-IP"]
-            ?: call.request.origin.remoteAddress
+                    ?: call.request.origin.remoteAddress
         this.remoteHost = call.request.origin.remoteHost
         this.remotePort = call.request.origin.remotePort.toString()
-        this.create(null)
     }
 
     companion object {
