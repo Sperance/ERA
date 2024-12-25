@@ -102,6 +102,7 @@ abstract class IntBaseDataImpl <T> {
         var isNeedFile = false
         val checkings: ArrayList<suspend (T) -> CheckObj> = ArrayList()
         val defaults: ArrayList<suspend (T) -> Pair<KMutableProperty0<*>, Any?>> = ArrayList()
+        var checkOnUpdate: ((T, T) -> Any)? = null
     }
 
     data class CheckObj(val result: Boolean, var errorCode: Int, var errorText: String)
@@ -194,6 +195,8 @@ abstract class IntBaseDataImpl <T> {
                 newObject!!.putField("imageLink", "${BASE_PATH}files/${currectObjClassName.lowercase()}/" + imageFile.name)
                 newObject!!.putField("imageFormat", partFileData!!.originalFileName?.substringAfterLast("."))
             }
+
+            params.checkOnUpdate?.invoke(findedObj as T, newObject!!)
 
             findedObj.updateFromNullable(newObject!!)
             val updated = findedObj.update()

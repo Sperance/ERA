@@ -13,6 +13,8 @@ import com.example.datamodel.services.Services
 import com.example.datamodel.stockfiles.Stockfiles
 import com.example.plugins.GMailSender
 import com.example.plugins.db
+import io.ktor.network.tls.certificates.buildKeyStore
+import io.ktor.network.tls.certificates.saveToFile
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -21,6 +23,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import org.junit.Test
 import org.komapper.core.dsl.QueryDsl
+import java.io.File
 import java.util.Properties
 import kotlin.reflect.KMutableProperty0
 import kotlin.reflect.full.companionObject
@@ -77,12 +80,26 @@ class AppTest {
     }
 
     @Test
-    fun test_null_class() {
-        println(Clients.serializer())
-        println(Clients.getMethod("serializer"))
+    fun testDatetime() {
+        val timeRequest = "2024-12-19T15:37:42.133"
+        printTextLog(timeRequest.toDateTimePossible().toString())
+    }
 
-        val newObject = Clients::class.java.getField("Companion")
-        println(newObject.getMethod("serializer"))
+    @Test
+    fun generateCertificate() {
+        val keyStoreFile = File("build/keystore.jks")
+        val keyStore = buildKeyStore {
+            certificate("eraAlias") {
+                password = "Password123."
+                domains = listOf("127.0.0.1", "0.0.0.0", "localhost", "95.163.84.228")
+            }
+        }
+        keyStore.saveToFile(keyStoreFile, "Pass123.")
+    }
+
+    @Test
+    fun test_null_class() {
+        println(calculateDifference(LocalDateTime.currentZeroDate(), LocalDateTime.currectDatetime()))
     }
 
     @Test

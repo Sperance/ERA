@@ -52,8 +52,10 @@ data class Records(
     var number: String? = null,
     @CommentField("Дата и время на которую записан клиент", true)
     var dateRecord: LocalDateTime? = null,
-    @CommentField("Статус записи (по умолчанию 'Создана')", false)
-    var status: String? = null,
+    @CommentField("Статус записи (по умолчанию '0 - Создана')", false)
+    var status: Int? = null,
+    @CommentField("Просмотрен ли заказ после изменения статуса (при смене статуса ставится false)", false)
+    var statusViewed: Boolean? = null,
     @CommentField("Стоимость записи", false)
     var price: Double? = null,
     @CommentField("Тип оплаты", false)
@@ -78,8 +80,8 @@ data class Records(
     ): ResultResponse {
         
         val listResults = ArrayList<Recordsdata>()
-        val listClients = Clients().getData()
-        val listServices = Services().getData()
+        val listClients = Clients.repo_clients.getData()
+        val listServices = Services.repo_services.getData()
 
         getData().forEach {
             listResults.add(Recordsdata(
@@ -90,6 +92,20 @@ data class Records(
         }
 
         return ResultResponse.Success(HttpStatusCode.OK, listResults)
+    }
+
+    override suspend fun update(
+        call: ApplicationCall,
+        params: RequestParams<Records>,
+        serializer: KSerializer<Records>
+    ): ResultResponse {
+
+        params.checkOnUpdate = { old: Records, new: Records ->
+            if (new.status != null && old.status != new.status)
+                new.statusViewed = false
+        }
+
+        return super.update(call, params, serializer)
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Records>, serializer: KSerializer<Records>): ResultResponse {
@@ -104,7 +120,8 @@ data class Records(
         params.checkings.add { CheckObj(Services().isHaveData(it.id_service!!), 443, "Не существует Услуги с id ${it.id_service}") }
 
         params.defaults.add { it::dateRecord to LocalDateTime.nullDatetime() }
-        params.defaults.add { it::status to "Создана" }
+        params.defaults.add { it::status to 0 }
+        params.defaults.add { it::statusViewed to false }
         params.defaults.add { it::number to generateShortOrderNumber(Records().getSize()) }
 
         return super.post(call, params, serializer)

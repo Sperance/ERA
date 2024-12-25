@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.datetime.toLocalDateTime
 import java.lang.reflect.Field
@@ -32,7 +33,6 @@ import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.companionObjectInstance
 import kotlin.reflect.full.declaredMembers
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
 
 fun String?.toIntPossible() : Boolean {
     if (this == null) return false
@@ -85,6 +85,30 @@ suspend fun ApplicationCall.respond(response: ResultResponse) {
         is ResultResponse.Error -> respond(status = response.status, message = response.message)
         is ResultResponse.Success -> respond(status = response.status, message = response.data)
     }
+}
+
+fun calculateDifference(start: LocalDateTime?, end: LocalDateTime?): String {
+
+    if (start == null || end == null) return ""
+
+    // Вычисляем продолжительность между двумя датами
+    val duration = java.time.Duration.between(start.toJavaLocalDateTime(), end.toJavaLocalDateTime())
+
+    var resultString = ""
+    // Получаем количество дней, часов, минут и секунд
+    val days = duration.toDays()
+    if (days > 0) resultString += "${days}d "
+    val hours = duration.toHours() % 24
+    if (hours > 0) resultString += "${hours}h "
+    val minutes = duration.toMinutes() % 60
+    if (minutes > 0) resultString += "${minutes}m "
+    val seconds = duration.seconds % 60
+    if (seconds > 0) resultString += "${seconds}s "
+    val millis = duration.toMillis() % 1000
+    if (millis > 0) resultString += "${millis}ms"
+
+    // Формируем строку с результатом
+    return resultString
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -144,6 +168,7 @@ fun Double.removePercent(value: Double) : Double {
 }
 
 fun Double.to1Digits() = String.format("%.1f", this).replace(",", ".").toDouble()
+fun Double.to0Digits() = String.format("%.0f", this).replace(",", ".").toDouble()
 
 inline fun <reified T> Any.listFields() : ArrayList<T> {
     val array = ArrayList<T>()

@@ -18,7 +18,8 @@ group = "com.example"
 version = "0.0.1"
 
 application {
-    mainClass.set("io.ktor.server.netty.EngineMain")
+    mainClass.set("com.example.ApplicationKt")
+//    mainClass.set("io.ktor.server.netty.EngineMain")
 
     val isDevelopment: Boolean = project.ext.has("development")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
@@ -28,6 +29,7 @@ repositories {
     mavenCentral()
     mavenLocal()
     google()
+    maven { url = uri("https://maven.pkg.jetbrains.space/public/p/ktor/eap") }
     maven("https://jitpack.io")
 }
 
@@ -69,6 +71,7 @@ dependencies {
     implementation("junit:junit:4.12")
     implementation("org.junit.jupiter:junit-jupiter:5.8.1")
     testImplementation("io.ktor:ktor-server-test-host-jvm")
+    implementation("io.ktor:ktor-network-tls-certificates-jvm")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0-RC.2")
 
     platform("org.komapper:komapper-platform:$komapperVersion").let {

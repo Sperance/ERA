@@ -104,9 +104,7 @@ data class Clients(
         val startDate = LocalDateTime.currentZeroDate()
         val endDate = startDate.plus((daysLoaded).days)
 
-        val currentRecords = Records().getData({ tbl_records.id_client_to eq clientId ; tbl_records.dateRecord.between(startDate..endDate) ; tbl_records.status.inList(
-            listOf("Заказ создан", "Заказ принят")
-        ) })
+        val currentRecords = Records().getData({ tbl_records.id_client_to eq clientId ; tbl_records.dateRecord.between(startDate..endDate) ; tbl_records.status lessEq 100 })
         val allServices = Services().getData()
 
         val stockPeriod = 30
