@@ -35,6 +35,10 @@ data class FeedBacks(
     @KomapperAutoIncrement
     @KomapperColumn(name = "feedback_id")
     val id: Int = 0,
+    @CommentField("Имя клиента оставившего отзыв", true)
+    var firstName: String? = null,
+    @CommentField("Фамилия клиента оставившего отзыв", true)
+    var lastName: String? = null,
     @CommentField("Идентификатор клиента оставившего отзыв", true)
     var id_client_from: Int? = null,
     @CommentField("Идентификатор сотрудника кому оставили отзыв", true)
@@ -83,3 +87,4 @@ data class FeedBacks(
         return super.post(call, params, serializer)
     }
 }
+
