@@ -11,6 +11,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import kotlinx.serialization.builtins.ListSerializer
 
 fun Application.configureNews() {
     routing {
@@ -38,7 +39,7 @@ fun Application.configureNews() {
             }
 
             post {
-                call.respond(News().post(call, IntBaseDataImpl.RequestParams(), News.serializer()))
+                call.respond(News().post(call, IntBaseDataImpl.RequestParams(), ListSerializer(News.serializer())))
             }
 
             delete {

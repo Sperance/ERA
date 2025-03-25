@@ -183,5 +183,12 @@ inline fun <reified T> Any.listFields() : ArrayList<T> {
 fun Field?.getCommentFieldAnnotation(): String {
     val ann = this?.getAnnotation(CommentField::class.java)
     if (ann == null) return ""
-    return "{ ${ann.name}; обязательное: ${ann.required} }"
+    return "[${ann.name}; обязательное: ${ann.required}]"
+}
+
+fun LocalDateTime?.isDateInRange(startDate: LocalDateTime?, endDate: LocalDateTime?): Boolean {
+    if (this == null) return false
+    if (startDate == null) return false
+    if (endDate == null) return false
+    return this.toJavaLocalDateTime().isAfter(startDate.toJavaLocalDateTime()) && this.toJavaLocalDateTime().isBefore(endDate.toJavaLocalDateTime())
 }

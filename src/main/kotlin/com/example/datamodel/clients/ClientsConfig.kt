@@ -11,6 +11,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import kotlinx.serialization.builtins.ListSerializer
 
 fun Application.configureClients() {
     routing {
@@ -36,6 +37,10 @@ fun Application.configureClients() {
                 call.respond(Clients().getFromType(call))
             }
 
+            get("/{phone}") {
+                call.respond(Clients().getFromPhone(call))
+            }
+
             get("/{id}") {
                 call.respond(Clients().getId(call, IntBaseDataImpl.RequestParams()))
             }
@@ -53,7 +58,7 @@ fun Application.configureClients() {
             }
 
             post {
-                call.respond(Clients().post(call, IntBaseDataImpl.RequestParams(), Clients.serializer()))
+                call.respond(Clients().post(call, IntBaseDataImpl.RequestParams(), ListSerializer(Clients.serializer())))
             }
 
             post("/recoveryPassword") {

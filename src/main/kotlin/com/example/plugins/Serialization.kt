@@ -13,10 +13,11 @@ import kotlinx.serialization.json.Json
 fun Application.configureSerialization() {
 
     install(CORS) {
-        // Разрешить все источники (не рекомендуется для продакшена)
+
         anyHost()
-        // Разрешить только конкретный источник
-        allowHost("localhost:3000")
+        allowHost("www.salon-era.ru", schemes = listOf("https"))
+        allowHost("salon-era.ru", schemes = listOf("https"))
+        allowHost("localhost:3000", schemes = listOf("http"))
         // Разрешить необходимые методы
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
@@ -29,7 +30,8 @@ fun Application.configureSerialization() {
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Authorization)
         // Если нужно разрешить все заголовки, можно оставить:
-        // allowHeaders { true }
+         allowHeaders { true }
+        allowCredentials = true
     }
 
     install(ContentNegotiation) {

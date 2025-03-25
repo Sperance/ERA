@@ -71,7 +71,6 @@ data class Records(
 
     companion object {
         val tbl_records = Meta.records
-        val repo_records = BaseRepository(Records())
     }
 
     override suspend fun get(
@@ -80,8 +79,8 @@ data class Records(
     ): ResultResponse {
         
         val listResults = ArrayList<Recordsdata>()
-        val listClients = Clients.repo_clients.getData()
-        val listServices = Services.repo_services.getData()
+        val listClients = Clients.repo_clients.getRepositoryData()
+        val listServices = Services.repo_services.getRepositoryData()
 
         getData().forEach {
             listResults.add(Recordsdata(
@@ -108,7 +107,7 @@ data class Records(
         return super.update(call, params, serializer)
     }
 
-    override suspend fun post(call: ApplicationCall, params: RequestParams<Records>, serializer: KSerializer<Records>): ResultResponse {
+    override suspend fun post(call: ApplicationCall, params: RequestParams<Records>, serializer: KSerializer<List<Records>>): ResultResponse {
         params.checkings.add { CheckObj(it.id_client_from.isNullOrZero(), 430, "Необходимо указать id Клиента который записывается на услугу") }
         params.checkings.add { CheckObj(it.id_client_to.isNullOrZero(), 431, "Необходимо указать id Клиента который будет выполнять услугу") }
         params.checkings.add { CheckObj(it.id_service.isNullOrZero(), 432, "Необходимо указать id Услуги") }

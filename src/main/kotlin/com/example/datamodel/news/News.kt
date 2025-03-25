@@ -47,7 +47,7 @@ data class News(
         val repo_news = BaseRepository(News())
     }
 
-    override suspend fun post(call: ApplicationCall, params: RequestParams<News>, serializer: KSerializer<News>): ResultResponse {
+    override suspend fun post(call: ApplicationCall, params: RequestParams<News>, serializer: KSerializer<List<News>>): ResultResponse {
         params.checkings.add { CheckObj(it.name.isNullOrEmpty(), 431, "Необходимо указать Наименование новости (name)") }
         params.checkings.add { CheckObj(it.mainText.isNullOrEmpty(), 432, "Необходимо указать Текст новости (mainText)") }
         return super.post(call, params, serializer)

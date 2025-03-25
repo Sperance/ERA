@@ -59,6 +59,7 @@ tasks.withType<DokkaTask>().configureEach {
 val komapperVersion = "3.0.0"
 
 dependencies {
+    implementation("io.ktor:ktor-server-websockets:2.3.12")
     implementation("io.ktor:ktor-server-core-jvm")
     implementation("io.ktor:ktor-server-cors-jvm")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm")

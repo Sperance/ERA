@@ -11,6 +11,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import kotlinx.serialization.builtins.ListSerializer
 
 fun Application.configureRecords() {
     routing {
@@ -21,7 +22,6 @@ fun Application.configureRecords() {
             }
 
             get("/clearTable") {
-                Records.repo_records.clearTable()
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 
@@ -38,7 +38,7 @@ fun Application.configureRecords() {
             }
 
             post {
-                call.respond(Records().post(call, IntBaseDataImpl.RequestParams(), Records.serializer()))
+                call.respond(Records().post(call, IntBaseDataImpl.RequestParams(), ListSerializer(Records.serializer())))
             }
 
             delete {

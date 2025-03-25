@@ -6,12 +6,15 @@ import com.example.currentZeroDate
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
+import com.example.datamodel.clientsschelude.ClientsSchelude
+import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.tbl_clientsschelude
 import com.example.datamodel.getData
+import com.example.datamodel.getSize
 import com.example.datamodel.isDuplicate
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.serverhistory.ServerHistory
-import com.example.datamodel.services.Services
+import com.example.datamodel.services.Services.Companion.repo_services
 import com.example.datamodel.update
 import com.example.isNullOrZero
 import com.example.minus
@@ -35,6 +38,7 @@ import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
 import kotlin.random.Random
+import kotlin.random.nextInt
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
@@ -105,7 +109,8 @@ data class Clients(
         val endDate = startDate.plus((daysLoaded).days)
 
         val currentRecords = Records().getData({ tbl_records.id_client_to eq clientId ; tbl_records.dateRecord.between(startDate..endDate) ; tbl_records.status lessEq 100 })
-        val allServices = Services().getData()
+        val currentSheludes = ClientsSchelude().getData({ tbl_clientsschelude.idClient eq clientId })
+        val allServices = repo_services.getRepositoryData()
 
         val stockPeriod = 30
         val removePeriodMin = 1
@@ -117,7 +122,7 @@ data class Clients(
             val servDateBegin = it.dateRecord!!.minus((blockSlots - removePeriodMin).minutes)
             val servDateEnd = it.dateRecord!!.plus((servLen.duration!! * stockPeriod - removePeriodMin).minutes)
             arrayClosed.add(servDateBegin..servDateEnd)
-            println("Загято: (${it.dateRecord!!}) $servDateBegin - $servDateEnd")
+            println("start: $servDateBegin end: $servDateEnd")
         }
 
         var stockDate = startDate
@@ -126,8 +131,10 @@ data class Clients(
         while (true) {
             if (stockDate >= maxDateTime) break
             val finded = arrayClosed.find { ar -> stockDate in ar }
-            if (finded == null && stockDate.hour in 10..<20) {
-                araResult.add(stockDate)
+            val sheludeDate = currentSheludes.find { she -> she.scheludeDateStart!!.dayOfMonth == stockDate.dayOfMonth }
+            if (sheludeDate != null && finded == null && stockDate in sheludeDate.scheludeDateStart!!..sheludeDate.scheludeDateEnd!!) {
+                if (stockDate.plus(blockSlots.minutes) <= sheludeDate.scheludeDateEnd!!)
+                    araResult.add(stockDate)
             }
             stockDate = stockDate.plus((stockPeriod).minutes)
         }
@@ -181,7 +188,20 @@ data class Clients(
             if (clientType.isNullOrEmpty())
                 return ResultResponse.Error(HttpStatusCode(431, ""), "Необходимо указать Тип клиента (параметр clientType)")
 
-            return ResultResponse.Success(HttpStatusCode.OK, repo_clients.getData().filter { it.clientType == clientType })
+            return ResultResponse.Success(HttpStatusCode.OK, repo_clients.getRepositoryData().filter { it.clientType == clientType })
+        } catch (e: Exception) {
+            return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
+        }
+    }
+
+    suspend fun getFromPhone(call: ApplicationCall): ResultResponse {
+        try {
+            val clientPhone = call.parameters["phone"]
+
+            if (clientPhone.isNullOrEmpty())
+                return ResultResponse.Error(HttpStatusCode(431, ""), "Необходимо указать Телефон клиента (параметр phone)")
+
+            return ResultResponse.Success(HttpStatusCode.OK, repo_clients.getRepositoryData().filter { it.phone == clientPhone })
         } catch (e: Exception) {
             return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
         }
@@ -197,7 +217,7 @@ data class Clients(
             if (user.password.isNullOrEmpty())
                 return ResultResponse.Error(HttpStatusCode(432, ""), "Необходимо указать Пароль(password)")
 
-            val client = repo_clients.getData().find { it.login == user.login && it.password == user.password }
+            val client = repo_clients.getRepositoryData().find { it.login == user.login && it.password == user.password }
             if (client == null)
                 return ResultResponse.Error(HttpStatusCode.NotFound, "Не найден пользователь с указанным Логином и Паролем")
 
@@ -218,14 +238,14 @@ data class Clients(
             if (password.isNullOrEmpty())
                 return ResultResponse.Error(HttpStatusCode(432, ""), "Incorrect parameter 'password'($password). This parameter must be 'String' type")
 
-            val findedClient = repo_clients.getData().find { it.email == email }
+            val findedClient = repo_clients.getRepositoryData().find { it.email == email }
             if (findedClient == null)
                 return ResultResponse.Error(HttpStatusCode(433, ""), "Не найден Клиент с адресом $email")
 
             findedClient.password = password
             val updated = findedClient.update()
 
-            repo_clients.updateItem(updated)
+            repo_clients.resetData()
 
             ServerHistory.addRecord(12, "Изменение пароля пользователя ${updated.id}", password)
 
@@ -243,7 +263,7 @@ data class Clients(
             if (email.isNullOrEmpty())
                 return ResultResponse.Error(HttpStatusCode(431, ""), "Incorrect parameter 'email'($email). This parameter must be 'String' type")
 
-            val findedClient = repo_clients.getData().find { it.email == email }
+            val findedClient = repo_clients.getRepositoryData().find { it.email == email }
             if (findedClient == null)
                 return ResultResponse.Error(HttpStatusCode(432, ""), "Не найден Клиент с адресом $email")
 
@@ -267,13 +287,13 @@ data class Clients(
         }
     }
 
-    override suspend fun post(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<Clients>): ResultResponse {
+    override suspend fun post(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<List<Clients>>): ResultResponse {
         params.checkings.add { CheckObj(it.firstName.isNullOrEmpty(), 431, "Необходимо указать Имя") }
         params.checkings.add { CheckObj(it.lastName.isNullOrEmpty(), 432, "Необходимо указать Фамилию") }
         params.checkings.add { CheckObj(it.phone.isNullOrEmpty(), 433, "Необходимо указать Телефон") }
-        params.checkings.add { CheckObj(it.login.isNullOrEmpty(), 434, "Необходимо указать Логин") }
-        params.checkings.add { CheckObj(it.password.isNullOrEmpty(), 435, "Необходимо указать Пароль") }
-        params.checkings.add { CheckObj(it.email.isNullOrEmpty(), 436, "Необходимо указать Email") }
+//        params.checkings.add { CheckObj(it.login.isNullOrEmpty(), 434, "Необходимо указать Логин") }
+//        params.checkings.add { CheckObj(it.password.isNullOrEmpty(), 435, "Необходимо указать Пароль") }
+//        params.checkings.add { CheckObj(it.email.isNullOrEmpty(), 436, "Необходимо указать Email") }
         params.checkings.add { CheckObj(it.gender.isNullOrZero(), 437, "Необходимо указать Пол") }
         params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.login eq it.login }, 441, "Клиент с указанным Логином уже существует") }
         params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.phone eq it.phone }, 442, "Клиент с указанным Номером телефона уже существует") }
@@ -282,8 +302,19 @@ data class Clients(
         params.defaults.add { it::dateBirthday to LocalDateTime.nullDatetime() }
         params.defaults.add { it::dateWorkIn to LocalDateTime.nullDatetime() }
         params.defaults.add { it::dateWorkOut to LocalDateTime.nullDatetime() }
+        params.defaults.add { it::login to generateShortClientLogin(Clients().getSize()) }
+        params.defaults.add { it::password to generateShortClientPassword(Clients().getSize()) }
 
         return super.post(call, params, serializer)
+    }
+
+    private fun generateShortClientLogin(allRecords: Long): String {
+        return "base_client_$allRecords"
+    }
+
+    private fun generateShortClientPassword(allRecords: Long): String {
+        val randomPass = Random(System.currentTimeMillis()).nextInt(10000..100000)
+        return "PWD_" + (randomPass + allRecords)
     }
 
     private fun toStringLow(): String {

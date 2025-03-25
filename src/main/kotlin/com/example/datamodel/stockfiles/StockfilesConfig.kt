@@ -11,6 +11,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import kotlinx.serialization.builtins.ListSerializer
 
 fun Application.configureStockfiles() {
     routing {
@@ -38,7 +39,7 @@ fun Application.configureStockfiles() {
             }
 
             post {
-                call.respond(Stockfiles().post(call, IntBaseDataImpl.RequestParams(), Stockfiles.serializer()))
+                call.respond(Stockfiles().post(call, IntBaseDataImpl.RequestParams(), ListSerializer(Stockfiles.serializer())))
             }
 
             delete {

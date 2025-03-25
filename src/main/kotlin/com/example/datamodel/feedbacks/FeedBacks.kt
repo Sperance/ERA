@@ -73,7 +73,7 @@ data class FeedBacks(
         }
     }
 
-    override suspend fun post(call: ApplicationCall, params: RequestParams<FeedBacks>, serializer: KSerializer<FeedBacks>): ResultResponse {
+    override suspend fun post(call: ApplicationCall, params: RequestParams<FeedBacks>, serializer: KSerializer<List<FeedBacks>>): ResultResponse {
         params.checkings.add { CheckObj(it.text.isNullOrEmpty(), 431, "Необходимо указать Текст отзыва") }
         params.checkings.add { CheckObj(it.value.isNullOrZero(), 432, "Необходимо указать Оценку отзыва") }
         params.checkings.add { CheckObj(it.id_client_from.isNullOrZero(), 433, "Необходимо указать id Клиента который оставляет отзыв") }

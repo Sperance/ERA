@@ -48,7 +48,7 @@ data class Stockfiles(
         val repo_stockfiles = BaseRepository(Stockfiles())
     }
 
-    override suspend fun post(call: ApplicationCall, params: RequestParams<Stockfiles>, serializer: KSerializer<Stockfiles>): ResultResponse {
+    override suspend fun post(call: ApplicationCall, params: RequestParams<Stockfiles>, serializer: KSerializer<List<Stockfiles>>): ResultResponse {
 
         params.isNeedFile = true
         params.checkings.add { CheckObj(it.category.isNullOrEmpty(), 431, "Необходимо указать Категорию файла") }

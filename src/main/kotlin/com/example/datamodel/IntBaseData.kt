@@ -5,11 +5,13 @@ import com.example.SYS_FIELDS_ARRAY
 import com.example.getCommentFieldAnnotation
 import com.example.getObjectRepository
 import com.example.isAllNullOrEmpty
+import com.example.printTextLog
 import com.example.toIntPossible
 import com.example.updateFromNullable
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
+import io.ktor.http.content.readAllParts
 import io.ktor.http.content.streamProvider
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receiveMultipart
@@ -19,6 +21,7 @@ import org.komapper.core.dsl.metamodel.EntityMetamodel
 import org.komapper.core.dsl.metamodel.PropertyMetamodel
 import org.komapper.core.dsl.metamodel.getAutoIncrementProperty
 import java.io.File
+import java.io.InputStream
 import java.nio.file.Paths
 import kotlin.io.path.absolutePathString
 import kotlin.reflect.KMutableProperty0
@@ -56,7 +59,9 @@ abstract class IntBaseDataImpl <T> {
                 property.set(value)
             }
 
-            val data = getObjectRepository(this)?.getData()
+            val data = getObjectRepository(this)?.getRepositoryData()
+            params.onAfterCompleted?.invoke()
+
             return if (data == null) ResultResponse.Success(HttpStatusCode.OK, getData())
             else ResultResponse.Success(HttpStatusCode.OK, data)
         } catch (e: Exception) {
@@ -89,6 +94,8 @@ abstract class IntBaseDataImpl <T> {
             val auProp = tblObj.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int>
 
             val findedObj = getDataOne({ auProp eq id.toInt()})
+            params.onAfterCompleted?.invoke()
+
             if (findedObj == null)
                 return ResultResponse.Error(HttpStatusCode.NotFound, "Not found $currectObjClassName with id $id")
 
@@ -102,6 +109,7 @@ abstract class IntBaseDataImpl <T> {
         var isNeedFile = false
         val checkings: ArrayList<suspend (T) -> CheckObj> = ArrayList()
         val defaults: ArrayList<suspend (T) -> Pair<KMutableProperty0<*>, Any?>> = ArrayList()
+        val onAfterCompleted: (() -> Any)? = null
         var checkOnUpdate: ((T, T) -> Any)? = null
     }
 
@@ -135,8 +143,10 @@ abstract class IntBaseDataImpl <T> {
 
             //Удаляем файл иконки с сервера
             getFileImageIcon(findedObj, currectObjClassName.lowercase())?.delete()
-            getObjectRepository(this)?.deleteItem(findedObj)
             findedObj.delete()
+
+            getObjectRepository(this)?.resetData()
+            params.onAfterCompleted?.invoke()
 
             return ResultResponse.Success(HttpStatusCode.NoContent, "$currectObjClassName with id $id successfully deleted")
         } catch (e: Exception) {
@@ -201,7 +211,8 @@ abstract class IntBaseDataImpl <T> {
             findedObj.updateFromNullable(newObject!!)
             val updated = findedObj.update()
 
-            getObjectRepository(this)?.updateItem(updated)
+            getObjectRepository(this)?.resetData()
+            params.onAfterCompleted?.invoke()
 
             return ResultResponse.Success(HttpStatusCode.OK, updated)
         } catch (e: Exception) {
@@ -216,57 +227,76 @@ abstract class IntBaseDataImpl <T> {
         return currentFile
     }
 
-    open suspend fun post(call: ApplicationCall, params: RequestParams<T>, serializer: KSerializer<T>): ResultResponse {
+    open suspend fun post(call: ApplicationCall, params: RequestParams<T>, serializer: KSerializer<List<T>>): ResultResponse {
         try {
             val multipartData = call.receiveMultipart()
 
-            var newObject: T? = null
-            var partFileData: PartData.FileItem? = null
+            var finishObject: T? = null
+            var partFileData: InputStream? = null
+            var partFileDataName = ""
+            var jsonString = ""
 
-                multipartData.forEachPart { part ->
-                    when (part) {
-                        is PartData.FormItem -> { newObject = Json.decodeFromString(serializer, part.value) }
-                        is PartData.FileItem -> { partFileData = part }
-                        is PartData.BinaryChannelItem -> {}
-                        is PartData.BinaryItem -> {}
+            multipartData.forEachPart { part ->
+                when (part) {
+                    is PartData.FormItem -> { jsonString = part.value }
+                    is PartData.FileItem -> {
+                        partFileData = part.streamProvider()
+                        partFileDataName = part.originalFileName?:""
                     }
+                    else -> { printTextLog("Unknown part type: ${part::class.simpleName}") }
                 }
+                part.dispose()
+            }
 
+            val newObject = Json.decodeFromString(serializer, jsonString)
             val currectObjClassName = this::class.simpleName!!
-
             if (params.isNeedFile && partFileData == null) return ResultResponse.Error(HttpStatusCode.BadRequest, "Для объекта $currectObjClassName ожидался файл, который не был получен")
-            if (newObject == null) return ResultResponse.Error(HttpStatusCode.BadRequest, "Не удалось создать объект $currectObjClassName по входящему JSON")
-
             params.checkings.forEach { check ->
-                val res = check.invoke(newObject!!)
-                if (res.result) return ResultResponse.Error(HttpStatusCode(res.errorCode, ""), res.errorText)
+                newObject.forEach { item ->
+                    val res = check.invoke(item)
+                    if (res.result) return ResultResponse.Error(HttpStatusCode(res.errorCode, ""), res.errorText)
+                }
             }
 
             params.defaults.forEach { def ->
-                val res = def.invoke(newObject!!)
-                val property = res.first as KMutableProperty0<Any?>
-                if (!property.get().isAllNullOrEmpty()) return@forEach
-                val value = res.second
-                property.set(value)
+                newObject.forEach { item ->
+                    val res = def.invoke(item)
+                    val property = res.first as KMutableProperty0<Any?>
+                    if (property.get().isAllNullOrEmpty()) {
+                        property.set(res.second)
+                    }
+                }
             }
 
-            val finish = newObject!!.create(null)
+            if (newObject.size > 1 && partFileData != null) {
+                return ResultResponse.Error(HttpStatusCode(420, "Perform Error"), "Невозможно сохранить файл изображения к массиву элементов (${newObject.size})")
+            }
+
+            newObject.forEach { item ->
+                finishObject = item?.create(null)
+            }
+
+            if (finishObject == null) {
+                return ResultResponse.Error(HttpStatusCode(430, "Perform Error"), "Не создан объект $currectObjClassName")
+            }
+
             if (partFileData != null) {
-                if (!finish.haveField("imageLink") || !finish.haveField("imageFormat")) {
+                if (!finishObject!!.haveField("imageLink") || !finishObject!!.haveField("imageFormat")) {
                     return ResultResponse.Error(HttpStatusCode(400, "Not Access"), "Для сущности $currectObjClassName не реализованы поля хранения файлов")
                 }
                 val imagePath = File(Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}")
                 if (!imagePath.exists()) imagePath.mkdirs()
-                val imageFile = File(Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}/icon_${finish.getField("id")}.${partFileData!!.originalFileName?.substringAfterLast(".")}")
-                partFileData!!.streamProvider().use { inpStream -> imageFile.outputStream().use { outStream -> inpStream.copyTo(outStream) } }
-                finish.putField("imageLink", "${BASE_PATH}files/${currectObjClassName.lowercase()}/" + imageFile.name)
-                finish.putField("imageFormat", partFileData!!.originalFileName?.substringAfterLast("."))
-                finish.update()
+                val imageFile = File(Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}/icon_${finishObject!!.getField("id")}.${partFileDataName.substringAfterLast(".")}")
+                partFileData!!.use { inpStream -> imageFile.outputStream().use { outStream -> inpStream.copyTo(outStream) } }
+                finishObject!!.putField("imageLink", "${BASE_PATH}files/${currectObjClassName.lowercase()}/" + imageFile.name)
+                finishObject!!.putField("imageFormat", partFileDataName.substringAfterLast("."))
+                finishObject = finishObject!!.update()
             }
 
-            getObjectRepository(this)?.addItem(finish as IntBaseDataImpl<T>)
+            getObjectRepository(this)?.resetData()
+            params.onAfterCompleted?.invoke()
 
-            return ResultResponse.Success(HttpStatusCode.Created, finish)
+            return ResultResponse.Success(HttpStatusCode.Created, finishObject as Any)
         } catch (e: Exception) {
             return ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
         }

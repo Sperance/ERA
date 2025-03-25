@@ -11,6 +11,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import kotlinx.serialization.builtins.ListSerializer
 
 fun Application.configureFeedbacks() {
     routing {
@@ -42,7 +43,7 @@ fun Application.configureFeedbacks() {
             }
 
             post {
-                call.respond(FeedBacks().post(call, IntBaseDataImpl.RequestParams(), FeedBacks.serializer()))
+                call.respond(FeedBacks().post(call, IntBaseDataImpl.RequestParams(), ListSerializer(FeedBacks.serializer())))
             }
 
             delete {
