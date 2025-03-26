@@ -4,36 +4,43 @@ import com.example.calculateDifference
 import com.example.currectDatetime
 import com.example.datamodel.create
 import com.example.datamodel.routeshistory.RoutesHistory
+import com.example.isSafeCommand
 import com.example.printTextLog
 import com.example.toDateTimePossible
 import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.createApplicationPlugin
-import io.ktor.server.application.hooks.CallFailed
 import io.ktor.server.logging.toLogString
 import io.ktor.server.request.header
 import io.ktor.server.request.httpMethod
+import io.ktor.server.request.path
+import io.ktor.server.response.respond
 import io.ktor.util.AttributeKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.toLocalDateTime
 import java.io.File
 
 val LogPlugin = createApplicationPlugin(name = "LogPlugin") {
     onCall { call ->
         val timeRequest = call.attributes.takeOrNull(AttributeKey("Request_Timestamp"))
+        val EraPost = call.request.header("EraPost")
         if (timeRequest == null) call.attributes.put(AttributeKey("Request_Timestamp"), LocalDateTime.currectDatetime())
-        printTextLog("[LogPlugin::onCall] REQUEST ${call.request.local.remoteAddress}::${call.request.local.remotePort}::${call.request.toLogString()} params: ${call.parameters.entries()}")
+        val safeCommand = isSafeCommand(call.request.path())
+        printTextLog("[LogPlugin::onCall] ${call.request.local.remoteAddress}::${call.request.local.remotePort}::${call.request.toLogString()} params: ${call.parameters.entries()} [EraPost:$EraPost][safeCommand:$safeCommand]")
+
+        if (safeCommand != null) {
+            call.respond(HttpStatusCode.NotAcceptable, "Unsafe command detected: '$safeCommand'")
+            return@onCall
+        }
     }
     onCallRespond { call ->
+        if (call.response.status() == HttpStatusCode.NotAcceptable) {
+            return@onCallRespond
+        }
         val timeRequest = call.attributes.takeOrNull(AttributeKey("Request_Timestamp"))
-        printTextLog("[LogPlugin::onCallRespond] RESPOND: ${call.request.local.remoteAddress}::${call.request.local.remotePort}::${call.request.toLogString()} params: ${call.parameters.entries()} timeHeader: $timeRequest")
+        printTextLog("[LogPlugin::onCallRespond::${call.response.status()}] ${call.request.local.remoteAddress}::${call.request.local.remotePort}::${call.request.toLogString()} params: ${call.parameters.entries()}")
         var respondData = ""
         transformBody { data ->
             respondData = when (data) {
@@ -46,7 +53,7 @@ val LogPlugin = createApplicationPlugin(name = "LogPlugin") {
             }
             data
         }
-        if (call.request.httpMethod in listOf(HttpMethod.Get, HttpMethod.Post, HttpMethod.Patch, HttpMethod.Delete)) {
+        if (!respondData.contains("404 Not Found") && call.request.httpMethod in listOf(HttpMethod.Get, HttpMethod.Post, HttpMethod.Patch, HttpMethod.Delete)) {
             CoroutineScope(Dispatchers.IO).launch {
                 val firstHistory = RoutesHistory()
                 firstHistory.fillFromCall(call)

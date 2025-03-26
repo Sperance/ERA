@@ -80,7 +80,6 @@ fun LocalDateTime.Companion.currentZeroDate() : LocalDateTime {
 fun LocalDateTime.Companion.currectDatetime() = Date().toLocalDateTime().toKotlinLocalDateTime()
 
 suspend fun ApplicationCall.respond(response: ResultResponse) {
-    printTextLog("[ApplicationCall::respond] ${response::class.simpleName} code: ${response.status}")
     when(response) {
         is ResultResponse.Error -> respond(status = response.status, message = response.message)
         is ResultResponse.Success -> respond(status = response.status, message = response.data)
@@ -154,7 +153,6 @@ fun Long.toFormatDateTime() : String {
     return SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(Date(this))
 }
 
-
 fun Double.getPercent(value: Double) : Double {
     return ((this / 100.0) * value).to1Digits()
 }
@@ -186,9 +184,23 @@ fun Field?.getCommentFieldAnnotation(): String {
     return "[${ann.name}; обязательное: ${ann.required}]"
 }
 
-fun LocalDateTime?.isDateInRange(startDate: LocalDateTime?, endDate: LocalDateTime?): Boolean {
-    if (this == null) return false
-    if (startDate == null) return false
-    if (endDate == null) return false
-    return this.toJavaLocalDateTime().isAfter(startDate.toJavaLocalDateTime()) && this.toJavaLocalDateTime().isBefore(endDate.toJavaLocalDateTime())
+fun isSafeCommand(command: String): String? {
+    if (command.trim() == "/") return "/"
+    if (command.trim() == "//") return "//"
+    val unsafePatterns = listOf(
+        "rm -rf", "wget", "chmod 777", "curl", "gzip", "gunzip", "bzip2", "unzip",
+        "tar -x", "tar -xf", "tar -czf", "tar -xzf", "tar -cjf", "tar -xjf", "tar -cJf", "tar -xJf",
+        "bash", "python", "perl", "ruby", "node", "java", "ruby",
+        "find", "grep", "xargs", "echo", "more", "less", "head", "tail",
+        "paste", "sort", "uniq","diff", "comm", "join", "paste", "split",
+        "expand", "unexpand", "fold", "base64", "uuencode",
+        "uudecode", "xxd", "hexdump", "strings", "stat",
+        "touch", "mkdir", "rmdir", "chown", "chgrp", "chmod",
+        "passwd", "sudo", "useradd", "userdel", "groupadd", "groupdel", "usermod",
+        "groupmod", "crontab", "systemctl", "init", "reboot", "shutdown",
+        "halt", "poweroff", "kill", "pkill", "killall", "htop", "pgrep",
+        "pstree", "nice", "renice", "ulimit", "restore.php", "dns", "www.", ".org", "/geoserver", "/script",
+        "http:", "/api.", ".php", "-stdin", "/json", ".com:443", ".asp", "-bin", ".env", ".pn:443",
+        "/robots", ".git", "/login")
+    return unsafePatterns.find { pat -> command.trim().lowercase().contains(pat.trim().lowercase()) }
 }

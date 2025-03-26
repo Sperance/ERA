@@ -20,8 +20,8 @@ fun main() {
         }
 
         module {
-            install(LogPlugin)
             configureSerialization()
+            install(LogPlugin)
             configureDatabases()
             configureTests()
         }

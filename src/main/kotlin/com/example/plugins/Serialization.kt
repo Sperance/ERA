@@ -1,5 +1,6 @@
 package com.example.plugins
 
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.*
@@ -39,6 +40,7 @@ fun Application.configureSerialization() {
             prettyPrint = true
             encodeDefaults = true
         })
+        register(ContentType.Text.Html, StringConverter())
     }
 
     install(PartialContent)
