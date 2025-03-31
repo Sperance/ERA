@@ -7,7 +7,7 @@ import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.clients.Clients
 import com.example.datamodel.getData
-import com.example.datamodel.isHaveData
+import com.example.datamodel.isDontHaveData
 import com.example.isNullOrZero
 import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
@@ -79,8 +79,8 @@ data class FeedBacks(
         params.checkings.add { CheckObj(it.id_client_from.isNullOrZero(), 433, "Необходимо указать id Клиента который оставляет отзыв") }
         params.checkings.add { CheckObj(it.id_client_to.isNullOrZero(), 434, "Необходимо указать id Клиента, которому составляется отзыв") }
         params.checkings.add { CheckObj(it.value!! < 0, 435, "Оценка не может быть меньше 0") }
-        params.checkings.add { CheckObj(Clients().isHaveData(it.id_client_from!!), 435, "Не существует Клиента с id ${it.id_client_from}") }
-        params.checkings.add { CheckObj(Clients().isHaveData(it.id_client_to!!), 436, "Не существует Клиента с id ${it.id_client_to}") }
+        params.checkings.add { CheckObj(Clients().isDontHaveData(it.id_client_from!!), 435, "Не существует Клиента с id ${it.id_client_from}") }
+        params.checkings.add { CheckObj(Clients().isDontHaveData(it.id_client_to!!), 436, "Не существует Клиента с id ${it.id_client_to}") }
 
         params.defaults.add { it::value to 0.toByte() }
 

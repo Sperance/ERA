@@ -3,13 +3,12 @@ package com.example.datamodel.records
 import com.example.CommentField
 import com.example.Recordsdata
 import com.example.currectDatetime
-import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.clients.Clients
 import com.example.datamodel.getData
 import com.example.datamodel.getSize
-import com.example.datamodel.isHaveData
+import com.example.datamodel.isDontHaveData
 import com.example.datamodel.services.Services
 import com.example.isNullOrEmpty
 import com.example.isNullOrZero
@@ -114,9 +113,9 @@ data class Records(
         params.checkings.add { CheckObj(it.dateRecord.isNullOrEmpty(), 433, "Необходимо указать Дату записи") }
         params.checkings.add { CheckObj(it.dateRecord!! <= LocalDateTime.currectDatetime(), 434, "Дата записи не может быть меньше текущей") }
         params.checkings.add { CheckObj(it.id_client_from == it.id_client_to, 435, "ID клиента и сотрудника не могут быть одинаковыми(${it.id_client_from})") }
-        params.checkings.add { CheckObj(Clients().isHaveData(it.id_client_from!!), 441, "Не существует Клиента с id ${it.id_client_from}") }
-        params.checkings.add { CheckObj(Clients().isHaveData(it.id_client_to!!), 442, "Не существует Клиента с id ${it.id_client_to}") }
-        params.checkings.add { CheckObj(Services().isHaveData(it.id_service!!), 443, "Не существует Услуги с id ${it.id_service}") }
+        params.checkings.add { CheckObj(Clients().isDontHaveData(it.id_client_from!!), 441, "Не существует Клиента с id ${it.id_client_from}") }
+        params.checkings.add { CheckObj(Clients().isDontHaveData(it.id_client_to!!), 442, "Не существует Клиента с id ${it.id_client_to}") }
+        params.checkings.add { CheckObj(Services().isDontHaveData(it.id_service!!), 443, "Не существует Услуги с id ${it.id_service}") }
 
         params.defaults.add { it::dateRecord to LocalDateTime.nullDatetime() }
         params.defaults.add { it::status to 0 }

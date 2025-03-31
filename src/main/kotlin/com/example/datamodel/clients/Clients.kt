@@ -6,11 +6,14 @@ import com.example.currentZeroDate
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
+import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.clientsschelude.ClientsSchelude
 import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.tbl_clientsschelude
 import com.example.datamodel.getData
+import com.example.datamodel.getFromArrayId
 import com.example.datamodel.getSize
 import com.example.datamodel.isDuplicate
+import com.example.datamodel.isDontHaveData
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.serverhistory.ServerHistory
@@ -30,18 +33,12 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import org.komapper.annotation.KomapperAutoIncrement
-import org.komapper.annotation.KomapperColumn
-import org.komapper.annotation.KomapperEntity
-import org.komapper.annotation.KomapperId
-import org.komapper.annotation.KomapperTable
-import org.komapper.annotation.KomapperVersion
+import org.komapper.annotation.*
 import org.komapper.core.dsl.Meta
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
-
 /**
  * Список клиентов.
  */
@@ -74,7 +71,7 @@ data class Clients(
     @CommentField("Дата увольнения сотрудника", false)
     var dateWorkOut: LocalDateTime? = null,
     @CommentField("Должность сотрудника", false)
-    var position: String? = null,
+    var position: Int? = null,
     @CommentField("Описание сотрудника", false)
     var description: String? = null,
     @CommentField("Тип клиента", false)
@@ -85,6 +82,8 @@ data class Clients(
     var imageLink: String? = null,
     @Transient
     var imageFormat: String? = null,
+    @CommentField("Массив ссылок на работы сотрудника", false)
+    var arrayTypeWork: Array<Int>? = null,
     @Transient
     @KomapperVersion
     val version: Int = 0,
@@ -291,13 +290,15 @@ data class Clients(
         params.checkings.add { CheckObj(it.firstName.isNullOrEmpty(), 431, "Необходимо указать Имя") }
         params.checkings.add { CheckObj(it.lastName.isNullOrEmpty(), 432, "Необходимо указать Фамилию") }
         params.checkings.add { CheckObj(it.phone.isNullOrEmpty(), 433, "Необходимо указать Телефон") }
-//        params.checkings.add { CheckObj(it.login.isNullOrEmpty(), 434, "Необходимо указать Логин") }
-//        params.checkings.add { CheckObj(it.password.isNullOrEmpty(), 435, "Необходимо указать Пароль") }
-//        params.checkings.add { CheckObj(it.email.isNullOrEmpty(), 436, "Необходимо указать Email") }
+        params.checkings.add { CheckObj(it.login.isNullOrEmpty(), 434, "Необходимо указать Логин") }
+        params.checkings.add { CheckObj(it.password.isNullOrEmpty(), 435, "Необходимо указать Пароль") }
+        params.checkings.add { CheckObj(it.email.isNullOrEmpty(), 436, "Необходимо указать Email") }
         params.checkings.add { CheckObj(it.gender.isNullOrZero(), 437, "Необходимо указать Пол") }
         params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.login eq it.login }, 441, "Клиент с указанным Логином уже существует") }
         params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.phone eq it.phone }, 442, "Клиент с указанным Номером телефона уже существует") }
         params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.email eq it.email }, 443, "Клиент с указанным Почтовым адресом уже существует") }
+        params.checkings.add { CheckObj(it.position != null && Catalogs().isDontHaveData(it.position), 444, "Не найдена Должность с id ${it.position}") }
+        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs().getFromArrayId(it.arrayTypeWork?.toList()), 445, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
 
         params.defaults.add { it::dateBirthday to LocalDateTime.nullDatetime() }
         params.defaults.add { it::dateWorkIn to LocalDateTime.nullDatetime() }

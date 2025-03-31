@@ -65,6 +65,7 @@ abstract class IntBaseDataImpl <T> {
             return if (data == null) ResultResponse.Success(HttpStatusCode.OK, getData())
             else ResultResponse.Success(HttpStatusCode.OK, data)
         } catch (e: Exception) {
+            e.printStackTrace()
             return ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
         }
     }
@@ -101,6 +102,7 @@ abstract class IntBaseDataImpl <T> {
 
             return ResultResponse.Success(HttpStatusCode.OK, findedObj)
         } catch (e: Exception) {
+            e.printStackTrace()
             return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
         }
     }
@@ -150,6 +152,7 @@ abstract class IntBaseDataImpl <T> {
 
             return ResultResponse.Success(HttpStatusCode.NoContent, "$currectObjClassName with id $id successfully deleted")
         } catch (e: Exception) {
+            e.printStackTrace()
             return ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
         }
     }
@@ -216,6 +219,7 @@ abstract class IntBaseDataImpl <T> {
 
             return ResultResponse.Success(HttpStatusCode.OK, updated)
         } catch (e: Exception) {
+            e.printStackTrace()
             return ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
         }
     }
@@ -298,6 +302,7 @@ abstract class IntBaseDataImpl <T> {
 
             return ResultResponse.Success(HttpStatusCode.Created, finishObject as Any)
         } catch (e: Exception) {
+            e.printStackTrace()
             return ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
         }
     }

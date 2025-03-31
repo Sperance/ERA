@@ -201,6 +201,7 @@ fun isSafeCommand(command: String): String? {
         "halt", "poweroff", "kill", "pkill", "killall", "htop", "pgrep",
         "pstree", "nice", "renice", "ulimit", "restore.php", "dns", "www.", ".org", "/geoserver", "/script",
         "http:", "/api.", ".php", "-stdin", "/json", ".com:443", ".asp", "-bin", ".env", ".pn:443",
-        "/robots", ".git", "/login")
+        "/robots", ".git", "/login", "goform", "set_LimitClient_cfg", "_cfg", "/version",
+        "/versions", ".zip")
     return unsafePatterns.find { pat -> command.trim().lowercase().contains(pat.trim().lowercase()) }
 }

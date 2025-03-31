@@ -56,7 +56,7 @@ tasks.withType<DokkaTask>().configureEach {
     }
 }
 
-val komapperVersion = "3.0.0"
+val komapperVersion = "5.2.1"
 
 dependencies {
     implementation("io.ktor:ktor-server-websockets:2.3.12")
@@ -68,7 +68,6 @@ dependencies {
     implementation("io.ktor:ktor-server-config-yaml")
     implementation("io.ktor:ktor-server-partial-content-jvm")
     implementation("io.ktor:ktor-server-auto-head-response-jvm")
-//    implementation("io.ktor:ktor-server-auth-jvm")
     implementation("junit:junit:4.12")
     implementation("org.junit.jupiter:junit-jupiter:5.8.1")
     testImplementation("io.ktor:ktor-server-test-host-jvm")
@@ -93,4 +92,5 @@ dependencies {
 
     implementation ("com.sun.mail:android-mail:1.6.7")
     implementation ("com.sun.mail:android-activation:1.6.7")
+    implementation("com.auth0:java-jwt:4.5.0")
 }

@@ -1,7 +1,6 @@
 package com.example.datamodel
 
 import com.example.plugins.db
-import com.example.printTextLog
 import org.komapper.core.dsl.QueryDsl
 import org.komapper.core.dsl.expression.SortExpression
 import org.komapper.core.dsl.expression.WhereDeclaration
@@ -9,6 +8,7 @@ import org.komapper.core.dsl.metamodel.EntityMetamodel
 import org.komapper.core.dsl.metamodel.PropertyMetamodel
 import org.komapper.core.dsl.metamodel.getAutoIncrementProperty
 import org.komapper.core.dsl.operator.count
+import org.komapper.core.dsl.query.firstOrNull
 import org.komapper.core.dsl.query.singleOrNull
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.createInstance
@@ -42,22 +42,17 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.create(kPro
 }
 
 @Suppress("UNCHECKED_CAST")
-suspend fun <META : EntityMetamodel<Any, Any, META>> Any.delete() {
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.createBatch(values: List<TYPE>): TYPE {
     val metaTable = getInstanceClassForTbl(this) as META
-//    val metaRepo = getInstanceRepoFor(this)
-//    metaRepo.deleteItem(this@delete.getField("id") as Int)
-    db.runQuery { QueryDsl.delete(metaTable).where { metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> eq this@delete.getField("id") as Int } }
+    val result = db.runQuery { QueryDsl.insert(metaTable).multiple(values) }
+    return result as TYPE
 }
 
-//@Suppress("UNCHECKED_CAST")
-//private fun <META : EntityMetamodel<Any, Any, META>> getInstanceRepoFor(obj: Any) : BaseRepository<*> {
-//    val nameClass = "com.example.datamodel.${obj::class.java.simpleName.lowercase()}.${obj::class.java.simpleName}"
-//    val instance = Class.forName(nameClass).kotlin.createInstance()
-//    val metaTable = instance.getField("repo_${obj::class.java.simpleName.lowercase()}")
-//        ?: throw IllegalArgumentException("not finded field with name repo_${obj::class.java.simpleName.lowercase()}) in class $nameClass")
-//
-//    return metaTable as BaseRepository<*>
-//}
+@Suppress("UNCHECKED_CAST")
+suspend fun <META : EntityMetamodel<Any, Any, META>> Any.delete() {
+    val metaTable = getInstanceClassForTbl(this) as META
+    db.runQuery { QueryDsl.delete(metaTable).where { metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> eq this@delete.getField("id") as Int } }
+}
 
 @Suppress("UNCHECKED_CAST")
 private fun <META : EntityMetamodel<Any, Any, META>> getInstanceClassForTbl(obj: Any) : META {
@@ -98,7 +93,14 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.getSize(dec
 }
 
 @Suppress("UNCHECKED_CAST")
-suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.isHaveData(dataId: Int) : Boolean {
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.isEmpty() : Boolean {
+    val metaTable = getInstanceClassForTbl(this) as META
+    return db.runQuery { QueryDsl.from(metaTable).select(count()) } == 0L
+}
+
+@Suppress("UNCHECKED_CAST")
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.isDontHaveData(dataId: Int?) : Boolean {
+    if (dataId == null) return false
     val metaTable = getInstanceClassForTbl(this) as META
     val whereExpr: WhereDeclaration = {metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> eq dataId}
     val result = (db.runQuery { QueryDsl.from(metaTable).where(whereExpr).select(count()) } ?: 0L) == 0L
@@ -112,4 +114,14 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.getFromId(i
     val whereExpr: WhereDeclaration = {metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> eq id}
     val result = db.runQuery { QueryDsl.from(metaTable).where(whereExpr).singleOrNull() }
     return result as TYPE?
+}
+
+@Suppress("UNCHECKED_CAST")
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.getFromArrayId(ids: List<Int>?) : Boolean {
+    if (ids == null) return false
+    val metaTable = getInstanceClassForTbl(this) as META
+    val whereExpr: WhereDeclaration = { (metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int>).inList(ids) }
+    val result = db.runQuery { QueryDsl.from(metaTable).where(whereExpr).select() }
+    if (result.size != ids.size) return false
+    return true
 }

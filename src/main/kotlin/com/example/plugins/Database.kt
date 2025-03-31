@@ -7,6 +7,7 @@ import com.example.datamodel.clients.configureClients
 import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.tbl_clientsschelude
 import com.example.datamodel.feedbacks.FeedBacks.Companion.tbl_feedbacks
 import com.example.datamodel.clientsschelude.configureClientsSchelude
+import com.example.datamodel.defaults.defaultsConfig
 import com.example.datamodel.feedbacks.configureFeedbacks
 import com.example.datamodel.news.News.Companion.tbl_news
 import com.example.datamodel.news.configureNews
@@ -65,5 +66,7 @@ fun Application.configureDatabases() {
         configureNews()
         configureClientsSchelude()
         configureCatalogs()
+
+        defaultsConfig()
     }
 }
