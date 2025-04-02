@@ -7,6 +7,7 @@ import com.example.plugins.LogPlugin
 import com.example.plugins.configureDatabases
 import com.example.plugins.configureSerialization
 import com.example.schedulers.DailyTaskScheduler
+import com.example.sockets.configureSockets
 import io.ktor.server.application.*
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
@@ -26,6 +27,7 @@ fun main() {
             configureSerialization()
             install(LogPlugin)
             configureDatabases()
+            configureSockets()
             configureTests()
         }
 

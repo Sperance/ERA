@@ -5,6 +5,9 @@ import com.example.currectDatetime
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
+import com.example.datamodel.clients.Clients
+import com.example.datamodel.services.Services
+import com.example.datamodel.update
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
@@ -57,6 +60,16 @@ data class Catalogs(
         params.checkings.add { CheckObj(repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null, 440, "В БД уже присутствует категория '${it.category}' со значнеием '${it.value}'") }
 
         return super.post(call, params, serializer)
+    }
+
+    override suspend fun delete(call: ApplicationCall, params: RequestParams<Catalogs>): ResultResponse {
+        params.onBeforeCompleted = { deletedId ->
+            Clients.repo_clients.clearLinkEqual(Clients::position, deletedId)
+            Clients.repo_clients.clearLinkEqualArray(Clients::arrayTypeWork, deletedId)
+            Services.repo_services.clearLinkEqual(Services::category, deletedId)
+        }
+
+        return super.delete(call, params)
     }
 
     suspend fun getFromType(call: ApplicationCall): ResultResponse {

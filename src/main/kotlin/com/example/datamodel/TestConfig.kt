@@ -1,8 +1,10 @@
 package com.example.datamodel
 
+import com.example.datamodel.clients.Clients
 import com.example.minus
 import com.example.plugins.GMailSender
 import com.example.plus
+import com.example.printTextLog
 import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -21,6 +23,13 @@ import kotlin.time.Duration.Companion.minutes
 fun Application.configureTests() {
     routing {
         route("/test") {
+            get ("/testLinks") {
+                Clients.repo_clients.resetData()
+                printTextLog("1 CLIENTS: ${Clients.repo_clients.getRepositoryData()}")
+                Clients.repo_clients.clearLinkEqual(Clients::position, 16)
+                printTextLog("2 CLIENTS: ${Clients.repo_clients.getRepositoryData()}")
+                call.respond(HttpStatusCode.OK)
+            }
             post ("/emailMessage") {
                 val email = call.parameters["email"]
 

@@ -5,7 +5,6 @@ import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.getField
 import com.example.datamodel.putField
-import com.example.datamodel.routeshistory.RoutesHistory
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.logging.toLogString
@@ -202,6 +201,8 @@ fun isSafeCommand(command: String): String? {
         "pstree", "nice", "renice", "ulimit", "restore.php", "dns", "www.", ".org", "/geoserver", "/script",
         "http:", "/api.", ".php", "-stdin", "/json", ".com:443", ".asp", "-bin", ".env", ".pn:443",
         "/robots", ".git", "/login", "goform", "set_LimitClient_cfg", "_cfg", "/version",
-        "/versions", ".zip")
+        "/versions", ".zip", ".html", "/gateway", "/login", "/hello.", "/formLogin", "/admin",
+        "/actuator", "/health", "/css", "_", "ab2g", "ab2h", "ReportServer", ".rar",
+        "/webui", "/chec", "/powershell")
     return unsafePatterns.find { pat -> command.trim().lowercase().contains(pat.trim().lowercase()) }
 }

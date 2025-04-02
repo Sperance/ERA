@@ -6,14 +6,11 @@ import com.example.currentZeroDate
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
-import com.example.datamodel.catalogs.Catalogs.Companion.repo_catalogs
 import com.example.datamodel.clients.Clients.Companion.repo_clients
 import com.example.datamodel.delete
 import com.example.isNullOrEmpty
 import com.example.isNullOrZero
 import com.example.minus
-import com.example.nullDatetime
-import com.example.plus
 import com.example.printTextLog
 import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
@@ -66,19 +63,15 @@ data class ClientsSchelude(
         params.checkings.add { CheckObj(it.scheludeDateEnd.isNullOrEmpty(), 433, "Необходимо указать Дату/время конца работы") }
         params.checkings.add { CheckObj(it.scheludeDateStart!! >= it.scheludeDateEnd!!, 434, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
         params.checkings.add { CheckObj(repo_clientsschelude.getRepositoryData().find { fil -> fil.idClient == it.idClient && fil.scheludeDateStart == it.scheludeDateStart && fil.scheludeDateEnd == it.scheludeDateEnd } != null, 435, "Запись с передаваемыми параметрами уже присутствует в базе данных") }
-        params.checkings.add { CheckObj(repo_clients.getRepositoryData().find { fin -> fin.id == it.idClient } == null, 436, "Не найден Client с id ${it.idClient}") }
-
-        params.onAfterCompleted = {
-            val currentDate = LocalDateTime.currentZeroDate().minus((60).days)
-            val dataRemove = repo_clientsschelude.getRepositoryData().filter { fil -> fil.scheludeDateEnd!! < currentDate }
-            dataRemove.forEach { dat ->
-                printTextLog("[DELETE] $dat - on over older by date (${dat.scheludeDateEnd}) < $currentDate")
-                dat.delete()
-            }
-            repo_clientsschelude.resetData()
-        }
+        params.checkings.add { CheckObj(!repo_clients.isHaveData(it.idClient), 436, "Не найден Client с id ${it.idClient}") }
 
         return super.post(call, params, serializer)
+    }
+
+    override suspend fun update(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<ClientsSchelude>): ResultResponse {
+        params.checkings.add { CheckObj(it.idClient != null && !repo_clients.isHaveData(it.idClient), 431, "Не найден Client с id ${it.idClient}") }
+
+        return super.update(call, params, serializer)
     }
 
     suspend fun getFromClient(call: ApplicationCall): ResultResponse {

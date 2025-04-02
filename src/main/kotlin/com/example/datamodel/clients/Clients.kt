@@ -9,11 +9,11 @@ import com.example.datamodel.ResultResponse
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.clientsschelude.ClientsSchelude
 import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.tbl_clientsschelude
+import com.example.datamodel.feedbacks.FeedBacks
 import com.example.datamodel.getData
 import com.example.datamodel.getFromArrayId
 import com.example.datamodel.getSize
 import com.example.datamodel.isDuplicate
-import com.example.datamodel.isDontHaveData
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.serverhistory.ServerHistory
@@ -297,16 +297,35 @@ data class Clients(
         params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.login eq it.login }, 441, "Клиент с указанным Логином уже существует") }
         params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.phone eq it.phone }, 442, "Клиент с указанным Номером телефона уже существует") }
         params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.email eq it.email }, 443, "Клиент с указанным Почтовым адресом уже существует") }
-        params.checkings.add { CheckObj(it.position != null && Catalogs().isDontHaveData(it.position), 444, "Не найдена Должность с id ${it.position}") }
-        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs().getFromArrayId(it.arrayTypeWork?.toList()), 445, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
+        params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), 444, "Не найдена Должность с id ${it.position}") }
+        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), 445, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
 
         params.defaults.add { it::dateBirthday to LocalDateTime.nullDatetime() }
         params.defaults.add { it::dateWorkIn to LocalDateTime.nullDatetime() }
         params.defaults.add { it::dateWorkOut to LocalDateTime.nullDatetime() }
         params.defaults.add { it::login to generateShortClientLogin(Clients().getSize()) }
         params.defaults.add { it::password to generateShortClientPassword(Clients().getSize()) }
+        params.defaults.add { it::arrayTypeWork to arrayOf<Int>() }
 
         return super.post(call, params, serializer)
+    }
+
+    override suspend fun delete(call: ApplicationCall, params: RequestParams<Clients>): ResultResponse {
+        params.onBeforeCompleted = { index ->
+            Records.repo_records.clearLinkEqual(Records::id_client_to, index)
+            Records.repo_records.clearLinkEqual(Records::id_client_from, index)
+            ClientsSchelude.repo_clientsschelude.clearLinkEqual(ClientsSchelude::idClient, index)
+            FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_client_to, index)
+            FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_client_from, index)
+        }
+
+        return super.delete(call, params)
+    }
+
+    override suspend fun update(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<Clients>): ResultResponse {
+        params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), 441, "Не найдена Должность с id ${it.position}") }
+        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), 442, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
+        return super.update(call, params, serializer)
     }
 
     private fun generateShortClientLogin(allRecords: Long): String {

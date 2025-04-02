@@ -1,6 +1,7 @@
 package com.example.datamodel
 
 import com.example.plugins.db
+import com.example.printTextLog
 import org.komapper.core.dsl.QueryDsl
 import org.komapper.core.dsl.expression.SortExpression
 import org.komapper.core.dsl.expression.WhereDeclaration
@@ -16,12 +17,13 @@ import kotlin.reflect.full.createInstance
 fun Any.haveField(name: String) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name } != null
 fun Any.getField(name: String) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name }?.get(this)
 fun Any.putField(name: String, value: Any?) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name }?.set(this, value)
-fun Any.getMethod(name: String) = this::class.java.declaredMethods.find { it.isAccessible = true; it.name == name }?.invoke(this)
 
 @Suppress("UNCHECKED_CAST")
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.update() : TYPE {
     val metaTable = getInstanceClassForTbl(this) as META
-    return db.runQuery { QueryDsl.update(metaTable).single(this@update) } as TYPE
+    val result = db.runQuery { QueryDsl.update(metaTable).single(this@update) } as TYPE
+    printTextLog("[Update object '${this::class.java.simpleName}' with id '${result.getField("id")}']")
+    return result
 }
 
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.isDuplicate(declaration: WhereDeclaration): Boolean {
@@ -38,6 +40,7 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.create(kPro
         if (already != null) return already as TYPE
     }
     val result = db.runQuery { QueryDsl.insert(metaTable).single(this@create) }
+    printTextLog("[Create object '${this::class.java.simpleName}' with id '${result.getField("id")}']")
     return result as TYPE
 }
 
@@ -51,6 +54,7 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.createBatch
 @Suppress("UNCHECKED_CAST")
 suspend fun <META : EntityMetamodel<Any, Any, META>> Any.delete() {
     val metaTable = getInstanceClassForTbl(this) as META
+    printTextLog("[Delete object '${this::class.java.simpleName}' with id '${this@delete.getField("id")}']")
     db.runQuery { QueryDsl.delete(metaTable).where { metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> eq this@delete.getField("id") as Int } }
 }
 
@@ -92,19 +96,9 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.getSize(dec
     return db.runQuery { QueryDsl.from(metaTable).where(whereExpr).select(count()) }?:0L
 }
 
-@Suppress("UNCHECKED_CAST")
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.isEmpty() : Boolean {
     val metaTable = getInstanceClassForTbl(this) as META
     return db.runQuery { QueryDsl.from(metaTable).select(count()) } == 0L
-}
-
-@Suppress("UNCHECKED_CAST")
-suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.isDontHaveData(dataId: Int?) : Boolean {
-    if (dataId == null) return false
-    val metaTable = getInstanceClassForTbl(this) as META
-    val whereExpr: WhereDeclaration = {metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> eq dataId}
-    val result = (db.runQuery { QueryDsl.from(metaTable).where(whereExpr).select(count()) } ?: 0L) == 0L
-    return result
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -122,6 +116,5 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.getFromArra
     val metaTable = getInstanceClassForTbl(this) as META
     val whereExpr: WhereDeclaration = { (metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int>).inList(ids) }
     val result = db.runQuery { QueryDsl.from(metaTable).where(whereExpr).select() }
-    if (result.size != ids.size) return false
-    return true
+    return result.size == ids.size
 }

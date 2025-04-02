@@ -9,6 +9,9 @@ import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.catalogs.Catalogs.Companion.tbl_catalogs
 import com.example.datamodel.getFromId
 import com.example.datamodel.isDuplicate
+import com.example.datamodel.records.Records
+import com.example.datamodel.stockfiles.Stockfiles
+import com.example.datamodel.update
 import com.example.isNullOrZero
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
@@ -69,10 +72,25 @@ data class Services(
         params.checkings.add { CheckObj(it.priceLow.isNullOrZero(), 432, "Необходимо указать Минимальную стоимость услуги") }
         params.checkings.add { CheckObj(it.duration.isNullOrZero(), 435, "Необходимо указать Продолжительность услуги (не может быть 0)") }
         params.checkings.add { CheckObj((it.priceLow != null && it.priceMax != null) && (it.priceMax!! < it.priceLow!!), 436, "Максимальная стоимость услуги(${it.priceMax}) не может быть меньше минимальной(${it.priceLow})") }
-        params.checkings.add { CheckObj(Catalogs().getFromId(it.category) == null, 441, "Не найдена Категория с id ${it.category}") }
+        params.checkings.add { CheckObj(!Catalogs.repo_catalogs.isHaveData(it.category), 441, "Не найдена Категория с id ${it.category}") }
 
         params.defaults.add { it::gender to -1 }
 
         return super.post(call, params, serializer)
+    }
+
+    override suspend fun update(call: ApplicationCall, params: RequestParams<Services>, serializer: KSerializer<Services>): ResultResponse {
+        params.checkings.add { CheckObj(it.category != null && !Catalogs.repo_catalogs.isHaveData(it.category), 441, "Не найдена Категория с id ${it.category}") }
+
+        return super.update(call, params, serializer)
+    }
+
+    override suspend fun delete(call: ApplicationCall, params: RequestParams<Services>): ResultResponse {
+        params.onBeforeCompleted = { index ->
+            Records.repo_records.clearLinkEqual(Records::id_service, index)
+            Stockfiles.repo_stockfiles.clearLinkEqual(Stockfiles::service, index)
+        }
+
+        return super.delete(call, params)
     }
 }

@@ -5,6 +5,7 @@ import com.example.currectDatetime
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
+import com.example.datamodel.services.Services
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -52,7 +53,15 @@ data class Stockfiles(
 
         params.isNeedFile = true
         params.checkings.add { CheckObj(it.category.isNullOrEmpty(), 431, "Необходимо указать Категорию файла") }
+        params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), 441, "Необходимо указать Категорию файла") }
 
         return super.post(call, params, serializer)
+    }
+
+    override suspend fun update(call: ApplicationCall, params: RequestParams<Stockfiles>, serializer: KSerializer<Stockfiles>
+    ): ResultResponse {
+        params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), 441, "Необходимо указать Категорию файла") }
+
+        return super.update(call, params, serializer)
     }
 }

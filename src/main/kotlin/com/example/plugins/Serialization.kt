@@ -14,21 +14,20 @@ import kotlinx.serialization.json.Json
 fun Application.configureSerialization() {
 
     install(CORS) {
-        anyHost()
+//        anyHost()
+
         allowHost("www.salon-era.ru", schemes = listOf("https"))
         allowHost("salon-era.ru", schemes = listOf("https"))
         allowHost("localhost:3000", schemes = listOf("http"))
-        // Разрешить необходимые методы
+        allowHost("127.0.0.1", schemes = listOf("http", "https"))
+
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
-//        allowMethod(HttpMethod.Head)
-//        allowMethod(HttpMethod.Options)
-//        allowMethod(HttpMethod.Patch)
-//        allowMethod(HttpMethod.Put)
         allowMethod(HttpMethod.Delete)
-        // Разрешить необходимые заголовки
+
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Authorization)
+
         allowCredentials = true
     }
 
