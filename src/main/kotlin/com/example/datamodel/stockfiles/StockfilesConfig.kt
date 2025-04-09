@@ -30,8 +30,8 @@ fun Application.configureStockfiles() {
                 call.respond(Stockfiles().get(call, IntBaseDataImpl.RequestParams()))
             }
 
-            get("/{id}") {
-                call.respond(Stockfiles().getId(call, IntBaseDataImpl.RequestParams()))
+            get("/all/filter") {
+                call.respond(Stockfiles().getFilter(call, IntBaseDataImpl.RequestParams()))
             }
 
             post("/update") {

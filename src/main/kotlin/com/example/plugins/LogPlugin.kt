@@ -1,32 +1,32 @@
 package com.example.plugins
 
-import com.example.currectDatetime
 import com.example.isSafeCommand
 import com.example.printTextLog
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.logging.toLogString
+import io.ktor.server.request.httpVersion
 import io.ktor.server.request.path
 import io.ktor.server.response.respond
-import io.ktor.util.AttributeKey
-import kotlinx.datetime.LocalDateTime
+import io.netty.handler.codec.http.HttpVersion
 
 val LogPlugin = createApplicationPlugin(name = "LogPlugin") {
     onCall { call ->
-        val timeRequest = call.attributes.takeOrNull(AttributeKey("Request_Timestamp"))
-        if (timeRequest == null) call.attributes.put(AttributeKey("Request_Timestamp"), LocalDateTime.currectDatetime())
-        val safeCommand = isSafeCommand(call.request.path())
-        printTextLog("[LogPlugin::onCall] ${call.request.local.remoteAddress}::${call.request.local.remotePort}::${call.request.toLogString()} params: ${call.parameters.entries()} [safe:$safeCommand]")
-
-        if (safeCommand != null) {
-            call.respond(HttpStatusCode.NotAcceptable, "Unsafe command detected: '$safeCommand'")
+        if (call.request.httpVersion.contains("0.9")) {
+            val textCommand = "HTTP version 0.9 not supported"
+            printTextLog("[LogPlugin::onCall] ${call.request.local.remoteAddress}::${call.request.local.remotePort}::${call.request.toLogString()} params: ${call.parameters.entries()} - $textCommand")
+            call.respond(HttpStatusCode.NotAcceptable, textCommand)
             return@onCall
         }
-    }
-    onCallRespond { call ->
-        if (call.response.status() == HttpStatusCode.NotAcceptable) {
-            return@onCallRespond
+
+        val safeCommand = isSafeCommand(call.request.path())
+        if (safeCommand != null) {
+            val textCommand = "Unsafe command: '$safeCommand'"
+            printTextLog("[LogPlugin::onCall] ${call.request.local.remoteAddress}::${call.request.local.remotePort}::${call.request.toLogString()} params: ${call.parameters.entries()} - $textCommand")
+            call.respond(HttpStatusCode.NotAcceptable, textCommand)
+            return@onCall
         }
-        printTextLog("[LogPlugin::onCallRespond::${call.response.status()}] ${call.request.local.remoteAddress}::${call.request.local.remotePort}::${call.request.toLogString()} params: ${call.parameters.entries()}")
+
+        printTextLog("[LogPlugin::onCall] ${call.request.local.remoteAddress}::${call.request.local.remotePort}::${call.request.toLogString()} params: ${call.parameters.entries()}")
     }
 }

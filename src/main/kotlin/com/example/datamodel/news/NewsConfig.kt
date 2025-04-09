@@ -30,8 +30,8 @@ fun Application.configureNews() {
                 call.respond(News().get(call, IntBaseDataImpl.RequestParams()))
             }
 
-            get("/{id}") {
-                call.respond(News().getId(call, IntBaseDataImpl.RequestParams()))
+            get("/all/filter") {
+                call.respond(News().getFilter(call, IntBaseDataImpl.RequestParams()))
             }
 
             post("/update") {

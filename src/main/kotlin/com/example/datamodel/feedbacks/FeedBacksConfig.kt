@@ -26,16 +26,12 @@ fun Application.configureFeedbacks() {
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 
-            get("/{clientId}") {
-                call.respond(FeedBacks().getFromId(call))
-            }
-
             get("/all") {
                 call.respond(FeedBacks().get(call, IntBaseDataImpl.RequestParams()))
             }
 
-            get("/{id}") {
-                call.respond(FeedBacks().getId(call, IntBaseDataImpl.RequestParams()))
+            get("/all/filter") {
+                call.respond(FeedBacks().getFilter(call, IntBaseDataImpl.RequestParams()))
             }
 
             post("/update") {

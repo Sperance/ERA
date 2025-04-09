@@ -32,8 +32,8 @@ fun Application.configureClientsSchelude() {
                 call.respond(ClientsSchelude().get(call, IntBaseDataImpl.RequestParams()))
             }
 
-            get("/{id}") {
-                call.respond(ClientsSchelude().getId(call, IntBaseDataImpl.RequestParams()))
+            get("/all/filter") {
+                call.respond(ClientsSchelude().getFilter(call, IntBaseDataImpl.RequestParams()))
             }
 
             post("/update") {

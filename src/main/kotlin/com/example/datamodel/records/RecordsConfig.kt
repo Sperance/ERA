@@ -31,8 +31,8 @@ fun Application.configureRecords() {
                 call.respond(Records().get(call, IntBaseDataImpl.RequestParams()))
             }
 
-            get("/{id}") {
-                call.respond(Records().getId(call, IntBaseDataImpl.RequestParams()))
+            get("/all/filter") {
+                call.respond(Records().getFilter(call, IntBaseDataImpl.RequestParams()))
             }
 
             post("/update") {

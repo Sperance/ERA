@@ -73,20 +73,23 @@ data class Records(
         val repo_records = BaseRepository(Records())
     }
 
-    override suspend fun get(call: ApplicationCall, params: RequestParams<Records>): ResultResponse {
+    suspend fun getFilledRecords() : ArrayList<Recordsdata> {
         val listResults = ArrayList<Recordsdata>()
         val listClients = Clients.repo_clients.getRepositoryData()
         val listServices = Services.repo_services.getRepositoryData()
 
-        getData().forEach {
+        repo_records.getRepositoryData().forEach {
             listResults.add(Recordsdata(
                 clientFrom = listClients.find { f -> f.id == it.id_client_from },
                 clientTo = listClients.find { f -> f.id == it.id_client_to },
                 service = listServices.find { f -> f.id == it.id_service },
                 record = it))
         }
+        return listResults
+    }
 
-        return ResultResponse.Success(HttpStatusCode.OK, listResults)
+    override suspend fun get(call: ApplicationCall, params: RequestParams<Records>): ResultResponse {
+        return ResultResponse.Success(HttpStatusCode.OK, getFilledRecords())
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Records>, serializer: KSerializer<Records>): ResultResponse {

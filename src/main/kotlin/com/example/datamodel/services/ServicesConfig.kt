@@ -30,8 +30,8 @@ fun Application.configureServices() {
                 call.respond(Services().get(call, IntBaseDataImpl.RequestParams()))
             }
 
-            get("/{id}") {
-                call.respond(Services().getId(call, IntBaseDataImpl.RequestParams()))
+            get("/all/filter") {
+                call.respond(Services().getFilter(call, IntBaseDataImpl.RequestParams()))
             }
 
             post("/update") {

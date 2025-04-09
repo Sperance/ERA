@@ -6,6 +6,8 @@ import com.example.datamodel.clients.Clients
 import com.example.datamodel.clients.Clients.Companion.tbl_clients
 import com.example.datamodel.create
 import com.example.datamodel.getDataOne
+import com.example.datamodel.getField
+import com.example.datamodel.haveField
 import com.example.datamodel.putField
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
@@ -151,6 +153,21 @@ class AppTest {
                     .selectAsEntity(tbl_records)
             }
             println("RES: $result")
+        }
+    }
+
+    @Test
+    fun test_reflect_query() {
+        val field = "lastName"
+        val value = "Минасян"
+
+        runBlocking {
+            Clients.repo_clients.getDataFilter(field, value).forEach {
+                printTextLog("1 NTS: $it")
+            }
+            Clients.repo_clients.getDataFilter(field + "s", value).forEach {
+                printTextLog("2 NTS: $it")
+            }
         }
     }
 

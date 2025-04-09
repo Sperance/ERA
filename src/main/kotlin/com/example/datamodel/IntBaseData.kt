@@ -2,6 +2,7 @@ package com.example.datamodel
 
 import com.example.BASE_PATH
 import com.example.SYS_FIELDS_ARRAY
+import com.example.datamodel.clients.Clients
 import com.example.getCommentFieldAnnotation
 import com.example.getObjectRepository
 import com.example.isAllNullOrEmpty
@@ -76,14 +77,24 @@ abstract class IntBaseDataImpl <T> {
         }
     }
 
-    open suspend fun getId(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
+    open suspend fun getFilter(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
         return db.withTransaction { tx ->
             try {
-                val id = call.parameters["id"]
-
-                if (id == null || !id.toIntPossible()) {
+                val field = call.parameters["field"]
+                if (field.isNullOrEmpty()) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Incorrect parameter 'id'($id). This parameter must be 'Int' type")
+                    return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Incorrect parameter 'field'. This parameter must be 'String' type")
+                }
+
+                val value = call.parameters["value"]
+                if (value.isNullOrEmpty()) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Incorrect parameter 'value'. This parameter must be 'String' type")
+                }
+
+                if (!this.haveField(field)) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Class ${this::class.simpleName} dont have field '$field'")
                 }
 
                 params.checkings.forEach { check ->
@@ -98,23 +109,13 @@ abstract class IntBaseDataImpl <T> {
                     val res = def.invoke(this as T)
                     val property = res.first as KMutableProperty0<Any?>
                     if (!property.get().isAllNullOrEmpty()) return@forEach
-                    val value = res.second
-                    property.set(value)
+                    property.set(res.second)
                 }
 
-                val currectObjClassName = this::class.simpleName!!
-                val tblObj = getField("tbl_${currectObjClassName.lowercase()}") as EntityMetamodel<*, *, *>
-                val auProp = tblObj.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int>
+                params.onBeforeCompleted?.invoke(null)
 
-                val findedObj = getDataOne({ auProp eq id.toInt()})
-                params.onBeforeCompleted?.invoke(id.toInt())
-
-                if (findedObj == null) {
-                    tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(HttpStatusCode.NotFound, "Not found $currectObjClassName with id $id")
-                }
-
-                return@withTransaction ResultResponse.Success(HttpStatusCode.OK, findedObj)
+                val resultList = getObjectRepository(this)?.getDataFilter(field, value)
+                return@withTransaction ResultResponse.Success(HttpStatusCode.OK, resultList as Collection<*>)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()

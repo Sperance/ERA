@@ -39,16 +39,8 @@ fun Application.configureClients() {
                 call.respond(Clients().get(call, IntBaseDataImpl.RequestParams()))
             }
 
-            get("/all/{clientType}") {
-                call.respond(Clients().getFromType(call))
-            }
-
-            get("/{phone}") {
-                call.respond(Clients().getFromPhone(call))
-            }
-
-            get("/{id}") {
-                call.respond(Clients().getId(call, IntBaseDataImpl.RequestParams()))
+            get("/all/filter") {
+                call.respond(Clients().getFilter(call, IntBaseDataImpl.RequestParams()))
             }
 
             get("/slots/{id}/{data}") {

@@ -32,8 +32,8 @@ fun Application.configureCatalogs() {
                 call.respond(Catalogs().get(call, IntBaseDataImpl.RequestParams()))
             }
 
-            get("/{id}") {
-                call.respond(Catalogs().getId(call, IntBaseDataImpl.RequestParams()))
+            get("/all/filter") {
+                call.respond(Catalogs().getFilter(call, IntBaseDataImpl.RequestParams()))
             }
 
             get {

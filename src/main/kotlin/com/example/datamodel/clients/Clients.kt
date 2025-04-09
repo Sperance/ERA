@@ -180,32 +180,6 @@ data class Clients(
         }
     }
 
-    suspend fun getFromType(call: ApplicationCall): ResultResponse {
-        try {
-            val clientType = call.parameters["clientType"]
-
-            if (clientType.isNullOrEmpty())
-                return ResultResponse.Error(HttpStatusCode(431, ""), "Необходимо указать Тип клиента (параметр clientType)")
-
-            return ResultResponse.Success(HttpStatusCode.OK, repo_clients.getRepositoryData().filter { it.clientType == clientType })
-        } catch (e: Exception) {
-            return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
-        }
-    }
-
-    suspend fun getFromPhone(call: ApplicationCall): ResultResponse {
-        try {
-            val clientPhone = call.parameters["phone"]
-
-            if (clientPhone.isNullOrEmpty())
-                return ResultResponse.Error(HttpStatusCode(431, ""), "Необходимо указать Телефон клиента (параметр phone)")
-
-            return ResultResponse.Success(HttpStatusCode.OK, repo_clients.getRepositoryData().filter { it.phone == clientPhone })
-        } catch (e: Exception) {
-            return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
-        }
-    }
-
     suspend fun auth(call: ApplicationCall): ResultResponse {
         try {
             val user = call.receive<Clients>()
@@ -300,11 +274,12 @@ data class Clients(
         params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), 444, "Не найдена Должность с id ${it.position}") }
         params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), 445, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
 
+        val size = Clients().getSize()
         params.defaults.add { it::dateBirthday to LocalDateTime.nullDatetime() }
         params.defaults.add { it::dateWorkIn to LocalDateTime.nullDatetime() }
         params.defaults.add { it::dateWorkOut to LocalDateTime.nullDatetime() }
-        params.defaults.add { it::login to generateShortClientLogin(Clients().getSize()) }
-        params.defaults.add { it::password to generateShortClientPassword(Clients().getSize()) }
+        params.defaults.add { it::login to "base_client_$size" }
+        params.defaults.add { it::password to generateShortClientPassword(size) }
         params.defaults.add { it::arrayTypeWork to arrayOf<Int>() }
 
         return super.post(call, params, serializer)
@@ -326,10 +301,6 @@ data class Clients(
         params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), 441, "Не найдена Должность с id ${it.position}") }
         params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), 442, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
         return super.update(call, params, serializer)
-    }
-
-    private fun generateShortClientLogin(allRecords: Long): String {
-        return "base_client_$allRecords"
     }
 
     private fun generateShortClientPassword(allRecords: Long): String {

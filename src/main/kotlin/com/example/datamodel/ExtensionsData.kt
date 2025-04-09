@@ -14,8 +14,8 @@ import org.komapper.core.dsl.query.singleOrNull
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.createInstance
 
-fun Any.haveField(name: String) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name } != null
-fun Any.getField(name: String) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name }?.get(this)
+fun Any.haveField(name: String) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name.lowercase() == name.lowercase() } != null
+fun Any.getField(name: String) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name.lowercase() == name.lowercase() }?.get(this)
 fun Any.putField(name: String, value: Any?) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name }?.set(this, value)
 
 @Suppress("UNCHECKED_CAST")

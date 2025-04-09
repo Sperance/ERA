@@ -202,7 +202,7 @@ fun isSafeCommand(command: String): String? {
         "http:", "/api.", ".php", "-stdin", "/json", ".com:443", ".asp", "-bin", ".env", ".pn:443",
         "/robots", ".git", "/login", "goform", "set_LimitClient_cfg", "_cfg", "/version",
         "/versions", ".zip", ".html", "/gateway", "/login", "/hello.", "/formLogin", "/admin",
-        "/actuator", "/health", "/css", "_", "ab2g", "ab2h", "ReportServer", ".rar",
-        "/webui", "/chec", "/powershell")
+        "/actuator", "/health", "/css", "ab2g", "ab2h", "ReportServer", ".rar",
+        "/webui", "/chec", "/powershell", "/sitemap", "/v1")
     return unsafePatterns.find { pat -> command.trim().lowercase().contains(pat.trim().lowercase()) }
 }
