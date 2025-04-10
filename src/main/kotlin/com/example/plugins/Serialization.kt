@@ -1,18 +1,22 @@
 package com.example.plugins
 
-import com.example.converters.StringConverter
-import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
 
-fun Application.configureContentNegotiation() {
+fun Application.configureSerialization() {
     install(ContentNegotiation) {
         json(Json {
             prettyPrint = true
-            encodeDefaults = true
+            isLenient = true
         })
-        register(ContentType.Text.Html, StringConverter())
     }
+//    routing {
+//        get("/json/gson") {
+//            call.respond(mapOf("hello" to "world"))
+//        }
+//    }
 }
