@@ -1,14 +1,7 @@
 package com.example.datamodel.serverhistory
 
 import com.example.currectDatetime
-import com.example.datamodel.BaseRepository
-import com.example.datamodel.create
-import com.example.datamodel.records.Records
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.plugins.origin
-import io.ktor.server.request.httpMethod
-import io.ktor.server.request.httpVersion
-import io.ktor.server.request.uri
+import com.example.helpers.create
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient

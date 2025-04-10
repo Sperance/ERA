@@ -1,13 +1,12 @@
 package com.example.datamodel.catalogs
 
-import com.example.CommentField
+import com.example.helpers.CommentField
 import com.example.currectDatetime
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.clients.Clients
 import com.example.datamodel.services.Services
-import com.example.datamodel.update
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
@@ -44,6 +43,7 @@ data class Catalogs(
     @Transient
     @KomapperVersion
     val version: Int = 0,
+    @Transient
     @CommentField("Дата создания строки", false)
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Catalogs>() {

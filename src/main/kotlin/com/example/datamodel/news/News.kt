@@ -1,11 +1,10 @@
 package com.example.datamodel.news
 
-import com.example.CommentField
+import com.example.helpers.CommentField
 import com.example.currectDatetime
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
-import com.example.isNullOrZero
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -38,6 +37,7 @@ data class News(
     @Transient
     @KomapperVersion
     val version: Int = 0,
+    @Transient
     @CommentField("Дата создания строки", false)
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<News>() {

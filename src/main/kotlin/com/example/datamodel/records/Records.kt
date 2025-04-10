@@ -1,14 +1,13 @@
 package com.example.datamodel.records
 
-import com.example.CommentField
-import com.example.Recordsdata
+import com.example.helpers.CommentField
+import com.example.helpers.Recordsdata
 import com.example.currectDatetime
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.clients.Clients
-import com.example.datamodel.getData
-import com.example.datamodel.getSize
+import com.example.helpers.getSize
 import com.example.datamodel.services.Services
 import com.example.isNullOrEmpty
 import com.example.isNullOrZero
@@ -64,6 +63,7 @@ data class Records(
     @Transient
     @KomapperVersion
     val version: Int = 0,
+    @Transient
     @CommentField("Дата создания строки", false)
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Records>() {
@@ -79,11 +79,13 @@ data class Records(
         val listServices = Services.repo_services.getRepositoryData()
 
         repo_records.getRepositoryData().forEach {
-            listResults.add(Recordsdata(
+            listResults.add(
+                Recordsdata(
                 clientFrom = listClients.find { f -> f.id == it.id_client_from },
                 clientTo = listClients.find { f -> f.id == it.id_client_to },
                 service = listServices.find { f -> f.id == it.id_service },
-                record = it))
+                record = it)
+            )
         }
         return listResults
     }

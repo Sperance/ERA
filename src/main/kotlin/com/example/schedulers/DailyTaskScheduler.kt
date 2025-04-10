@@ -2,7 +2,7 @@ package com.example.schedulers
 
 import com.example.currentZeroDate
 import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.repo_clientsschelude
-import com.example.datamodel.delete
+import com.example.helpers.delete
 import com.example.minus
 import com.example.printTextLog
 import kotlinx.coroutines.CoroutineScope
@@ -39,8 +39,8 @@ class DailyTaskScheduler {
         val dataRemove = repo_clientsschelude.getRepositoryData().filter { fil -> fil.scheludeDateEnd!! < currentDate }
         dataRemove.forEach { dat ->
             printTextLog("[DELETE] $dat - on over older by date (${dat.scheludeDateEnd}) < $currentDate")
+            repo_clientsschelude.deleteData(dat)
             dat.delete()
         }
-        repo_clientsschelude.resetData()
     }
 }

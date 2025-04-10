@@ -1,34 +1,13 @@
 package com.example.plugins
 
+import com.example.converters.StringConverter
 import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
-import io.ktor.server.plugins.autohead.AutoHeadResponse
 import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.cors.routing.CORS
-import io.ktor.server.plugins.partialcontent.PartialContent
 import kotlinx.serialization.json.Json
 
-fun Application.configureSerialization() {
-
-    install(CORS) {
-        allowHost("www.salon-era.ru", schemes = listOf("https"))
-        allowHost("salon-era.ru", schemes = listOf("https"))
-        allowHost("localhost:3000", schemes = listOf("http"))
-        allowHost("127.0.0.1", schemes = listOf("http", "https"))
-
-        allowMethod(HttpMethod.Get)
-        allowMethod(HttpMethod.Post)
-        allowMethod(HttpMethod.Delete)
-
-        allowHeader(HttpHeaders.ContentType)
-        allowHeader(HttpHeaders.Authorization)
-
-        allowCredentials = true
-    }
-
+fun Application.configureContentNegotiation() {
     install(ContentNegotiation) {
         json(Json {
             prettyPrint = true
@@ -36,7 +15,4 @@ fun Application.configureSerialization() {
         })
         register(ContentType.Text.Html, StringConverter())
     }
-
-    install(PartialContent)
-    install(AutoHeadResponse)
 }

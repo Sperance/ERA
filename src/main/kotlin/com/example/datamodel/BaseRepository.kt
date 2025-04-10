@@ -1,6 +1,11 @@
 package com.example.datamodel
 
 import com.example.datamodel.serverhistory.ServerHistory
+import com.example.helpers.clearTable
+import com.example.helpers.getData
+import com.example.helpers.getField
+import com.example.helpers.haveField
+import com.example.helpers.update
 import com.example.printTextLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -138,6 +143,6 @@ open class BaseRepository<T: Any>(private val obj: T) {
     // Получение данных, с загрузкой, если коллекция пуста
     open suspend fun getRepositoryData(): Collection<T> {
         if (isEmpty()) resetData() // Если коллекция пуста, загружаем данные
-        return repoData.sortedBy { it.getField("id").toString().toInt() }.toList() // Возвращаем копию для безопасности
+        return repoData.toSet().sortedBy { it.getField("id").toString().toInt() } // Возвращаем копию для безопасности
     }
 }

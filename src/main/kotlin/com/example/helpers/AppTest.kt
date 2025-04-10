@@ -1,20 +1,22 @@
-package com.example
+package com.example.helpers
 
+import com.example.calculateDifference
+import com.example.currectDatetime
+import com.example.currentZeroDate
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.catalogs.Catalogs.Companion.tbl_catalogs
 import com.example.datamodel.clients.Clients
 import com.example.datamodel.clients.Clients.Companion.tbl_clients
-import com.example.datamodel.create
-import com.example.datamodel.getDataOne
-import com.example.datamodel.getField
-import com.example.datamodel.haveField
-import com.example.datamodel.putField
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.services.Services
-import com.example.datamodel.update
-import com.example.plugins.GMailSender
+import com.example.getObjectRepository
+import com.example.minus
+import com.example.nullDatetime
 import com.example.plugins.db
+import com.example.plus
+import com.example.printTextLog
+import com.example.toDateTimePossible
 import io.ktor.network.tls.certificates.buildKeyStore
 import io.ktor.network.tls.certificates.saveToFile
 import kotlinx.coroutines.runBlocking
@@ -26,7 +28,6 @@ import kotlinx.serialization.Serializable
 import org.junit.Test
 import org.komapper.core.dsl.QueryDsl
 import java.io.File
-import kotlin.reflect.KMutableProperty0
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.time.Duration.Companion.minutes
 

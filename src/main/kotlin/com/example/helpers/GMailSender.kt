@@ -1,13 +1,10 @@
-package com.example.plugins
+package com.example.helpers
 
 import com.example.printTextLog
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.security.AccessController
-import java.security.PrivilegedAction
-import java.security.Provider
 import java.util.Properties
 import javax.activation.DataHandler
 import javax.activation.DataSource

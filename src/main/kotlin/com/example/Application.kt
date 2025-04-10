@@ -1,11 +1,15 @@
-
-
 package com.example
 
 import com.example.datamodel.configureTests
 import com.example.plugins.LogPlugin
+import com.example.plugins.configureAutoHeadResponse
+import com.example.plugins.configureCORS
 import com.example.plugins.configureDatabases
-import com.example.plugins.configureSerialization
+import com.example.plugins.configurePartialContent
+import com.example.plugins.configureContentNegotiation
+import com.example.plugins.configureRateLimit
+import com.example.plugins.configureSessions
+import com.example.plugins.configureStatusPages
 import com.example.schedulers.DailyTaskScheduler
 import com.example.sockets.configureSockets
 import io.ktor.server.application.*
@@ -24,8 +28,16 @@ fun main() {
         }
 
         module {
-            configureSerialization()
+            configureStatusPages()
             install(LogPlugin)
+
+            configureCORS()
+
+            configureRateLimit()
+//            configureSessions()
+            configurePartialContent()
+            configureContentNegotiation()
+            configureAutoHeadResponse()
             configureDatabases()
             configureSockets()
             configureTests()

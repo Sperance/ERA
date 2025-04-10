@@ -1,4 +1,4 @@
-package com.example
+package com.example.helpers
 
 val SYS_FIELDS_ARRAY = listOf("companion", "id", "version", "createdat")
 val BASE_PATH = "https://api.salon-era.ru/"

@@ -1,4 +1,4 @@
-package com.example.plugins
+package com.example.converters
 
 import io.ktor.http.ContentType
 import io.ktor.http.content.OutgoingContent
@@ -14,7 +14,7 @@ class StringConverter : ContentConverter {
         charset: Charset,
         typeInfo: TypeInfo,
         content: ByteReadChannel
-    ): Any? {
+    ): Any {
         val bytes = content.readRemaining().readBytes()
         return bytes.toString(charset)
     }

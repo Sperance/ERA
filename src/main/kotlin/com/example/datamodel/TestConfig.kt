@@ -2,7 +2,7 @@ package com.example.datamodel
 
 import com.example.datamodel.clients.Clients
 import com.example.minus
-import com.example.plugins.GMailSender
+import com.example.helpers.GMailSender
 import com.example.plus
 import com.example.printTextLog
 import com.example.toIntPossible

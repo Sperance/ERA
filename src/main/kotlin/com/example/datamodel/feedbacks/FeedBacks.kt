@@ -1,12 +1,12 @@
 package com.example.datamodel.feedbacks
 
-import com.example.CommentField
+import com.example.helpers.CommentField
 import com.example.currectDatetime
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.clients.Clients
-import com.example.datamodel.getData
+import com.example.helpers.getData
 import com.example.isNullOrZero
 import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
@@ -49,6 +49,7 @@ data class FeedBacks(
     @Transient
     @KomapperVersion
     val version: Int = 0,
+    @Transient
     @CommentField("Дата создания строки", false)
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<FeedBacks>() {

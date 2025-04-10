@@ -1,6 +1,6 @@
 package com.example.datamodel.stockfiles
 
-import com.example.CommentField
+import com.example.helpers.CommentField
 import com.example.currectDatetime
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
@@ -40,6 +40,7 @@ data class Stockfiles(
     @Transient
     @KomapperVersion
     val version: Int = 0,
+    @Transient
     @CommentField("Дата создания строки", false)
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Stockfiles>() {

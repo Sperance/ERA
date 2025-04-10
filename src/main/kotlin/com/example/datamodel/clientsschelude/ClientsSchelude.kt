@@ -1,17 +1,13 @@
 package com.example.datamodel.clientsschelude
 
-import com.example.CommentField
+import com.example.helpers.CommentField
 import com.example.currectDatetime
-import com.example.currentZeroDate
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.clients.Clients.Companion.repo_clients
-import com.example.datamodel.delete
 import com.example.isNullOrEmpty
 import com.example.isNullOrZero
-import com.example.minus
-import com.example.printTextLog
 import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
@@ -26,7 +22,6 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
-import kotlin.time.Duration.Companion.days
 
 /**
  * График работы сотрудников
@@ -48,6 +43,7 @@ data class ClientsSchelude(
     @Transient
     @KomapperVersion
     val version: Int = 0,
+    @Transient
     @CommentField("Дата создания строки", false)
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<ClientsSchelude>() {

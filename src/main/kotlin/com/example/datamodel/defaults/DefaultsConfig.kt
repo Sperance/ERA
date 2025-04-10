@@ -2,11 +2,12 @@ package com.example.datamodel.defaults
 
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.clients.Clients
-import com.example.datamodel.createBatch
-import com.example.datamodel.isEmpty
+import com.example.helpers.createBatch
+import com.example.helpers.isEmpty
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 
-suspend fun defaultsConfig() {
+fun defaultsConfig() = runBlocking {
     delay(2000)
     defaultCatalogs()
     defaultClients()

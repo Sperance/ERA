@@ -1,17 +1,13 @@
 package com.example.datamodel.services
 
-import com.example.CommentField
+import com.example.helpers.CommentField
 import com.example.currectDatetime
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.catalogs.Catalogs
-import com.example.datamodel.catalogs.Catalogs.Companion.tbl_catalogs
-import com.example.datamodel.getFromId
-import com.example.datamodel.isDuplicate
 import com.example.datamodel.records.Records
 import com.example.datamodel.stockfiles.Stockfiles
-import com.example.datamodel.update
 import com.example.isNullOrZero
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
@@ -58,6 +54,7 @@ data class Services(
     @Transient
     @KomapperVersion
     val version: Int = 0,
+    @Transient
     @CommentField("Дата создания строки", false)
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Services>() {

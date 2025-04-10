@@ -1,6 +1,6 @@
 package com.example.datamodel.clients
 
-import com.example.CommentField
+import com.example.helpers.CommentField
 import com.example.currectDatetime
 import com.example.currentZeroDate
 import com.example.datamodel.BaseRepository
@@ -10,19 +10,18 @@ import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.clientsschelude.ClientsSchelude
 import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.tbl_clientsschelude
 import com.example.datamodel.feedbacks.FeedBacks
-import com.example.datamodel.getData
-import com.example.datamodel.getFromArrayId
-import com.example.datamodel.getSize
-import com.example.datamodel.isDuplicate
+import com.example.helpers.getData
+import com.example.helpers.getSize
+import com.example.helpers.isDuplicate
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.serverhistory.ServerHistory
 import com.example.datamodel.services.Services.Companion.repo_services
-import com.example.datamodel.update
+import com.example.helpers.update
 import com.example.isNullOrZero
 import com.example.minus
 import com.example.nullDatetime
-import com.example.plugins.GMailSender
+import com.example.helpers.GMailSender
 import com.example.plus
 import com.example.toDateTimePossible
 import com.example.toIntPossible
@@ -87,6 +86,7 @@ data class Clients(
     @Transient
     @KomapperVersion
     val version: Int = 0,
+    @Transient
     @CommentField("Дата создания строки", false)
     val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Clients>() {
@@ -121,7 +121,6 @@ data class Clients(
             val servDateBegin = it.dateRecord!!.minus((blockSlots - removePeriodMin).minutes)
             val servDateEnd = it.dateRecord!!.plus((servLen.duration!! * stockPeriod - removePeriodMin).minutes)
             arrayClosed.add(servDateBegin..servDateEnd)
-            println("start: $servDateBegin end: $servDateEnd")
         }
 
         var stockDate = startDate

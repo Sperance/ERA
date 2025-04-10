@@ -2,7 +2,6 @@ package com.example.datamodel.records
 
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
-import com.example.datamodel.clearTable
 import com.example.respond
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -23,7 +22,7 @@ fun Application.configureRecords() {
             }
 
             get("/clearTable") {
-                Records().clearTable()
+                Records.repo_records.clearTable()
                 call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
             }
 

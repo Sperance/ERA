@@ -3,21 +3,13 @@ package com.example
 import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
-import com.example.datamodel.getField
-import com.example.datamodel.putField
-import io.ktor.server.application.Application
+import com.example.helpers.getField
+import com.example.helpers.putField
+import com.example.helpers.CommentField
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.logging.toLogString
-import io.ktor.server.plugins.origin
-import io.ktor.server.request.httpMethod
-import io.ktor.server.request.httpVersion
-import io.ktor.server.request.uri
 import io.ktor.server.response.respond
 import io.ktor.server.util.toLocalDateTime
 import io.ktor.util.InternalAPI
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -203,6 +195,6 @@ fun isSafeCommand(command: String): String? {
         "/robots", ".git", "/login", "goform", "set_LimitClient_cfg", "_cfg", "/version",
         "/versions", ".zip", ".html", "/gateway", "/login", "/hello.", "/formLogin", "/admin",
         "/actuator", "/health", "/css", "ab2g", "ab2h", "ReportServer", ".rar",
-        "/webui", "/chec", "/powershell", "/sitemap", "/v1")
+        "/webui", "/chec", "/powershell", "/sitemap", "/v1", ".tar", ".gz")
     return unsafePatterns.find { pat -> command.trim().lowercase().contains(pat.trim().lowercase()) }
 }

@@ -1,4 +1,4 @@
-package com.example.datamodel
+package com.example.helpers
 
 import com.example.plugins.db
 import com.example.printTextLog
@@ -9,7 +9,6 @@ import org.komapper.core.dsl.metamodel.EntityMetamodel
 import org.komapper.core.dsl.metamodel.PropertyMetamodel
 import org.komapper.core.dsl.metamodel.getAutoIncrementProperty
 import org.komapper.core.dsl.operator.count
-import org.komapper.core.dsl.query.firstOrNull
 import org.komapper.core.dsl.query.singleOrNull
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.createInstance
