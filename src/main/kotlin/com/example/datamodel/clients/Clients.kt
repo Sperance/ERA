@@ -23,6 +23,10 @@ import com.example.minus
 import com.example.nullDatetime
 import com.example.helpers.GMailSender
 import com.example.plus
+import com.example.printTextLog
+import com.example.security.generateSalt
+import com.example.security.hashPassword
+import com.example.security.verifyPassword
 import com.example.toDateTimePossible
 import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
@@ -83,6 +87,9 @@ data class Clients(
     var imageFormat: String? = null,
     @CommentField("Массив ссылок на работы сотрудника", false)
     var arrayTypeWork: Array<Int>? = null,
+    @Transient
+    @CommentField("Соль для шифрования", false)
+    var salt: String? = null,
     @Transient
     @KomapperVersion
     val version: Int = 0,
@@ -189,7 +196,7 @@ data class Clients(
             if (user.password.isNullOrEmpty())
                 return ResultResponse.Error(HttpStatusCode(432, ""), "Необходимо указать Пароль(password)")
 
-            val client = repo_clients.getRepositoryData().find { it.login == user.login && it.password == user.password }
+            val client = repo_clients.getRepositoryData().find { it.login == user.login && verifyPassword(it.password, it.salt, user.password) }
             if (client == null)
                 return ResultResponse.Error(HttpStatusCode.NotFound, "Не найден пользователь с указанным Логином и Паролем")
 
@@ -214,7 +221,7 @@ data class Clients(
             if (findedClient == null)
                 return ResultResponse.Error(HttpStatusCode(433, ""), "Не найден Клиент с адресом $email")
 
-            findedClient.password = password
+            findedClient.setNewPassword(password)
             val updated = findedClient.update()
 
             repo_clients.resetData()
@@ -280,6 +287,11 @@ data class Clients(
         params.defaults.add { it::login to "base_client_$size" }
         params.defaults.add { it::password to generateShortClientPassword(size) }
         params.defaults.add { it::arrayTypeWork to arrayOf<Int>() }
+        params.defaults.add { it::salt to generateSalt() }
+
+        params.onBeforeSaved = { newObj ->
+            newObj.setNewPassword(newObj.password!!)
+        }
 
         return super.post(call, params, serializer)
     }
@@ -299,7 +311,17 @@ data class Clients(
     override suspend fun update(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<Clients>): ResultResponse {
         params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), 441, "Не найдена Должность с id ${it.position}") }
         params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), 442, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
+        params.checkings.add { CheckObj(it.salt != null, 443, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
+
+        params.onBeforeSaved = { newObj ->
+            newObj.setNewPassword(newObj.password!!)
+        }
+
         return super.update(call, params, serializer)
+    }
+
+    fun setNewPassword(newPass: String) {
+        password = hashPassword(newPass, salt!!)
     }
 
     private fun generateShortClientPassword(allRecords: Long): String {

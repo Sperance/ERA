@@ -8,7 +8,6 @@ import io.ktor.server.logging.toLogString
 import io.ktor.server.request.httpVersion
 import io.ktor.server.request.path
 import io.ktor.server.response.respond
-import io.netty.handler.codec.http.HttpVersion
 
 val LogPlugin = createApplicationPlugin(name = "LogPlugin") {
     onCall { call ->

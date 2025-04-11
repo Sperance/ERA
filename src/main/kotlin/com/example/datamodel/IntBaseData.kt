@@ -1,5 +1,6 @@
 package com.example.datamodel
 
+import com.example.enums.EnumDataFilter
 import com.example.helpers.BASE_PATH
 import com.example.helpers.SYS_FIELDS_ARRAY
 import com.example.getCommentFieldAnnotation
@@ -23,6 +24,10 @@ import io.ktor.http.content.forEachPart
 import io.ktor.http.content.streamProvider
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receiveMultipart
+import io.ktor.util.cio.writeChannel
+import io.ktor.utils.io.copyAndClose
+import io.ktor.utils.io.read
+import io.ktor.utils.io.toByteArray
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import org.komapper.core.dsl.metamodel.EntityMetamodel
@@ -93,6 +98,12 @@ abstract class IntBaseDataImpl <T> {
                     return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Incorrect parameter 'field'. This parameter must be 'String' type")
                 }
 
+                val state = call.parameters["state"]
+                if (state.isNullOrEmpty()) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Incorrect parameter 'state'. This parameter must be 'String' type")
+                }
+
                 val value = call.parameters["value"]
                 if (value.isNullOrEmpty()) {
                     tx.setRollbackOnly()
@@ -102,6 +113,12 @@ abstract class IntBaseDataImpl <T> {
                 if (!this.haveField(field)) {
                     tx.setRollbackOnly()
                     return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Class ${this::class.simpleName} dont have field '$field'")
+                }
+
+                val stateEnum = EnumDataFilter.entries.find { it.name == state.uppercase() }
+                if (stateEnum == null) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Incorrect parameter 'state'. This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains")
                 }
 
                 params.checkings.forEach { check ->
@@ -121,7 +138,7 @@ abstract class IntBaseDataImpl <T> {
 
                 params.onBeforeCompleted?.invoke(null)
 
-                val resultList = getObjectRepository(this)?.getDataFilter(field, value)
+                val resultList = getObjectRepository(this)?.getDataFilter(field, stateEnum, value)
                 return@withTransaction ResultResponse.Success(HttpStatusCode.OK, resultList as Collection<*>)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
@@ -136,6 +153,7 @@ abstract class IntBaseDataImpl <T> {
         val checkings: ArrayList<suspend (T) -> CheckObj> = ArrayList()
         val defaults: ArrayList<suspend (T) -> Pair<KMutableProperty0<*>, Any?>> = ArrayList()
         var onBeforeCompleted: (suspend (Int?) -> Any)? = null
+        var onBeforeSaved: (suspend (T) -> Any)? = null
         var checkOnUpdate: ((T, T) -> Any)? = null
     }
 
@@ -197,23 +215,27 @@ abstract class IntBaseDataImpl <T> {
                 val multipartData = call.receiveMultipart()
 
                 var newObject: T? = null
-                var partFileData: PartData.FileItem? = null
+                val currectObjClassName = this::class.simpleName!!
+                var fileName: String? = null
+                var fileBytes: ByteArray? = null
 
                 multipartData.forEachPart { part ->
                     when (part) {
                         is PartData.FormItem -> { newObject = Json.decodeFromString(serializer, part.value) }
-                        is PartData.FileItem -> { partFileData = part }
+                        is PartData.FileItem -> {
+                            fileName = part.originalFileName
+                            fileBytes = part.provider().toByteArray()
+                        }
                         is PartData.BinaryChannelItem -> {}
                         is PartData.BinaryItem -> {}
                     }
                 }
 
-                val currectObjClassName = this::class.simpleName!!
-
-                if (params.isNeedFile && partFileData == null) {
+                if (params.isNeedFile && fileBytes == null) {
                     tx.setRollbackOnly()
                     return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Для объекта $currectObjClassName ожидался файл, который не был получен")
                 }
+
                 if (newObject == null) {
                     tx.setRollbackOnly()
                     return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Не удалось создать объект $currectObjClassName по входящему JSON")
@@ -243,23 +265,26 @@ abstract class IntBaseDataImpl <T> {
                     return@withTransaction ResultResponse.Error(HttpStatusCode.NotFound, "Not found $currectObjClassName with id ${newObject?.getField("id")}")
                 }
 
-                if (partFileData != null) {
-
+                if (fileBytes != null) {
                     if (!newObject!!.haveField("imageLink") || !newObject!!.haveField("imageFormat")) {
                         tx.setRollbackOnly()
                         return@withTransaction ResultResponse.Error(HttpStatusCode(400, "Not Access"), "Для сущности $currectObjClassName не реализованы поля хранения файлов")
                     }
 
-                    getFileImageIcon(findedObj, currectObjClassName.lowercase())?.delete()
-                    val imageFile = File(Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}/icon_${findedObj.getField("id")}.${partFileData!!.originalFileName?.substringAfterLast(".")}")
-                    partFileData!!.streamProvider().use { inpStream -> imageFile.outputStream().use { outStream -> inpStream.copyTo(outStream) } }
+                    val imageFile = File(Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}/icon_${newObject!!.getField("id")}.${fileName?.substringAfterLast(".")}")
+                    if (imageFile.exists()) imageFile.delete()
+                    imageFile.writeBytes(fileBytes!!)
                     newObject!!.putField("imageLink", "${BASE_PATH}files/${currectObjClassName.lowercase()}/" + imageFile.name)
-                    newObject!!.putField("imageFormat", partFileData!!.originalFileName?.substringAfterLast("."))
+                    newObject!!.putField("imageFormat", imageFile.extension)
                 }
 
                 params.checkOnUpdate?.invoke(findedObj as T, newObject!!)
-
                 params.onBeforeCompleted?.invoke(findedObj.getField("id").toString().toIntOrNull())
+
+                if (newObject!!.haveField("salt")) {
+                    newObject!!.putField("salt", findedObj.getField("salt"))
+                }
+                params.onBeforeSaved?.invoke(newObject as T)
 
                 findedObj.updateFromNullable(newObject!!)
                 val updated = findedObj.update()
@@ -357,24 +382,26 @@ abstract class IntBaseDataImpl <T> {
                 val multipartData = call.receiveMultipart()
 
                 var finishObject: T? = null
-                var partFileData: InputStream? = null
-                var partFileDataName = ""
                 var jsonString = ""
+                val currectObjClassName = this::class.simpleName!!
+
+                var fileName: String? = null
+                var fileBytes: ByteArray? = null
 
                 multipartData.forEachPart { part ->
                     when (part) {
                         is PartData.FormItem -> { jsonString = part.value }
                         is PartData.FileItem -> {
-                            partFileData = part.streamProvider()
-                            partFileDataName = part.originalFileName?:""
+                            fileName = part.originalFileName
+                            fileBytes = part.provider().toByteArray()
                         }
                         else -> { printTextLog("Unknown part type: ${part::class.simpleName}") }
                     }
                 }
 
                 val newObject = Json.decodeFromString(serializer, jsonString)
-                val currectObjClassName = this::class.simpleName!!
-                if (params.isNeedFile && partFileData == null) {
+
+                if (params.isNeedFile && fileBytes == null) {
                     tx.setRollbackOnly()
                     return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Для объекта $currectObjClassName ожидался файл, который не был получен")
                 }
@@ -398,7 +425,7 @@ abstract class IntBaseDataImpl <T> {
                     }
                 }
 
-                if (newObject.size > 1 && partFileData != null) {
+                if (newObject.size > 1 && fileBytes != null) {
                     tx.setRollbackOnly()
                     return@withTransaction ResultResponse.Error(HttpStatusCode(420, "Perform Error"), "Невозможно сохранить файл изображения к массиву элементов (${newObject.size})")
                 }
@@ -413,24 +440,26 @@ abstract class IntBaseDataImpl <T> {
                     return@withTransaction ResultResponse.Error(HttpStatusCode(430, "Perform Error"), "Не создан объект $currectObjClassName")
                 }
 
-                if (partFileData != null) {
+                if (fileBytes != null) {
                     if (!finishObject!!.haveField("imageLink") || !finishObject!!.haveField("imageFormat")) {
                         tx.setRollbackOnly()
                         return@withTransaction ResultResponse.Error(HttpStatusCode(400, "Not Access"), "Для сущности $currectObjClassName не реализованы поля хранения файлов")
                     }
-                    val imagePath = File(Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}")
-                    if (!imagePath.exists()) imagePath.mkdirs()
-                    val imageFile = File(Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}/icon_${finishObject!!.getField("id")}.${partFileDataName.substringAfterLast(".")}")
-                    partFileData!!.use { inpStream -> imageFile.outputStream().use { outStream -> inpStream.copyTo(outStream) } }
+
+                    val imageFile = File(Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}/icon_${finishObject!!.getField("id")}.${fileName?.substringAfterLast(".")}")
+                    if (imageFile.exists()) imageFile.delete()
+                    imageFile.writeBytes(fileBytes!!)
                     finishObject!!.putField("imageLink", "${BASE_PATH}files/${currectObjClassName.lowercase()}/" + imageFile.name)
-                    finishObject!!.putField("imageFormat", partFileDataName.substringAfterLast("."))
+                    finishObject!!.putField("imageFormat", imageFile.extension)
 
                     params.onBeforeCompleted?.invoke(finishObject!!.getField("id").toString().toIntOrNull())
+                    params.onBeforeSaved?.invoke(finishObject!!)
                     finishObject = finishObject!!.update()
 
                     getObjectRepository(this)?.updateData(finishObject as IntBaseDataImpl<T>)
                 } else {
                     params.onBeforeCompleted?.invoke(finishObject!!.getField("id").toString().toIntOrNull())
+                    params.onBeforeSaved?.invoke(finishObject!!)
                 }
 
                 return@withTransaction ResultResponse.Success(HttpStatusCode.Created, finishObject as Any)

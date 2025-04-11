@@ -7,6 +7,7 @@ import com.example.plugins.configureCORS
 import com.example.plugins.configureDatabases
 import com.example.plugins.configurePartialContent
 import com.example.plugins.configureContentNegotiation
+import com.example.plugins.configureForwardedHeaders
 import com.example.plugins.configureRateLimit
 import com.example.plugins.configureStatusPages
 import com.example.sockets.configureSockets
@@ -26,6 +27,7 @@ fun main() {
         module = {
             configureStatusPages()
             install(LogPlugin)
+            configureForwardedHeaders()
             configureCORS()
             configureRateLimit()
             configurePartialContent()

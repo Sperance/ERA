@@ -4,6 +4,8 @@ import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.clients.Clients
 import com.example.helpers.createBatch
 import com.example.helpers.isEmpty
+import com.example.security.generateSalt
+import com.example.security.hashPassword
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
@@ -20,18 +22,20 @@ private suspend fun defaultClients() {
                 firstName = "admin"
                 lastName = "admin"
                 login = "admin"
-                password = "Password123."
                 phone = "999"
+                salt = generateSalt()
                 email = "adm@adm.ru"
                 clientType = "admin"
+                setNewPassword("Password123.")
             },
             Clients().apply {
                 firstName = "Dmitriy"
                 lastName = "MMM"
                 login = "tandine"
-                password = "32543254"
                 phone = "+79779999999"
+                salt = generateSalt()
                 email = "mde@mde.ru"
+                setNewPassword("32543254")
             })
         )
     }

@@ -158,21 +158,6 @@ class AppTest {
     }
 
     @Test
-    fun test_reflect_query() {
-        val field = "lastName"
-        val value = "Минасян"
-
-        runBlocking {
-            Clients.repo_clients.getDataFilter(field, value).forEach {
-                printTextLog("1 NTS: $it")
-            }
-            Clients.repo_clients.getDataFilter(field + "s", value).forEach {
-                printTextLog("2 NTS: $it")
-            }
-        }
-    }
-
-    @Test
     fun test_range() {
         val stockPeriod = 30
         val blockSlots = 6 * stockPeriod

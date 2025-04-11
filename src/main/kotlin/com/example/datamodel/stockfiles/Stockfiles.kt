@@ -51,7 +51,6 @@ data class Stockfiles(
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Stockfiles>, serializer: KSerializer<List<Stockfiles>>): ResultResponse {
-
         params.isNeedFile = true
         params.checkings.add { CheckObj(it.category.isNullOrEmpty(), 431, "Необходимо указать Категорию файла") }
         params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), 441, "Необходимо указать Категорию файла") }
@@ -59,8 +58,7 @@ data class Stockfiles(
         return super.post(call, params, serializer)
     }
 
-    override suspend fun update(call: ApplicationCall, params: RequestParams<Stockfiles>, serializer: KSerializer<Stockfiles>
-    ): ResultResponse {
+    override suspend fun update(call: ApplicationCall, params: RequestParams<Stockfiles>, serializer: KSerializer<Stockfiles>): ResultResponse {
         params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), 441, "Необходимо указать Категорию файла") }
 
         return super.update(call, params, serializer)
