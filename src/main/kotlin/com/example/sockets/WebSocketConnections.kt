@@ -1,5 +1,6 @@
 package com.example.sockets
 
+import com.example.printTextLog
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import kotlinx.coroutines.CoroutineScope
@@ -7,7 +8,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 
 class WebSocketConnections {
     private val connections = ConcurrentHashMap<String, WebSocketSession>()
@@ -43,6 +43,6 @@ class WebSocketConnections {
     }
 
     private fun printConnectionsStatus(type: String) {
-        println("Total active connections [$type]: ${connections.size} - Keys: ${connections.keys.joinToString(", ")}")
+        printTextLog("Total active connections [$type]: ${connections.size} - Keys: ${connections.keys.joinToString(", ")}")
     }
 }

@@ -274,6 +274,76 @@ abstract class IntBaseDataImpl <T> {
         }
     }
 
+    open suspend fun updateMany(call: ApplicationCall, params: RequestParams<T>, serializer: KSerializer<List<T>>): ResultResponse {
+        return db.withTransaction { tx ->
+            try {
+                val multipartData = call.receiveMultipart()
+                var jsonString = ""
+                multipartData.forEachPart { part ->
+                    when (part) {
+                        is PartData.FormItem -> { jsonString = part.value }
+                        is PartData.FileItem -> {}
+                        is PartData.BinaryChannelItem -> {}
+                        is PartData.BinaryItem -> {}
+                    }
+                }
+
+                val currectObjClassName = this::class.simpleName!!
+                val newObject = Json.decodeFromString(serializer, jsonString)
+
+                if (newObject.isEmpty()) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Не удалось создать массив объектов $currectObjClassName по входящему JSON")
+                }
+
+                params.checkings.forEach { check ->
+                    newObject.forEach { item ->
+                        val res = check.invoke(item)
+                        if (res.result) {
+                            tx.setRollbackOnly()
+                            return@withTransaction ResultResponse.Error(HttpStatusCode(res.errorCode, ""), res.errorText)
+                        }
+                    }
+                }
+
+                params.defaults.forEach { def ->
+                    newObject.forEach { item ->
+                        val res = def.invoke(item)
+                        val property = res.first as KMutableProperty0<Any?>
+                        if (property.get().isAllNullOrEmpty()) {
+                            property.set(res.second)
+                        }
+                    }
+                }
+
+                val tblObj = getField("tbl_${currectObjClassName.lowercase()}") as EntityMetamodel<*, *, *>
+                val auProp = tblObj.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int>
+
+                val resultArray = arrayListOf<IntBaseDataImpl<T>>()
+                newObject.forEach { item ->
+                    val findedObj = getDataOne({ auProp eq item?.getField("id") as Int?})
+                    if (findedObj == null) {
+                        tx.setRollbackOnly()
+                        return@withTransaction ResultResponse.Error(HttpStatusCode.NotFound, "Not found $currectObjClassName with id ${newObject?.getField("id")}")
+                    }
+
+                    params.checkOnUpdate?.invoke(findedObj as T, item)
+                    params.onBeforeCompleted?.invoke(findedObj.getField("id").toString().toIntOrNull())
+                    findedObj.updateFromNullable(item as Any)
+                    val updated = findedObj.update()
+                    getObjectRepository(this)?.updateData(updated)
+                    resultArray.add(updated)
+                }
+
+                return@withTransaction ResultResponse.Success(HttpStatusCode.OK, resultArray)
+            } catch (e: Exception) {
+                tx.setRollbackOnly()
+                e.printStackTrace()
+                return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
+            }
+        }
+    }
+
     private fun getFileImageIcon(findedObj: IntBaseDataImpl<T>, pathName: String): File? {
         if (findedObj.getField("imageLink") == null) return null
         val currentFile = File(Paths.get("").absolutePathString() + "/files/$pathName/icon_${findedObj.getField("id")}.${findedObj.getField("imageFormat")}")

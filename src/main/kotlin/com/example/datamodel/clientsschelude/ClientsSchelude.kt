@@ -58,29 +58,24 @@ data class ClientsSchelude(
         params.checkings.add { CheckObj(it.scheludeDateStart.isNullOrEmpty(), 432, "Необходимо указать Дату/время начала работы") }
         params.checkings.add { CheckObj(it.scheludeDateEnd.isNullOrEmpty(), 433, "Необходимо указать Дату/время конца работы") }
         params.checkings.add { CheckObj(it.scheludeDateStart!! >= it.scheludeDateEnd!!, 434, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
-        params.checkings.add { CheckObj(repo_clientsschelude.getRepositoryData().find { fil -> fil.idClient == it.idClient && fil.scheludeDateStart == it.scheludeDateStart && fil.scheludeDateEnd == it.scheludeDateEnd } != null, 435, "Запись с передаваемыми параметрами уже присутствует в базе данных") }
-        params.checkings.add { CheckObj(!repo_clients.isHaveData(it.idClient), 436, "Не найден Client с id ${it.idClient}") }
+        params.checkings.add { CheckObj(repo_clientsschelude.getRepositoryData().find { fil -> fil.idClient == it.idClient && fil.scheludeDateStart == it.scheludeDateStart && fil.scheludeDateEnd == it.scheludeDateEnd } != null, 441, "Запись с передаваемыми параметрами уже присутствует в базе данных") }
+        params.checkings.add { CheckObj(!repo_clients.isHaveData(it.idClient), 442, "Не найден Client с id ${it.idClient}") }
 
         return super.post(call, params, serializer)
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<ClientsSchelude>): ResultResponse {
         params.checkings.add { CheckObj(it.idClient != null && !repo_clients.isHaveData(it.idClient), 431, "Не найден Client с id ${it.idClient}") }
+        params.checkings.add { CheckObj(it.scheludeDateStart != null && it.scheludeDateEnd != null && it.scheludeDateStart!! >= it.scheludeDateEnd!!, 432, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
 
         return super.update(call, params, serializer)
     }
 
-    suspend fun getFromClient(call: ApplicationCall): ResultResponse {
-        try {
-            val _idClient = call.parameters["idClient"]
+    override suspend fun updateMany(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<List<ClientsSchelude>>): ResultResponse {
+        params.checkings.add { CheckObj(it.idClient != null && !repo_clients.isHaveData(it.idClient), 431, "Не найден Client с id ${it.idClient}") }
+        params.checkings.add { CheckObj(it.scheludeDateStart != null && it.scheludeDateEnd != null && it.scheludeDateStart!! >= it.scheludeDateEnd!!, 432, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
 
-            if (_idClient == null || !_idClient.toIntPossible())
-                return ResultResponse.Error(HttpStatusCode(431, ""), "Необходимо указать id Клиента(idClient) записи")
-
-            return ResultResponse.Success(HttpStatusCode.OK, repo_clientsschelude.getRepositoryData().filter { fil -> fil.idClient == _idClient.toInt() })
-        } catch (e: Exception) {
-            return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
-        }
+        return super.updateMany(call, params, serializer)
     }
 }
 

@@ -8,6 +8,7 @@ import io.ktor.util.reflect.TypeInfo
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.core.readBytes
+import io.ktor.utils.io.readRemaining
 
 class StringConverter : ContentConverter {
     override suspend fun deserialize(
@@ -19,7 +20,7 @@ class StringConverter : ContentConverter {
         return bytes.toString(charset)
     }
 
-    override suspend fun serializeNullable(
+    override suspend fun serialize(
         contentType: ContentType,
         charset: Charset,
         typeInfo: TypeInfo,

@@ -12,6 +12,7 @@ import com.example.datamodel.services.Services
 import com.example.isNullOrEmpty
 import com.example.isNullOrZero
 import com.example.nullDatetime
+import com.example.printTextLog
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
@@ -100,8 +101,10 @@ data class Records(
         params.checkings.add { CheckObj(it.id_service != null && !Services.repo_services.isHaveData(it.id_service!!), 443, "Не существует Услуги с id ${it.id_service}") }
 
         params.checkOnUpdate = { old: Records, new: Records ->
-            if (new.status != null && old.status != new.status)
+            if (new.status != null && old.status != new.status) {
                 new.statusViewed = false
+                printTextLog("[Records - Update statusViewed]: $new")
+            }
         }
 
         return super.update(call, params, serializer)

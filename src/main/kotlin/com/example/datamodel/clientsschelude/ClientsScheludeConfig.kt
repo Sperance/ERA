@@ -40,9 +40,8 @@ fun Application.configureClientsSchelude() {
                 call.respond(ClientsSchelude().update(call, IntBaseDataImpl.RequestParams(), ClientsSchelude.serializer()))
             }
 
-            get {
-                if (call.parameters["idClient"] != null) call.respond(ClientsSchelude().getFromClient(call))
-                call.respond(HttpStatusCode.MethodNotAllowed)
+            post("/update/many") {
+                call.respond(ClientsSchelude().updateMany(call, IntBaseDataImpl.RequestParams(), ListSerializer(ClientsSchelude.serializer())))
             }
 
             post {

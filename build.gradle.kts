@@ -8,7 +8,7 @@ val h2_version: String by project
 
 plugins {
     kotlin("jvm") version "2.0.20"
-    id("io.ktor.plugin") version "2.3.12"
+    id("io.ktor.plugin") version "3.1.2"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.20"
     id("com.google.devtools.ksp") version "2.0.20-1.0.24"
     id("org.jetbrains.dokka") version "1.9.20"
@@ -56,7 +56,7 @@ tasks.withType<DokkaTask>().configureEach {
 val komapperVersion = "5.2.1"
 
 dependencies {
-    implementation("io.ktor:ktor-server-websockets:2.3.12")
+    implementation("io.ktor:ktor-server-websockets-jvm")
     implementation("io.ktor:ktor-server-core-jvm")
     implementation("io.ktor:ktor-server-cors-jvm")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm")
@@ -69,6 +69,7 @@ dependencies {
     implementation("io.ktor:ktor-server-sessions-jvm")
     implementation("io.ktor:ktor-server-rate-limit-jvm")
     implementation("io.ktor:ktor-server-status-pages-jvm")
+    implementation("io.ktor:ktor-server-forwarded-header-jvm")
     implementation("junit:junit:4.12")
     implementation("org.junit.jupiter:junit-jupiter:5.8.1")
     testImplementation("io.ktor:ktor-server-test-host-jvm")
