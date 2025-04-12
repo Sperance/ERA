@@ -204,6 +204,7 @@ abstract class IntBaseDataImpl <T> {
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
+                getObjectRepository(this)?.resetData()
                 ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
             }
         }
@@ -288,12 +289,13 @@ abstract class IntBaseDataImpl <T> {
 
                 findedObj.updateFromNullable(newObject!!)
                 val updated = findedObj.update()
-                getObjectRepository(this)?.updateData(updated)
+//                getObjectRepository(this)?.updateData(updated)
 
                 return@withTransaction ResultResponse.Success(HttpStatusCode.OK, updated)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
+                getObjectRepository(this)?.resetData()
                 return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
             }
         }
@@ -356,7 +358,7 @@ abstract class IntBaseDataImpl <T> {
                     params.onBeforeCompleted?.invoke(findedObj.getField("id").toString().toIntOrNull())
                     findedObj.updateFromNullable(item as Any)
                     val updated = findedObj.update()
-                    getObjectRepository(this)?.updateData(updated)
+//                    getObjectRepository(this)?.updateData(updated)
                     resultArray.add(updated)
                 }
 
@@ -364,13 +366,14 @@ abstract class IntBaseDataImpl <T> {
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
+                getObjectRepository(this)?.resetData()
                 return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
             }
         }
     }
 
     private fun getFileImageIcon(findedObj: IntBaseDataImpl<T>, pathName: String): File? {
-        if (findedObj.getField("imageLink") == null) return null
+        if (!findedObj.haveField("imageLink")) return null
         val currentFile = File(Paths.get("").absolutePathString() + "/files/$pathName/icon_${findedObj.getField("id")}.${findedObj.getField("imageFormat")}")
         if (!currentFile.exists()) return null
         return currentFile
@@ -435,11 +438,6 @@ abstract class IntBaseDataImpl <T> {
                     getObjectRepository(this)?.addData(finishObject as IntBaseDataImpl<T>)
                 }
 
-                if (finishObject == null) {
-                    tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(HttpStatusCode(430, "Perform Error"), "Не создан объект $currectObjClassName")
-                }
-
                 if (fileBytes != null) {
                     if (!finishObject!!.haveField("imageLink") || !finishObject!!.haveField("imageFormat")) {
                         tx.setRollbackOnly()
@@ -456,7 +454,7 @@ abstract class IntBaseDataImpl <T> {
                     params.onBeforeSaved?.invoke(finishObject!!)
                     finishObject = finishObject!!.update()
 
-                    getObjectRepository(this)?.updateData(finishObject as IntBaseDataImpl<T>)
+//                    getObjectRepository(this)?.updateData(finishObject as IntBaseDataImpl<T>)
                 } else {
                     params.onBeforeCompleted?.invoke(finishObject!!.getField("id").toString().toIntOrNull())
                     params.onBeforeSaved?.invoke(finishObject!!)
@@ -466,6 +464,7 @@ abstract class IntBaseDataImpl <T> {
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
+                getObjectRepository(this)?.resetData()
                 return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
             }
         }
