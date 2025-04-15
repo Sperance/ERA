@@ -41,6 +41,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
         if (obj == null) return
 
         withContext(Dispatchers.IO) {
+            if (repoData.isEmpty()) resetData()
             mutex.withLock {
                 val removed = repoData.removeIf { it.getField("id") == obj.getField("id") }
                 if (removed) {
@@ -55,6 +56,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
         if (id == null) return
 
         withContext(Dispatchers.IO) {
+            if (repoData.isEmpty()) resetData()
             mutex.withLock {
                 val removed = repoData.removeIf { it.getField("id").toString() == id.toString() }
                 if (removed) {
@@ -69,6 +71,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
         if (obj == null) return
 
         withContext(Dispatchers.IO) {
+            if (repoData.isEmpty()) resetData()
             mutex.withLock {
                 val existingObj = repoData.find { it.getField("id") == obj.getField("id") }
                 if (existingObj != null) {
@@ -88,6 +91,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
         if (obj == null) return
 
         withContext(Dispatchers.IO) {
+            if (repoData.isEmpty()) resetData()
             mutex.withLock {
                 if (repoData.none { it.getField("id") == obj.getField("id") }) {
                     repoData.add(obj)
@@ -115,6 +119,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
     open suspend fun isHaveData(id: Int?): Boolean {
         if (id == null) return false
         return withContext(Dispatchers.IO) {
+            if (repoData.isEmpty()) resetData()
             mutex.withLock {
                 repoData.any { it.getField("id") == id }
             }
@@ -124,8 +129,11 @@ open class BaseRepository<T : Any>(private val obj: T) {
     open suspend fun isHaveData(ids: Collection<Int>?): Boolean {
         if (ids == null) return false
         return withContext(Dispatchers.IO) {
+            if (repoData.isEmpty()) resetData()
             mutex.withLock {
-                repoData.count { ids.contains(it.getField("id")) } == ids.size
+                val result = repoData.count { ids.contains(it.getField("id")) }
+                printTextLog("COUNT RES: $result")
+                result == ids.size
             }
         }
     }
@@ -135,6 +143,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
         val toUpdate = mutableListOf<T>()
 
         withContext(Dispatchers.IO) {
+            if (repoData.isEmpty()) resetData()
             mutex.withLock {
                 repoData.filter { field.get(it) == index }.forEach { item ->
                     field.set(item, null)
@@ -155,6 +164,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
         val toUpdate = mutableListOf<T>()
 
         withContext(Dispatchers.IO) {
+            if (repoData.isEmpty()) resetData()
             mutex.withLock {
                 repoData.filter { field.get(it)?.contains(index) == true }.forEach { item ->
                     val newArray = field.get(item)?.toMutableList() ?: return@forEach
@@ -176,6 +186,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
         if (field == null) return emptyList()
 
         return withContext(Dispatchers.IO) {
+            if (repoData.isEmpty()) resetData()
             mutex.withLock {
                 repoData.filter {
                     val fieldValue = it.getField(field)?.toString()?.lowercase()
@@ -197,13 +208,11 @@ open class BaseRepository<T : Any>(private val obj: T) {
     }
 
     open suspend fun getRepositoryData(): Collection<T> {
-        if (repoData.isEmpty()) {
-            resetData()
-        }
+        if (repoData.isEmpty()) resetData()
 
         return withContext(Dispatchers.IO) {
             mutex.withLock {
-                repoData.toSet().sortedBy { it.getField("id").toString().toIntOrNull() ?: 0 }
+                repoData
             }
         }
     }

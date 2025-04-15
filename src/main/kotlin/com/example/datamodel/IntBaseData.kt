@@ -21,12 +21,8 @@ import com.example.updateFromNullable
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
-import io.ktor.http.content.streamProvider
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receiveMultipart
-import io.ktor.util.cio.writeChannel
-import io.ktor.utils.io.copyAndClose
-import io.ktor.utils.io.read
 import io.ktor.utils.io.toByteArray
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
@@ -34,7 +30,6 @@ import org.komapper.core.dsl.metamodel.EntityMetamodel
 import org.komapper.core.dsl.metamodel.PropertyMetamodel
 import org.komapper.core.dsl.metamodel.getAutoIncrementProperty
 import java.io.File
-import java.io.InputStream
 import java.nio.file.Paths
 import kotlin.io.path.absolutePathString
 import kotlin.reflect.KMutableProperty0
@@ -152,8 +147,7 @@ abstract class IntBaseDataImpl <T> {
         var isNeedFile = false
         val checkings: ArrayList<suspend (T) -> CheckObj> = ArrayList()
         val defaults: ArrayList<suspend (T) -> Pair<KMutableProperty0<*>, Any?>> = ArrayList()
-        var onBeforeCompleted: (suspend (Int?) -> Any)? = null
-        var onBeforeSaved: (suspend (T) -> Any)? = null
+        var onBeforeCompleted: (suspend (T?) -> Any)? = null
         var checkOnUpdate: ((T, T) -> Any)? = null
     }
 
@@ -193,7 +187,7 @@ abstract class IntBaseDataImpl <T> {
                     return@withTransaction ResultResponse.Error(HttpStatusCode.NotFound, "Not found $currectObjClassName with id $id")
                 }
 
-                params.onBeforeCompleted?.invoke(id.toInt())
+                params.onBeforeCompleted?.invoke(findedObj as T)
 
                 getFileImageIcon(findedObj, currectObjClassName.lowercase())?.delete()
                 findedObj.delete()
@@ -280,22 +274,15 @@ abstract class IntBaseDataImpl <T> {
                 }
 
                 params.checkOnUpdate?.invoke(findedObj as T, newObject!!)
-                params.onBeforeCompleted?.invoke(findedObj.getField("id").toString().toIntOrNull())
-
-                if (newObject!!.haveField("salt")) {
-                    newObject!!.putField("salt", findedObj.getField("salt"))
-                }
-                params.onBeforeSaved?.invoke(newObject as T)
 
                 findedObj.updateFromNullable(newObject!!)
                 val updated = findedObj.update()
-//                getObjectRepository(this)?.updateData(updated)
+                getObjectRepository(this)?.updateData(updated)
 
                 return@withTransaction ResultResponse.Success(HttpStatusCode.OK, updated)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
-                getObjectRepository(this)?.resetData()
                 return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
             }
         }
@@ -351,14 +338,14 @@ abstract class IntBaseDataImpl <T> {
                     val findedObj = getDataOne({ auProp eq item?.getField("id") as Int?})
                     if (findedObj == null) {
                         tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(HttpStatusCode.NotFound, "Not found $currectObjClassName with id ${newObject?.getField("id")}")
+                        return@withTransaction ResultResponse.Error(HttpStatusCode.NotFound, "Not found $currectObjClassName with id ${newObject.getField("id")}")
                     }
 
                     params.checkOnUpdate?.invoke(findedObj as T, item)
-                    params.onBeforeCompleted?.invoke(findedObj.getField("id").toString().toIntOrNull())
+
                     findedObj.updateFromNullable(item as Any)
                     val updated = findedObj.update()
-//                    getObjectRepository(this)?.updateData(updated)
+                    getObjectRepository(this)?.updateData(updated)
                     resultArray.add(updated)
                 }
 
@@ -366,7 +353,6 @@ abstract class IntBaseDataImpl <T> {
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
-                getObjectRepository(this)?.resetData()
                 return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
             }
         }
@@ -435,6 +421,10 @@ abstract class IntBaseDataImpl <T> {
 
                 newObject.forEach { item ->
                     finishObject = item?.create(null)
+                    if (finishObject == null) {
+                        tx.setRollbackOnly()
+                        return@withTransaction ResultResponse.Error(HttpStatusCode(421, "Perform Error"), "Не удалось создать объект $item")
+                    }
                     getObjectRepository(this)?.addData(finishObject as IntBaseDataImpl<T>)
                 }
 
@@ -450,14 +440,10 @@ abstract class IntBaseDataImpl <T> {
                     finishObject!!.putField("imageLink", "${BASE_PATH}files/${currectObjClassName.lowercase()}/" + imageFile.name)
                     finishObject!!.putField("imageFormat", imageFile.extension)
 
-                    params.onBeforeCompleted?.invoke(finishObject!!.getField("id").toString().toIntOrNull())
-                    params.onBeforeSaved?.invoke(finishObject!!)
+                    params.onBeforeCompleted?.invoke(finishObject!!)
                     finishObject = finishObject!!.update()
-
-//                    getObjectRepository(this)?.updateData(finishObject as IntBaseDataImpl<T>)
                 } else {
-                    params.onBeforeCompleted?.invoke(finishObject!!.getField("id").toString().toIntOrNull())
-                    params.onBeforeSaved?.invoke(finishObject!!)
+                    params.onBeforeCompleted?.invoke(finishObject!!)
                 }
 
                 return@withTransaction ResultResponse.Success(HttpStatusCode.Created, finishObject as Any)

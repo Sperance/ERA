@@ -22,6 +22,9 @@ import com.example.isNullOrZero
 import com.example.minus
 import com.example.nullDatetime
 import com.example.helpers.GMailSender
+import com.example.helpers.getField
+import com.example.helpers.haveField
+import com.example.helpers.putField
 import com.example.plus
 import com.example.printTextLog
 import com.example.security.generateSalt
@@ -289,20 +292,20 @@ data class Clients(
         params.defaults.add { it::arrayTypeWork to arrayOf<Int>() }
         params.defaults.add { it::salt to generateSalt() }
 
-        params.onBeforeSaved = { newObj ->
-            newObj.setNewPassword(newObj.password!!)
+        params.onBeforeCompleted = { obj ->
+            obj!!.setNewPassword(obj.password!!)
         }
 
         return super.post(call, params, serializer)
     }
 
     override suspend fun delete(call: ApplicationCall, params: RequestParams<Clients>): ResultResponse {
-        params.onBeforeCompleted = { index ->
-            Records.repo_records.clearLinkEqual(Records::id_client_to, index)
-            Records.repo_records.clearLinkEqual(Records::id_client_from, index)
-            ClientsSchelude.repo_clientsschelude.clearLinkEqual(ClientsSchelude::idClient, index)
-            FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_client_to, index)
-            FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_client_from, index)
+        params.onBeforeCompleted = { obj ->
+            Records.repo_records.clearLinkEqual(Records::id_client_to, obj?.id)
+            Records.repo_records.clearLinkEqual(Records::id_client_from, obj?.id)
+            ClientsSchelude.repo_clientsschelude.clearLinkEqual(ClientsSchelude::idClient, obj?.id)
+            FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_client_to, obj?.id)
+            FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_client_from, obj?.id)
         }
 
         return super.delete(call, params)
@@ -310,11 +313,14 @@ data class Clients(
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<Clients>): ResultResponse {
         params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), 441, "Не найдена Должность с id ${it.position}") }
-        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), 442, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
+        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), 442, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()} ALL: ${Catalogs.repo_catalogs.getRepositoryData().joinToString("\n")}") }
         params.checkings.add { CheckObj(it.salt != null, 443, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
 
-        params.onBeforeSaved = { newObj ->
-            newObj.setNewPassword(newObj.password!!)
+        params.checkOnUpdate = { finded, new ->
+            if (new.haveField("salt") && finded.haveField("salt")) {
+                new.putField("salt", finded.getField("salt"))
+            }
+            if (new.password != null) new.setNewPassword(new.password!!)
         }
 
         return super.update(call, params, serializer)

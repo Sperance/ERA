@@ -63,10 +63,10 @@ data class Catalogs(
     }
 
     override suspend fun delete(call: ApplicationCall, params: RequestParams<Catalogs>): ResultResponse {
-        params.onBeforeCompleted = { deletedId ->
-            Clients.repo_clients.clearLinkEqual(Clients::position, deletedId)
-            Clients.repo_clients.clearLinkEqualArray(Clients::arrayTypeWork, deletedId)
-            Services.repo_services.clearLinkEqual(Services::category, deletedId)
+        params.onBeforeCompleted = { obj ->
+            Clients.repo_clients.clearLinkEqual(Clients::position, obj?.id)
+            Clients.repo_clients.clearLinkEqualArray(Clients::arrayTypeWork, obj?.id)
+            Services.repo_services.clearLinkEqual(Services::category, obj?.id)
         }
 
         return super.delete(call, params)

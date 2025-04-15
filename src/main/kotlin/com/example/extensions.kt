@@ -184,20 +184,12 @@ fun isSafeCommand(command: String): String? {
     val unsafePatterns = listOf(
         "rm -rf", "wget", "chmod 777", "curl", "gzip", "gunzip", "bzip2", "unzip",
         "tar -x", "tar -xf", "tar -czf", "tar -xzf", "tar -cjf", "tar -xjf", "tar -cJf", "tar -xJf",
-        "bash", "python", "perl", "ruby", "node", "java", "ruby",
-        "find", "grep", "xargs", "echo", "more", "less", "head", "tail",
-        "paste", "sort", "uniq","diff", "comm", "join", "paste", "split",
-        "expand", "unexpand", "fold", "base64", "uuencode",
-        "uudecode", "xxd", "hexdump", "strings", "stat",
-        "touch", "mkdir", "rmdir", "chown", "chgrp", "chmod",
-        "passwd", "sudo", "useradd", "userdel", "groupadd", "groupdel", "usermod",
-        "groupmod", "crontab", "systemctl", "init", "reboot", "shutdown",
-        "halt", "poweroff", "kill", "pkill", "killall", "htop", "pgrep",
-        "pstree", "nice", "renice", "ulimit", "restore.php", "dns", "www.", ".org", "/geoserver", "/script",
+        "pstree", "nice", "renice", "ulimit", "dns", "www.", ".org", "/geoserver", "/script",
         "http:", "/api.", ".php", "-stdin", "/json", ".com:443", ".asp", "-bin", ".env", ".pn:443",
-        "/robots", ".git", "/login", "goform", "set_LimitClient_cfg", "_cfg", "/version",
+        "/robots", ".git", "/login", "goform", "_cfg", "/version",
         "/versions", ".zip", ".html", "/gateway", "/login", "/hello.", "/formLogin", "/admin",
         "/actuator", "/health", "/css", "ab2g", "ab2h", "ReportServer", ".rar",
-        "/webui", "/chec", "/powershell", "/sitemap", "/v1", ".tar", ".gz")
+        "/webui", "/chec", "/powershell", "/sitemap", "/v1", ".tar", ".gz", "/metadata",
+        "/web/", "/doc/", ".7z", ".xml", "debug", ".cgi", "pro.")
     return unsafePatterns.find { pat -> command.trim().lowercase().contains(pat.trim().lowercase()) }
 }

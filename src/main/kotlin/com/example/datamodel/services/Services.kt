@@ -83,9 +83,9 @@ data class Services(
     }
 
     override suspend fun delete(call: ApplicationCall, params: RequestParams<Services>): ResultResponse {
-        params.onBeforeCompleted = { index ->
-            Records.repo_records.clearLinkEqual(Records::id_service, index)
-            Stockfiles.repo_stockfiles.clearLinkEqual(Stockfiles::service, index)
+        params.onBeforeCompleted = { obj ->
+            Records.repo_records.clearLinkEqual(Records::id_service, obj?.id)
+            Stockfiles.repo_stockfiles.clearLinkEqual(Stockfiles::service, obj?.id)
         }
 
         return super.delete(call, params)
