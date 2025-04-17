@@ -52,6 +52,12 @@ data class ClientsSchelude(
     }
 
     override fun getBaseId() = id
+    override fun baseParams(): RequestParams<ClientsSchelude> {
+        val params = RequestParams<ClientsSchelude>()
+        params.checkings.add { CheckObj(it.idClient != null && !repo_clients.isHaveData(it.idClient), 431, "Не найден Client с id ${it.idClient}") }
+        params.checkings.add { CheckObj(it.scheludeDateStart != null && it.scheludeDateEnd != null && it.scheludeDateStart!! >= it.scheludeDateEnd!!, 432, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
+        return params
+    }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<List<ClientsSchelude>>): ResultResponse {
         params.checkings.add { CheckObj(it.idClient.isNullOrZero(), 431, "Необходимо указать id Клиента для графика работы") }
@@ -62,20 +68,6 @@ data class ClientsSchelude(
         params.checkings.add { CheckObj(!repo_clients.isHaveData(it.idClient), 442, "Не найден Client с id ${it.idClient}") }
 
         return super.post(call, params, serializer)
-    }
-
-    override suspend fun update(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<ClientsSchelude>): ResultResponse {
-        params.checkings.add { CheckObj(it.idClient != null && !repo_clients.isHaveData(it.idClient), 431, "Не найден Client с id ${it.idClient}") }
-        params.checkings.add { CheckObj(it.scheludeDateStart != null && it.scheludeDateEnd != null && it.scheludeDateStart!! >= it.scheludeDateEnd!!, 432, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
-
-        return super.update(call, params, serializer)
-    }
-
-    override suspend fun updateMany(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<List<ClientsSchelude>>): ResultResponse {
-        params.checkings.add { CheckObj(it.idClient != null && !repo_clients.isHaveData(it.idClient), 431, "Не найден Client с id ${it.idClient}") }
-        params.checkings.add { CheckObj(it.scheludeDateStart != null && it.scheludeDateEnd != null && it.scheludeDateStart!! >= it.scheludeDateEnd!!, 432, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
-
-        return super.updateMany(call, params, serializer)
     }
 }
 

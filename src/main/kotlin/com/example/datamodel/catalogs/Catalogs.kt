@@ -54,6 +54,11 @@ data class Catalogs(
     }
 
     override fun getBaseId() = id
+    override fun baseParams(): RequestParams<Catalogs> {
+        val params = RequestParams<Catalogs>()
+        params.checkings.add { CheckObj(repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null, 440, "В БД уже присутствует категория '${it.category}' со значнеием '${it.value}'") }
+        return params
+    }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Catalogs>, serializer: KSerializer<List<Catalogs>>): ResultResponse {
         params.checkings.add { CheckObj(it.type.isNullOrEmpty(), 430, "Необходимо указать Тип категории(type) для элемента") }
@@ -72,31 +77,5 @@ data class Catalogs(
         }
 
         return super.delete(call, params)
-    }
-
-    suspend fun getFromType(call: ApplicationCall): ResultResponse {
-        try {
-            val paramType = call.parameters["type"]
-
-            if (paramType.isNullOrEmpty())
-                return ResultResponse.Error(HttpStatusCode(431, ""), "Необходимо указать Тип работы(type) записи")
-
-            return ResultResponse.Success(HttpStatusCode.OK, repo_catalogs.getRepositoryData().filter { it.type?.trim()?.lowercase() == paramType.trim().lowercase() })
-        } catch (e: Exception) {
-            return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
-        }
-    }
-
-    suspend fun getFromCategory(call: ApplicationCall): ResultResponse {
-        try {
-            val paramCategory = call.parameters["category"]
-
-            if (paramCategory.isNullOrEmpty())
-                return ResultResponse.Error(HttpStatusCode(431, ""), "Необходимо указать Категорию(category) записи")
-
-            return ResultResponse.Success(HttpStatusCode.OK, repo_catalogs.getRepositoryData().filter { it.category?.trim()?.lowercase() == paramCategory.trim().lowercase() })
-        } catch (e: Exception) {
-            return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
-        }
     }
 }

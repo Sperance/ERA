@@ -36,12 +36,6 @@ fun Application.configureCatalogs() {
                 call.respond(Catalogs().getFilter(call, IntBaseDataImpl.RequestParams()))
             }
 
-            get {
-                if (call.parameters["type"] != null) call.respond(Catalogs().getFromType(call))
-                else if (call.parameters["category"] != null) call.respond(Catalogs().getFromCategory(call))
-                else call.respond(HttpStatusCode.MethodNotAllowed)
-            }
-
             post("/update") {
                 call.respond(Catalogs().update(call, IntBaseDataImpl.RequestParams(), Catalogs.serializer()))
             }

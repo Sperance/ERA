@@ -4,6 +4,8 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.plugins.statuspages.StatusPages
+import io.ktor.server.request.httpMethod
+import io.ktor.server.request.path
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 
@@ -12,6 +14,15 @@ fun Application.configureStatusPages() {
 
         exception<Throwable> { call, status ->
             call.respondText("500 Error: ${status.message}", status = HttpStatusCode.InternalServerError)
+        }
+        
+        status(HttpStatusCode.NotFound) { call, status ->
+            call.respond(status, mapOf(
+                "code" to HttpStatusCode.NotFound.value,
+                "error" to "Not Found",
+                "message" to "Указанного запроса '${call.request.httpMethod.value}::${call.request.path()}' не существует. Пожалуйста, проверьте параметры еще раз"
+            )
+            )
         }
 
         status(HttpStatusCode.TooManyRequests) { call, status ->

@@ -75,6 +75,13 @@ data class Records(
     }
 
     override fun getBaseId() = id
+    override fun baseParams(): RequestParams<Records> {
+        val params = RequestParams<Records>()
+        params.checkings.add { CheckObj(it.id_client_from != null && !Clients.repo_clients.isHaveData(it.id_client_from!!), 441, "Не существует Клиента с id ${it.id_client_from}") }
+        params.checkings.add { CheckObj(it.id_client_to != null && !Clients.repo_clients.isHaveData(it.id_client_to!!), 442, "Не существует Клиента с id ${it.id_client_to}") }
+        params.checkings.add { CheckObj(it.id_service != null && !Services.repo_services.isHaveData(it.id_service!!), 443, "Не существует Услуги с id ${it.id_service}") }
+        return params
+    }
 
     suspend fun getFilledRecords() : ArrayList<Recordsdata> {
         val listResults = ArrayList<Recordsdata>()
@@ -98,10 +105,6 @@ data class Records(
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Records>, serializer: KSerializer<Records>): ResultResponse {
-        params.checkings.add { CheckObj(it.id_client_from != null && !Clients.repo_clients.isHaveData(it.id_client_from!!), 441, "Не существует Клиента с id ${it.id_client_from}") }
-        params.checkings.add { CheckObj(it.id_client_to != null && !Clients.repo_clients.isHaveData(it.id_client_to!!), 442, "Не существует Клиента с id ${it.id_client_to}") }
-        params.checkings.add { CheckObj(it.id_service != null && !Services.repo_services.isHaveData(it.id_service!!), 443, "Не существует Услуги с id ${it.id_service}") }
-
         params.checkOnUpdate = { old: Records, new: Records ->
             if (new.status != null && old.status != new.status) {
                 new.statusViewed = false

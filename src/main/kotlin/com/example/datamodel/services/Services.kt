@@ -65,6 +65,11 @@ data class Services(
     }
 
     override fun getBaseId() = id
+    override fun baseParams(): RequestParams<Services> {
+        val params = RequestParams<Services>()
+        params.checkings.add { CheckObj(it.category != null && !Catalogs.repo_catalogs.isHaveData(it.category), 441, "Не найдена Категория с id ${it.category}") }
+        return params
+    }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Services>, serializer: KSerializer<List<Services>>): ResultResponse {
         params.checkings.add { CheckObj(it.name.isNullOrEmpty(), 431, "Необходимо указать Наименование услуги") }
@@ -76,12 +81,6 @@ data class Services(
         params.defaults.add { it::gender to -1 }
 
         return super.post(call, params, serializer)
-    }
-
-    override suspend fun update(call: ApplicationCall, params: RequestParams<Services>, serializer: KSerializer<Services>): ResultResponse {
-        params.checkings.add { CheckObj(it.category != null && !Catalogs.repo_catalogs.isHaveData(it.category), 441, "Не найдена Категория с id ${it.category}") }
-
-        return super.update(call, params, serializer)
     }
 
     override suspend fun delete(call: ApplicationCall, params: RequestParams<Services>): ResultResponse {

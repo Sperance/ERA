@@ -57,6 +57,12 @@ data class FeedBacks(
     }
 
     override fun getBaseId() = id
+    override fun baseParams(): RequestParams<FeedBacks> {
+        val params = RequestParams<FeedBacks>()
+        params.checkings.add { CheckObj(it.id_client_from != null && !Clients.repo_clients.isHaveData(it.id_client_from!!), 441, "Не существует Клиента с id ${it.id_client_from}") }
+        params.checkings.add { CheckObj(it.id_client_to != null && !Clients.repo_clients.isHaveData(it.id_client_to!!), 442, "Не существует Клиента с id ${it.id_client_to}") }
+        return params
+    }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<FeedBacks>, serializer: KSerializer<List<FeedBacks>>): ResultResponse {
         params.checkings.add { CheckObj(it.text.isNullOrEmpty(), 431, "Необходимо указать Текст отзыва") }
@@ -71,13 +77,6 @@ data class FeedBacks(
         params.defaults.add { it::value to 0.toByte() }
 
         return super.post(call, params, serializer)
-    }
-
-    override suspend fun update(call: ApplicationCall, params: RequestParams<FeedBacks>, serializer: KSerializer<FeedBacks>): ResultResponse {
-        params.checkings.add { CheckObj(it.id_client_from != null && !Clients.repo_clients.isHaveData(it.id_client_from!!), 441, "Не существует Клиента с id ${it.id_client_from}") }
-        params.checkings.add { CheckObj(it.id_client_to != null && !Clients.repo_clients.isHaveData(it.id_client_to!!), 442, "Не существует Клиента с id ${it.id_client_to}") }
-
-        return super.update(call, params, serializer)
     }
 }
 

@@ -1,16 +1,16 @@
 package com.example.datamodel.defaults
 
+import com.example.currectDatetime
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.clients.Clients
 import com.example.helpers.createBatch
 import com.example.helpers.isEmpty
 import com.example.security.generateSalt
-import com.example.security.hashPassword
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.LocalDateTime
 
 fun defaultsConfig() = runBlocking {
-    delay(2000)
     defaultCatalogs()
     defaultClients()
 }
@@ -26,6 +26,7 @@ private suspend fun defaultClients() {
                 salt = generateSalt()
                 email = "adm@adm.ru"
                 clientType = "admin"
+                dateWorkIn = LocalDateTime.currectDatetime()
                 setNewPassword("Password123.")
             },
             Clients().apply {
@@ -35,6 +36,7 @@ private suspend fun defaultClients() {
                 phone = "+79779999999"
                 salt = generateSalt()
                 email = "mde@mde.ru"
+                dateWorkIn = LocalDateTime.currectDatetime()
                 setNewPassword("32543254")
             })
         )

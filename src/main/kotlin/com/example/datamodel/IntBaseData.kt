@@ -44,6 +44,7 @@ sealed class ResultResponse {
 abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
 
     abstract fun getBaseId(): Int
+    open fun baseParams(): RequestParams<T> { return RequestParams() }
 
     open fun getCommentArray(): String {
         var textFields = ""
@@ -186,7 +187,7 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
                 val findedObj = getDataOne({ auProp eq id.toInt()})
                 if (findedObj == null) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(HttpStatusCode.NotFound, "Not found $currectObjClassName with id $id")
+                    return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Not found $currectObjClassName with id $id")
                 }
 
                 params.onBeforeCompleted?.invoke(findedObj as T)
@@ -246,6 +247,14 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
                     }
                 }
 
+                baseParams().checkings.forEach { check ->
+                    val res = check.invoke(newObject!!)
+                    if (res.result) {
+                        tx.setRollbackOnly()
+                        return@withTransaction ResultResponse.Error(HttpStatusCode(res.errorCode, ""), res.errorText)
+                    }
+                }
+
                 params.defaults.forEach { def ->
                     val res = def.invoke(newObject!!)
                     val property = res.first as KMutableProperty0<Any?>
@@ -259,7 +268,7 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
                 val findedObj = getDataOne({ auProp eq newObject?.getBaseId() })
                 if (findedObj == null) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(HttpStatusCode.NotFound, "Not found $currectObjClassName with id ${newObject?.getBaseId()}")
+                    return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Not found $currectObjClassName with id ${newObject?.getBaseId()}")
                 }
 
                 if (fileBytes != null) {
@@ -317,6 +326,16 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
                     }
                 }
 
+                baseParams().checkings.forEach { check ->
+                    newObject.forEach { item ->
+                        val res = check.invoke(item)
+                        if (res.result) {
+                            tx.setRollbackOnly()
+                            return@withTransaction ResultResponse.Error(HttpStatusCode(res.errorCode, ""), res.errorText)
+                        }
+                    }
+                }
+
                 params.defaults.forEach { def ->
                     newObject.forEach { item ->
                         val res = def.invoke(item)
@@ -335,7 +354,7 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
                     val findedObj = getDataOne({ auProp eq item.getBaseId() as Int?})
                     if (findedObj == null) {
                         tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(HttpStatusCode.NotFound, "Not found $currectObjClassName with id ${item.getBaseId()}")
+                        return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Not found $currectObjClassName with id ${item.getBaseId()}")
                     }
 
                     params.checkOnUpdate?.invoke(findedObj as T, item)
@@ -391,7 +410,18 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
                     tx.setRollbackOnly()
                     return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, "Для объекта $currectObjClassName ожидался файл, который не был получен")
                 }
+
                 params.checkings.forEach { check ->
+                    newObject.forEach { item ->
+                        val res = check.invoke(item)
+                        if (res.result) {
+                            tx.setRollbackOnly()
+                            return@withTransaction ResultResponse.Error(HttpStatusCode(res.errorCode, ""), res.errorText)
+                        }
+                    }
+                }
+
+                baseParams().checkings.forEach { check ->
                     newObject.forEach { item ->
                         val res = check.invoke(item)
                         if (res.result) {

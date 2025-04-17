@@ -109,6 +109,13 @@ data class Clients(
     }
 
     override fun getBaseId() = id
+    override fun baseParams(): RequestParams<Clients> {
+        val params = RequestParams<Clients>()
+        params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), 441, "Не найдена Должность с id ${it.position}") }
+        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), 442, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()} ALL: ${Catalogs.repo_catalogs.getRepositoryData().joinToString("\n")}") }
+        params.checkings.add { CheckObj(it.salt != null, 443, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
+        return params
+    }
 
     private fun generateEmailRecoveryCode() : String {
         val randomSuffix = Random.nextInt(10000, 99999)
@@ -205,7 +212,7 @@ data class Clients(
 
             val client = repo_clients.getRepositoryData().find { it.login == user.login && verifyPassword(it.password, it.salt, user.password) }
             if (client == null)
-                return ResultResponse.Error(HttpStatusCode.NotFound, "Не найден пользователь с указанным Логином и Паролем")
+                return ResultResponse.Error(HttpStatusCode.BadRequest, "Не найден пользователь с указанным Логином и Паролем")
 
             ServerHistory.addRecord(11, "Авторизация пользователя ${client.id}", client.toStringLow())
             return ResultResponse.Success(HttpStatusCode.OK, client)
@@ -316,17 +323,12 @@ data class Clients(
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<Clients>): ResultResponse {
-        params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), 441, "Не найдена Должность с id ${it.position}") }
-        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), 442, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()} ALL: ${Catalogs.repo_catalogs.getRepositoryData().joinToString("\n")}") }
-        params.checkings.add { CheckObj(it.salt != null, 443, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
-
         params.checkOnUpdate = { finded, new ->
             if (new.haveField("salt") && finded.haveField("salt")) {
                 new.putField("salt", finded.getField("salt"))
             }
             if (new.password != null) new.setNewPassword(new.password!!)
         }
-
         return super.update(call, params, serializer)
     }
 

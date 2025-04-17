@@ -125,31 +125,6 @@ fun Long.toFormatDateTime() : String {
     return SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(Date(this))
 }
 
-fun Double.getPercent(value: Double) : Double {
-    return ((this / 100.0) * value).to1Digits()
-}
-
-fun Double.addPercent(value: Double) : Double {
-    return (this + getPercent(value)).to1Digits()
-}
-
-fun Double.removePercent(value: Double) : Double {
-    return (this - getPercent(value)).to1Digits()
-}
-
-fun Double.to1Digits() = String.format("%.1f", this).replace(",", ".").toDouble()
-fun Double.to0Digits() = String.format("%.0f", this).replace(",", ".").toDouble()
-
-inline fun <reified T> Any.listFields() : ArrayList<T> {
-    val array = ArrayList<T>()
-    this::class.java.declaredFields.forEach {
-        it.isAccessible = true
-        val itField = it.get(this)
-        if (itField is T) array.add(itField as T)
-    }
-    return array
-}
-
 fun Field?.getCommentFieldAnnotation(): String {
     val ann = this?.getAnnotation(CommentField::class.java)
     if (ann == null) return ""
@@ -161,8 +136,6 @@ fun isSafeCommand(command: String): String? {
     if (command.trim() == "/") return "/"
     if (command.trim() == "//") return "//"
     val unsafePatterns = listOf(
-        "rm -rf", "wget", "chmod 777", "curl", "gzip", "gunzip", "bzip2", "unzip",
-        "tar -x", "tar -xf", "tar -czf", "tar -xzf", "tar -cjf", "tar -xjf", "tar -cJf", "tar -xJf",
         "pstree", "nice", "renice", "ulimit", "dns", "www.", ".org", "/geoserver", "/script",
         "http:", "/api.", ".php", "-stdin", "/json", ".com:443", ".asp", "-bin", ".env", ".pn:443",
         "/robots", ".git", "/login", "goform", "_cfg", "/version",
@@ -172,6 +145,6 @@ fun isSafeCommand(command: String): String? {
         "/web/", "/doc/", ".7z", ".xml", "debug", ".cgi", "pro.", ".js", "/x.", "/owa/",
         "/query", "/resolve", "/GponForm/", "/diag_", ".application", "/ecp/", "/microsoft",
         "/aaa", "/aab", "/index", ".ico", "/device", "/onvif", "web.", ".in:", "config",
-        "/t4", "/teorema5", "/HNAP1")
+        "/t4", "/teorema5", "/HNAP1", "-", "_", "*", "#", "!")
     return unsafePatterns.find { pat -> command.trim().lowercase().contains(pat.trim().lowercase()) }
 }
