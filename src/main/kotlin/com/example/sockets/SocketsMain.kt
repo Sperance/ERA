@@ -7,6 +7,8 @@ import io.ktor.server.logging.toLogString
 import io.ktor.server.request.header
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.pingPeriod
+import io.ktor.server.websocket.timeout
 import io.ktor.server.websocket.webSocket
 import io.ktor.utils.io.CancellationException
 import io.ktor.websocket.Frame
@@ -17,13 +19,14 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.seconds
 
 val socketsRecords = WebSocketConnections()
 
 fun Application.configureSockets() {
     install(WebSockets) {
-        pingPeriodMillis = 15_000
-        timeoutMillis = 15_000
+        pingPeriod = 10.seconds
+        timeout = 10.seconds
         maxFrameSize = Long.MAX_VALUE
         masking = false
     }
@@ -52,6 +55,7 @@ fun Application.configureSockets() {
                 println("Error occurred: ${e.message}")
             } finally {
                 socketsRecords.removeConnection(secKey)
+                close()
                 println("WebSocket connection closed")
             }
         }

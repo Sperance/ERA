@@ -6,10 +6,7 @@ import com.example.datamodel.BaseRepository
 import com.example.datamodel.IntBaseDataImpl
 import com.example.datamodel.ResultResponse
 import com.example.datamodel.clients.Clients
-import com.example.helpers.getData
 import com.example.isNullOrZero
-import com.example.toIntPossible
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -59,19 +56,7 @@ data class FeedBacks(
         val repo_feedbacks = BaseRepository(FeedBacks())
     }
 
-    suspend fun getFromId(call: ApplicationCall) : ResultResponse {
-        try {
-            val _clientId = call.parameters["clientId"]
-
-            if (_clientId == null || !_clientId.toIntPossible())
-                return ResultResponse.Error(HttpStatusCode(431, ""), "Incorrect parameter 'clientId'($_clientId). This parameter must be 'Int' type")
-
-            val id = _clientId.toInt()
-            return ResultResponse.Success(HttpStatusCode.OK, getData({ tbl_feedbacks.id_client_to eq id }))
-        } catch (e: Exception) {
-            return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
-        }
-    }
+    override fun getBaseId() = id
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<FeedBacks>, serializer: KSerializer<List<FeedBacks>>): ResultResponse {
         params.checkings.add { CheckObj(it.text.isNullOrEmpty(), 431, "Необходимо указать Текст отзыва") }

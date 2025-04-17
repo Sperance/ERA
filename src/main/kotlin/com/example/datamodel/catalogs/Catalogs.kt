@@ -53,6 +53,8 @@ data class Catalogs(
         val repo_catalogs = BaseRepository(Catalogs())
     }
 
+    override fun getBaseId() = id
+
     override suspend fun post(call: ApplicationCall, params: RequestParams<Catalogs>, serializer: KSerializer<List<Catalogs>>): ResultResponse {
         params.checkings.add { CheckObj(it.type.isNullOrEmpty(), 430, "Необходимо указать Тип категории(type) для элемента") }
         params.checkings.add { CheckObj(it.category.isNullOrEmpty(), 431, "Необходимо указать Категорию(category) для элемента") }

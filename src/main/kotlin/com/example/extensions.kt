@@ -6,6 +6,8 @@ import com.example.datamodel.ResultResponse
 import com.example.helpers.getField
 import com.example.helpers.putField
 import com.example.helpers.CommentField
+import com.example.helpers.haveField
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.PipelineCall
 import io.ktor.server.logging.toLogString
@@ -78,30 +80,6 @@ suspend fun ApplicationCall.respond(response: ResultResponse) {
         is ResultResponse.Error -> respond(status = response.status, message = response.message)
         is ResultResponse.Success -> respond(status = response.status, message = response.data)
     }
-}
-
-fun calculateDifference(start: LocalDateTime?, end: LocalDateTime?): String {
-
-    if (start == null || end == null) return ""
-
-    // Вычисляем продолжительность между двумя датами
-    val duration = java.time.Duration.between(start.toJavaLocalDateTime(), end.toJavaLocalDateTime())
-
-    var resultString = ""
-    // Получаем количество дней, часов, минут и секунд
-    val days = duration.toDays()
-    if (days > 0) resultString += "${days}d "
-    val hours = duration.toHours() % 24
-    if (hours > 0) resultString += "${hours}h "
-    val minutes = duration.toMinutes() % 60
-    if (minutes > 0) resultString += "${minutes}m "
-    val seconds = duration.seconds % 60
-    if (seconds > 0) resultString += "${seconds}s "
-    val millis = duration.toMillis() % 1000
-    if (millis > 0) resultString += "${millis}ms"
-
-    // Формируем строку с результатом
-    return resultString
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -179,6 +157,7 @@ fun Field?.getCommentFieldAnnotation(): String {
 }
 
 fun isSafeCommand(command: String): String? {
+    if (command.trim().isBlank()) return "<blank>"
     if (command.trim() == "/") return "/"
     if (command.trim() == "//") return "//"
     val unsafePatterns = listOf(
@@ -190,6 +169,9 @@ fun isSafeCommand(command: String): String? {
         "/versions", ".zip", ".html", "/gateway", "/login", "/hello.", "/formLogin", "/admin",
         "/actuator", "/health", "/css", "ab2g", "ab2h", "ReportServer", ".rar",
         "/webui", "/chec", "/powershell", "/sitemap", "/v1", ".tar", ".gz", "/metadata",
-        "/web/", "/doc/", ".7z", ".xml", "debug", ".cgi", "pro.")
+        "/web/", "/doc/", ".7z", ".xml", "debug", ".cgi", "pro.", ".js", "/x.", "/owa/",
+        "/query", "/resolve", "/GponForm/", "/diag_", ".application", "/ecp/", "/microsoft",
+        "/aaa", "/aab", "/index", ".ico", "/device", "/onvif", "web.", ".in:", "config",
+        "/t4", "/teorema5", "/HNAP1")
     return unsafePatterns.find { pat -> command.trim().lowercase().contains(pat.trim().lowercase()) }
 }

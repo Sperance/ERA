@@ -26,7 +26,6 @@ import com.example.helpers.getField
 import com.example.helpers.haveField
 import com.example.helpers.putField
 import com.example.plus
-import com.example.printTextLog
 import com.example.security.generateSalt
 import com.example.security.hashPassword
 import com.example.security.verifyPassword
@@ -35,12 +34,15 @@ import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
+import io.r2dbc.spi.R2dbcType
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import org.komapper.annotation.*
 import org.komapper.core.dsl.Meta
+import org.komapper.core.type.ClobString
+import java.sql.JDBCType
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.time.Duration.Companion.days
@@ -105,6 +107,8 @@ data class Clients(
         val tbl_clients = Meta.clients
         val repo_clients = BaseRepository(Clients())
     }
+
+    override fun getBaseId() = id
 
     private fun generateEmailRecoveryCode() : String {
         val randomSuffix = Random.nextInt(10000, 99999)

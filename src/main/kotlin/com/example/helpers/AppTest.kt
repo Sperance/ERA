@@ -1,8 +1,5 @@
 package com.example.helpers
 
-import com.example.calculateDifference
-import com.example.currectDatetime
-import com.example.currentZeroDate
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.catalogs.Catalogs.Companion.tbl_catalogs
 import com.example.datamodel.clients.Clients
@@ -12,7 +9,6 @@ import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.services.Services
 import com.example.getObjectRepository
 import com.example.minus
-import com.example.nullDatetime
 import com.example.plugins.db
 import com.example.plus
 import com.example.printTextLog
@@ -28,7 +24,6 @@ import kotlinx.serialization.Serializable
 import org.junit.Test
 import org.komapper.core.dsl.QueryDsl
 import java.io.File
-import kotlin.reflect.full.declaredMemberProperties
 import kotlin.time.Duration.Companion.minutes
 
 @Serializable
@@ -39,36 +34,7 @@ data class Recordsdata(
     var record: Records?
 )
 
-@Suppress("UNCHECKED_CAST")
 class AppTest {
-
-    private fun Any.nulling() {
-        this::class.declaredMemberProperties.forEach {
-            if (listOf(
-                    "companion",
-                    "id",
-                    "version",
-                    "createdAt"
-                ).contains(it.name.lowercase())
-            ) return@forEach
-            if (!it.returnType.isMarkedNullable) return@forEach
-            this.putField(it.name, null)
-        }
-    }
-
-    private fun Any.integrate(obj: Any) {
-        this::class.declaredMemberProperties.forEach {
-            if (listOf(
-                    "companion",
-                    "id",
-                    "version",
-                    "createdAt"
-                ).contains(it.name.lowercase())
-            ) return@forEach
-            if (!it.returnType.isMarkedNullable) return@forEach
-            this.putField(it.name, null)
-        }
-    }
 
     @Test
     fun testTranscation() {
@@ -135,16 +101,6 @@ class AppTest {
     }
 
     @Test
-    fun test_null_class() {
-        println(
-            calculateDifference(
-                LocalDateTime.currentZeroDate(),
-                LocalDateTime.currectDatetime()
-            )
-        )
-    }
-
-    @Test
     fun test_get_all_json() {
         runBlocking {
             val result = db.runQuery {
@@ -192,23 +148,5 @@ class AppTest {
         }
 
         araResult.forEach(::println)
-    }
-
-    data class Nulling(
-        var id: Int,
-        @CommentField("НОН НУЛЛ парент", true)
-        var nonnull: String,
-        var name: String?,
-        var price: Int? = null,
-        var date: LocalDateTime? = LocalDateTime.nullDatetime(),
-        var category: String? = "Client"
-    ) {
-        fun testFun() {
-            println("textfff")
-        }
-
-        override fun toString(): String {
-            return "Nulling(id=$id, nonnull='$nonnull', name=$name, price=$price, date=$date, category=$category)"
-        }
     }
 }

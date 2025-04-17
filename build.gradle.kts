@@ -74,6 +74,7 @@ dependencies {
     implementation("org.junit.jupiter:junit-jupiter:5.8.1")
     testImplementation("io.ktor:ktor-server-test-host-jvm")
     implementation("io.ktor:ktor-network-tls-certificates-jvm")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:$kotlin_version")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0-RC.2")
     platform("org.komapper:komapper-platform:$komapperVersion").let {
         implementation(it)

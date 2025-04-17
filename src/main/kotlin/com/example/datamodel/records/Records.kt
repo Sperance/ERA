@@ -74,6 +74,8 @@ data class Records(
         val repo_records = BaseRepository(Records())
     }
 
+    override fun getBaseId() = id
+
     suspend fun getFilledRecords() : ArrayList<Recordsdata> {
         val listResults = ArrayList<Recordsdata>()
         val listClients = Clients.repo_clients.getRepositoryData()

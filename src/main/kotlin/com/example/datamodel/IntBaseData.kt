@@ -41,7 +41,9 @@ sealed class ResultResponse {
 }
 
 @Suppress("UNCHECKED_CAST")
-abstract class IntBaseDataImpl <T> {
+abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
+
+    abstract fun getBaseId(): Int
 
     open fun getCommentArray(): String {
         var textFields = ""
@@ -254,23 +256,18 @@ abstract class IntBaseDataImpl <T> {
 
                 val tblObj = getField("tbl_${currectObjClassName.lowercase()}") as EntityMetamodel<*, *, *>
                 val auProp = tblObj.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int>
-                val findedObj = getDataOne({ auProp eq newObject?.getField("id") as Int?})
+                val findedObj = getDataOne({ auProp eq newObject?.getBaseId() })
                 if (findedObj == null) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(HttpStatusCode.NotFound, "Not found $currectObjClassName with id ${newObject?.getField("id")}")
+                    return@withTransaction ResultResponse.Error(HttpStatusCode.NotFound, "Not found $currectObjClassName with id ${newObject?.getBaseId()}")
                 }
 
                 if (fileBytes != null) {
-                    if (!newObject!!.haveField("imageLink") || !newObject!!.haveField("imageFormat")) {
+                    if (!newObject!!.isHaveImageFields()) {
                         tx.setRollbackOnly()
                         return@withTransaction ResultResponse.Error(HttpStatusCode(400, "Not Access"), "Для сущности $currectObjClassName не реализованы поля хранения файлов")
                     }
-
-                    val imageFile = File(Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}/icon_${newObject!!.getField("id")}.${fileName?.substringAfterLast(".")}")
-                    if (imageFile.exists()) imageFile.delete()
-                    imageFile.writeBytes(fileBytes!!)
-                    newObject!!.putField("imageLink", "${BASE_PATH}files/${currectObjClassName.lowercase()}/" + imageFile.name)
-                    newObject!!.putField("imageFormat", imageFile.extension)
+                    saveImageToFields(fileBytes, fileName?.substringAfterLast("."))
                 }
 
                 params.checkOnUpdate?.invoke(findedObj as T, newObject!!)
@@ -335,10 +332,10 @@ abstract class IntBaseDataImpl <T> {
 
                 val resultArray = arrayListOf<IntBaseDataImpl<T>>()
                 newObject.forEach { item ->
-                    val findedObj = getDataOne({ auProp eq item?.getField("id") as Int?})
+                    val findedObj = getDataOne({ auProp eq item.getBaseId() as Int?})
                     if (findedObj == null) {
                         tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(HttpStatusCode.NotFound, "Not found $currectObjClassName with id ${newObject.getField("id")}")
+                        return@withTransaction ResultResponse.Error(HttpStatusCode.NotFound, "Not found $currectObjClassName with id ${item.getBaseId()}")
                     }
 
                     params.checkOnUpdate?.invoke(findedObj as T, item)
@@ -360,7 +357,7 @@ abstract class IntBaseDataImpl <T> {
 
     private fun getFileImageIcon(findedObj: IntBaseDataImpl<T>, pathName: String): File? {
         if (!findedObj.haveField("imageLink")) return null
-        val currentFile = File(Paths.get("").absolutePathString() + "/files/$pathName/icon_${findedObj.getField("id")}.${findedObj.getField("imageFormat")}")
+        val currentFile = File(Paths.get("").absolutePathString() + "/files/$pathName/icon_${findedObj.getBaseId()}.${findedObj.getField("imageFormat")}")
         if (!currentFile.exists()) return null
         return currentFile
     }
@@ -420,26 +417,16 @@ abstract class IntBaseDataImpl <T> {
                 }
 
                 newObject.forEach { item ->
-                    finishObject = item?.create(null)
-                    if (finishObject == null) {
-                        tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(HttpStatusCode(421, "Perform Error"), "Не удалось создать объект $item")
-                    }
-                    getObjectRepository(this)?.addData(finishObject as IntBaseDataImpl<T>)
+                    finishObject = item.create(null)
+                    getObjectRepository(this)?.addData(finishObject)
                 }
 
                 if (fileBytes != null) {
-                    if (!finishObject!!.haveField("imageLink") || !finishObject!!.haveField("imageFormat")) {
+                    if (!finishObject!!.isHaveImageFields()) {
                         tx.setRollbackOnly()
                         return@withTransaction ResultResponse.Error(HttpStatusCode(400, "Not Access"), "Для сущности $currectObjClassName не реализованы поля хранения файлов")
                     }
-
-                    val imageFile = File(Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}/icon_${finishObject!!.getField("id")}.${fileName?.substringAfterLast(".")}")
-                    if (imageFile.exists()) imageFile.delete()
-                    imageFile.writeBytes(fileBytes!!)
-                    finishObject!!.putField("imageLink", "${BASE_PATH}files/${currectObjClassName.lowercase()}/" + imageFile.name)
-                    finishObject!!.putField("imageFormat", imageFile.extension)
-
+                    saveImageToFields(fileBytes, fileName?.substringAfterLast("."))
                     params.onBeforeCompleted?.invoke(finishObject!!)
                     finishObject = finishObject!!.update()
                 } else {
@@ -454,5 +441,31 @@ abstract class IntBaseDataImpl <T> {
                 return@withTransaction ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
             }
         }
+    }
+
+    /**
+     * Проверка полей на наличие картинок
+     */
+    private fun isHaveImageFields(): Boolean {
+        return haveField("imageLink") && haveField("imageFormat")
+    }
+
+    private fun saveImageToFields(fileBytes: ByteArray?, fileExtension: String?) {
+        if (fileBytes == null) {
+            printTextLog("[saveImageToFields] fileBytes is NULL")
+            return
+        }
+        if (fileExtension == null) {
+            printTextLog("[saveImageToFields] fileExtension is NULL")
+            return
+        }
+        val currectObjClassName = this::class.simpleName!!
+        val imageFile = File(Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}/icon_${getBaseId()}.$fileExtension")
+        if (imageFile.exists()) imageFile.delete()
+        imageFile.writeBytes(fileBytes)
+        putField("imageLink", "${BASE_PATH}files/${currectObjClassName.lowercase()}/" + imageFile.name)
+        putField("imageFormat", imageFile.extension)
+
+        printTextLog("[saveImageToFields] Save file for $currectObjClassName ${imageFile.path}")
     }
 }

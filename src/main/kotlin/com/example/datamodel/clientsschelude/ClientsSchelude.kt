@@ -8,8 +8,6 @@ import com.example.datamodel.ResultResponse
 import com.example.datamodel.clients.Clients.Companion.repo_clients
 import com.example.isNullOrEmpty
 import com.example.isNullOrZero
-import com.example.toIntPossible
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -52,6 +50,8 @@ data class ClientsSchelude(
         val tbl_clientsschelude = Meta.clientsSchelude
         val repo_clientsschelude = BaseRepository(ClientsSchelude())
     }
+
+    override fun getBaseId() = id
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<List<ClientsSchelude>>): ResultResponse {
         params.checkings.add { CheckObj(it.idClient.isNullOrZero(), 431, "Необходимо указать id Клиента для графика работы") }
