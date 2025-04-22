@@ -8,10 +8,10 @@ import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.services.Services
 import com.example.getObjectRepository
+import com.example.logging.DailyLogger.printTextLog
 import com.example.minus
 import com.example.plugins.db
 import com.example.plus
-import com.example.printTextLog
 import com.example.toDateTimePossible
 import io.ktor.network.tls.certificates.buildKeyStore
 import io.ktor.network.tls.certificates.saveToFile

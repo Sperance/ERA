@@ -1,7 +1,7 @@
 package com.example.plugins
 
 import com.example.isSafeCommand
-import com.example.printTextLog
+import com.example.logging.DailyLogger.printTextLog
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.logging.toLogString

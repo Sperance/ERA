@@ -14,8 +14,8 @@ import com.example.helpers.haveField
 import com.example.helpers.putField
 import com.example.helpers.update
 import com.example.isAllNullOrEmpty
+import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.db
-import com.example.printTextLog
 import com.example.toIntPossible
 import com.example.updateFromNullable
 import io.ktor.http.HttpStatusCode
@@ -276,7 +276,7 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
                         tx.setRollbackOnly()
                         return@withTransaction ResultResponse.Error(HttpStatusCode(400, "Not Access"), "Для сущности $currectObjClassName не реализованы поля хранения файлов")
                     }
-                    saveImageToFields(fileBytes, fileName?.substringAfterLast("."))
+                    saveImageToFields(newObject, fileBytes, fileName?.substringAfterLast("."))
                 }
 
                 params.checkOnUpdate?.invoke(findedObj as T, newObject!!)
@@ -456,9 +456,10 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
                         tx.setRollbackOnly()
                         return@withTransaction ResultResponse.Error(HttpStatusCode(400, "Not Access"), "Для сущности $currectObjClassName не реализованы поля хранения файлов")
                     }
-                    saveImageToFields(fileBytes, fileName?.substringAfterLast("."))
+                    saveImageToFields(finishObject, fileBytes, fileName?.substringAfterLast("."))
                     params.onBeforeCompleted?.invoke(finishObject!!)
                     finishObject = finishObject!!.update()
+                    getObjectRepository(this)?.updateData(finishObject)
                 } else {
                     params.onBeforeCompleted?.invoke(finishObject!!)
                 }
@@ -480,7 +481,11 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
         return haveField("imageLink") && haveField("imageFormat")
     }
 
-    private fun saveImageToFields(fileBytes: ByteArray?, fileExtension: String?) {
+    private fun saveImageToFields(newObject: T?, fileBytes: ByteArray?, fileExtension: String?) {
+        if (newObject == null) {
+            printTextLog("[saveImageToFields] newObject is NULL")
+            return
+        }
         if (fileBytes == null) {
             printTextLog("[saveImageToFields] fileBytes is NULL")
             return
@@ -489,12 +494,17 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
             printTextLog("[saveImageToFields] fileExtension is NULL")
             return
         }
+
         val currectObjClassName = this::class.simpleName!!
-        val imageFile = File(Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}/icon_${getBaseId()}.$fileExtension")
+
+        val imagePath  = File(Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}")
+        if (!imagePath.exists()) imagePath.mkdirs()
+        val imageFile = File("${imagePath.absolutePath}/icon_${newObject.getField("id")}.$fileExtension")
         if (imageFile.exists()) imageFile.delete()
+
         imageFile.writeBytes(fileBytes)
-        putField("imageLink", "${BASE_PATH}files/${currectObjClassName.lowercase()}/" + imageFile.name)
-        putField("imageFormat", imageFile.extension)
+        newObject.putField("imageLink", "${BASE_PATH}files/${currectObjClassName.lowercase()}/" + imageFile.name)
+        newObject.putField("imageFormat", imageFile.extension)
 
         printTextLog("[saveImageToFields] Save file for $currectObjClassName ${imageFile.path}")
     }

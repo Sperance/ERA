@@ -1,6 +1,6 @@
 package com.example.helpers
 
-import com.example.printTextLog
+import com.example.logging.DailyLogger.printTextLog
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream

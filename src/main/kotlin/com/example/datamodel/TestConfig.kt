@@ -3,12 +3,11 @@ package com.example.datamodel
 import com.example.datamodel.clients.Clients
 import com.example.minus
 import com.example.helpers.GMailSender
+import com.example.logging.DailyLogger.printTextLog
 import com.example.plus
-import com.example.printTextLog
 import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -25,9 +24,7 @@ fun Application.configureTests() {
         route("/test") {
             get ("/testLinks") {
                 Clients.repo_clients.resetData()
-                printTextLog("1 CLIENTS: ${Clients.repo_clients.getRepositoryData()}")
                 Clients.repo_clients.clearLinkEqual(Clients::position, 16)
-                printTextLog("2 CLIENTS: ${Clients.repo_clients.getRepositoryData()}")
                 call.respond(HttpStatusCode.OK)
             }
             post ("/emailMessage") {

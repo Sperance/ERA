@@ -6,7 +6,7 @@ import com.example.helpers.clearTable
 import com.example.helpers.getData
 import com.example.helpers.getField
 import com.example.helpers.update
-import com.example.printTextLog
+import com.example.logging.DailyLogger.printTextLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

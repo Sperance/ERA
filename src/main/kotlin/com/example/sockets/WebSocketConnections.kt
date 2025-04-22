@@ -1,6 +1,6 @@
 package com.example.sockets
 
-import com.example.printTextLog
+import com.example.logging.DailyLogger.printTextLog
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import kotlinx.coroutines.CoroutineScope

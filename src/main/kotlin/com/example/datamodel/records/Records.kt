@@ -11,8 +11,8 @@ import com.example.helpers.getSize
 import com.example.datamodel.services.Services
 import com.example.isNullOrEmpty
 import com.example.isNullOrZero
+import com.example.logging.DailyLogger.printTextLog
 import com.example.nullDatetime
-import com.example.printTextLog
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime

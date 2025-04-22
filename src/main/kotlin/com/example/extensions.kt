@@ -6,19 +6,13 @@ import com.example.datamodel.ResultResponse
 import com.example.helpers.getField
 import com.example.helpers.putField
 import com.example.helpers.CommentField
-import com.example.helpers.haveField
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.PipelineCall
-import io.ktor.server.logging.toLogString
-import io.ktor.server.plugins.origin
 import io.ktor.server.response.respond
 import io.ktor.server.util.toLocalDateTime
 import io.ktor.utils.io.InternalAPI
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
-import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.datetime.toLocalDateTime
 import java.lang.reflect.Field
@@ -116,11 +110,6 @@ fun <T: Any> IntBaseDataImpl<*>.updateFromNullable(nullable: T) : Int {
     return counterUpdated
 }
 
-fun printTextLog(text: String) {
-    val curDTime = System.currentTimeMillis().toFormatDateTime()
-    println("$curDTime $text")
-}
-
 fun Long.toFormatDateTime() : String {
     return SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(Date(this))
 }
@@ -145,6 +134,7 @@ fun isSafeCommand(command: String): String? {
         "/web/", "/doc/", ".7z", ".xml", "debug", ".cgi", "pro.", ".js", "/x.", "/owa/",
         "/query", "/resolve", "/GponForm/", "/diag_", ".application", "/ecp/", "/microsoft",
         "/aaa", "/aab", "/index", ".ico", "/device", "/onvif", "web.", ".in:", "config",
-        "/t4", "/teorema5", "/HNAP1", "-", "_", "*", "#", "!")
+        "/t4", "/teorema5", "/HNAP1", "-", "*", "#", "!", ":1", ":2", ":3", ":4", ":5",
+        ":6", ":7", ":8", ":9", ":0", "_profiler", "/env")
     return unsafePatterns.find { pat -> command.trim().lowercase().contains(pat.trim().lowercase()) }
 }

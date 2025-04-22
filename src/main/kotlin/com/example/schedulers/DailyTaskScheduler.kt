@@ -3,8 +3,8 @@ package com.example.schedulers
 import com.example.currentZeroDate
 import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.repo_clientsschelude
 import com.example.helpers.delete
+import com.example.logging.DailyLogger.printTextLog
 import com.example.minus
-import com.example.printTextLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

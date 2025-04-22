@@ -15,7 +15,7 @@ plugins {
 }
 
 group = "com.example"
-version = "0.0.1"
+version = "1.5.0"
 
 application {
     mainClass.set("com.example.ApplicationKt")
@@ -50,6 +50,15 @@ tasks.withType<DokkaTask>().configureEach {
             matchingRegex.set(".*internal.*")
             suppress.set(true)
         }
+    }
+}
+
+tasks {
+    // Настройка сборки shadow JAR
+    shadowJar {
+        archiveBaseName.set("DesRPG")
+        archiveVersion.set("$version")
+        mergeServiceFiles() // Объединение сервисных файлов, чтобы избежать проблем с конфликтающими файлами
     }
 }
 
@@ -90,7 +99,10 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.2")
-    implementation ("com.sun.mail:android-mail:1.6.7")
-    implementation ("com.sun.mail:android-activation:1.6.7")
+    implementation("com.sun.mail:android-mail:1.6.7")
+    implementation("com.sun.mail:android-activation:1.6.7")
     implementation("com.auth0:java-jwt:4.5.0")
+
+    implementation("com.akuleshov7:ktoml-core:0.5.1")
+    implementation("com.akuleshov7:ktoml-file:0.5.1")
 }

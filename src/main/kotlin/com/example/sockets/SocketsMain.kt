@@ -1,29 +1,34 @@
 package com.example.sockets
 
+import com.example.applicationTomlSettings
 import com.example.datamodel.records.Records
+import com.example.logging.DailyLogger.printTextLog
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import io.ktor.server.logging.toLogString
 import io.ktor.server.request.header
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
 import io.ktor.server.websocket.webSocket
-import io.ktor.utils.io.CancellationException
 import io.ktor.websocket.Frame
 import io.ktor.websocket.close
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.seconds
 
 val socketsRecords = WebSocketConnections()
 
 fun Application.configureSockets() {
+
+    if (!applicationTomlSettings!!.SETTINGS.WEB_SOCKET) {
+        printTextLog("[applicationTomlSettings] WEB_SOCKET is Disabled")
+        return
+    } else {
+        printTextLog("[applicationTomlSettings] WEB_SOCKET is Active")
+    }
+
     install(WebSockets) {
         pingPeriod = 10.seconds
         timeout = 10.seconds

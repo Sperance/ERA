@@ -1,7 +1,7 @@
 package com.example.helpers
 
+import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.db
-import com.example.printTextLog
 import org.komapper.core.dsl.QueryDsl
 import org.komapper.core.dsl.expression.SortExpression
 import org.komapper.core.dsl.expression.WhereDeclaration

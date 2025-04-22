@@ -1,5 +1,6 @@
 package com.example.plugins
 
+import com.example.applicationTomlSettings
 import com.example.datamodel.catalogs.Catalogs.Companion.tbl_catalogs
 import com.example.datamodel.catalogs.configureCatalogs
 import com.example.datamodel.clients.Clients.Companion.tbl_clients
@@ -18,6 +19,7 @@ import com.example.datamodel.services.Services.Companion.tbl_services
 import com.example.datamodel.services.configureServices
 import com.example.datamodel.stockfiles.Stockfiles.Companion.tbl_stockfiles
 import com.example.datamodel.stockfiles.configureStockfiles
+import com.example.logging.DailyLogger.printTextLog
 import com.example.schedulers.configureSchedulers
 import io.ktor.server.application.*
 import io.ktor.server.http.content.staticFiles
@@ -32,11 +34,11 @@ import java.io.File
 
 private val connectionFactory: ConnectionFactoryOptions = ConnectionFactoryOptions.builder()
     .option(ConnectionFactoryOptions.DRIVER, "postgresql")
-    .option(ConnectionFactoryOptions.HOST, "localhost")
-    .option(ConnectionFactoryOptions.PORT, 5432)
-    .option(ConnectionFactoryOptions.USER, "postgres_rpg")
-    .option(ConnectionFactoryOptions.PASSWORD, "22322137")
-    .option(ConnectionFactoryOptions.DATABASE, "postgres_rpg")
+    .option(ConnectionFactoryOptions.HOST, applicationTomlSettings!!.DATABASE.HOST)
+    .option(ConnectionFactoryOptions.PORT, applicationTomlSettings!!.DATABASE.PORT)
+    .option(ConnectionFactoryOptions.USER, applicationTomlSettings!!.DATABASE.USER)
+    .option(ConnectionFactoryOptions.PASSWORD, applicationTomlSettings!!.DATABASE.PASSWORD)
+    .option(ConnectionFactoryOptions.DATABASE, applicationTomlSettings!!.DATABASE.DATABASE)
     .build()
 
 val db = R2dbcDatabase(connectionFactory, executionOptions = ExecutionOptions(suppressLogging = true))
@@ -69,5 +71,6 @@ fun Application.configureDatabases() {
         defaultsConfig()
     }.invokeOnCompletion {
         configureSchedulers()
+        printTextLog("[configureDatabases] Server is Started")
     }
 }

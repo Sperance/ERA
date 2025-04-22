@@ -1,6 +1,6 @@
 package com.example.schedulers
 
-import com.example.printTextLog
+import com.example.logging.DailyLogger.printTextLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
