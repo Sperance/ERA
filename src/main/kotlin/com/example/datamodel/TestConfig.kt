@@ -1,9 +1,11 @@
 package com.example.datamodel
 
 import com.example.datamodel.clients.Clients
+import com.example.enums.EnumSQLTypes
 import com.example.minus
 import com.example.helpers.GMailSender
-import com.example.logging.DailyLogger.printTextLog
+import com.example.helpers.executeAddColumn
+import com.example.helpers.executeDelColumn
 import com.example.plus
 import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
@@ -22,6 +24,14 @@ import kotlin.time.Duration.Companion.minutes
 fun Application.configureTests() {
     routing {
         route("/test") {
+            get ("/createColumn") {
+                val res = Clients().executeAddColumn("newColumn", EnumSQLTypes.VARCHAR_255)
+                call.respond(HttpStatusCode.OK, res?:"")
+            }
+            get ("/deleteColumn") {
+                val res = Clients().executeDelColumn("newColumn")
+                call.respond(HttpStatusCode.OK, res?:"")
+            }
             get ("/testLinks") {
                 Clients.repo_clients.resetData()
                 Clients.repo_clients.clearLinkEqual(Clients::position, 16)

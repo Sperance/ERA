@@ -64,7 +64,7 @@ data class ClientsSchelude(
         params.checkings.add { CheckObj(it.scheludeDateStart.isNullOrEmpty(), 432, "Необходимо указать Дату/время начала работы") }
         params.checkings.add { CheckObj(it.scheludeDateEnd.isNullOrEmpty(), 433, "Необходимо указать Дату/время конца работы") }
         params.checkings.add { CheckObj(it.scheludeDateStart!! >= it.scheludeDateEnd!!, 434, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
-        params.checkings.add { CheckObj(repo_clientsschelude.getRepositoryData().find { fil -> fil.idClient == it.idClient && fil.scheludeDateStart == it.scheludeDateStart && fil.scheludeDateEnd == it.scheludeDateEnd } != null, 441, "Запись с передаваемыми параметрами уже присутствует в базе данных") }
+        params.checkings.add { CheckObj(repo_clientsschelude.getRepositoryData().find { fil -> fil.idClient == it.idClient && fil.scheludeDateStart == it.scheludeDateStart && fil.scheludeDateEnd == it.scheludeDateEnd } != null, 409, "Запись с передаваемыми параметрами уже присутствует в базе данных") }
         params.checkings.add { CheckObj(!repo_clients.isHaveData(it.idClient), 442, "Не найден Client с id ${it.idClient}") }
 
         return super.post(call, params, serializer)

@@ -15,6 +15,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.datetime.toLocalDateTime
+import java.io.File
 import java.lang.reflect.Field
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -135,6 +136,6 @@ fun isSafeCommand(command: String): String? {
         "/query", "/resolve", "/GponForm/", "/diag_", ".application", "/ecp/", "/microsoft",
         "/aaa", "/aab", "/index", ".ico", "/device", "/onvif", "web.", ".in:", "config",
         "/t4", "/teorema5", "/HNAP1", "-", "*", "#", "!", ":1", ":2", ":3", ":4", ":5",
-        ":6", ":7", ":8", ":9", ":0", "_profiler", "/env")
+        ":6", ":7", ":8", ":9", ":0", "_profiler", "/env", "%")
     return unsafePatterns.find { pat -> command.trim().lowercase().contains(pat.trim().lowercase()) }
 }

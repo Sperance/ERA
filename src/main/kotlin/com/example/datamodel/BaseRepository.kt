@@ -5,6 +5,7 @@ import com.example.enums.EnumDataFilter
 import com.example.helpers.clearTable
 import com.example.helpers.getData
 import com.example.helpers.getField
+import com.example.helpers.haveField
 import com.example.helpers.update
 import com.example.logging.DailyLogger.printTextLog
 import kotlinx.coroutines.CoroutineScope
@@ -21,10 +22,6 @@ open class BaseRepository<T : Any>(private val obj: T) {
     private val mutex = Mutex()
     val onChanged = java.util.concurrent.atomic.AtomicBoolean(false)
 
-    private fun toAllLog(text: String, workObj: T?) {
-        printTextLog("[${obj::class.java.simpleName}::${this.hashCode()}][$text] SIZE: ${repoData.size} WORK: $workObj DATAS: \n\t${repoData.joinToString("\n\t")}")
-    }
-
     // Безопасная загрузка данных снаружи блока lock
     open suspend fun resetData() {
         val newData = obj.getData()
@@ -32,7 +29,6 @@ open class BaseRepository<T : Any>(private val obj: T) {
             mutex.withLock {
                 repoData.clear()
                 repoData.addAll(newData)
-                toAllLog("resetData", null)
             }
         }
     }
@@ -45,7 +41,6 @@ open class BaseRepository<T : Any>(private val obj: T) {
             mutex.withLock {
                 val removed = repoData.removeIf { it.getField("id") == obj.getField("id") }
                 if (removed) {
-                    toAllLog("deleteData 1", obj)
                     onChanged.set(true)
                 }
             }
@@ -60,7 +55,6 @@ open class BaseRepository<T : Any>(private val obj: T) {
             mutex.withLock {
                 val removed = repoData.removeIf { it.getField("id").toString() == id.toString() }
                 if (removed) {
-                    toAllLog("deleteData 2", null)
                     onChanged.set(true)
                 }
             }
@@ -77,7 +71,6 @@ open class BaseRepository<T : Any>(private val obj: T) {
                 if (existingObj != null) {
                     if (repoData.remove(existingObj)) {
                         repoData.add(obj)
-                        toAllLog("updateData", obj)
                         onChanged.set(true)
                     }
                 } else {
@@ -95,7 +88,6 @@ open class BaseRepository<T : Any>(private val obj: T) {
             mutex.withLock {
                 if (repoData.none { it.getField("id") == obj.getField("id") }) {
                     repoData.add(obj)
-                    toAllLog("addData", obj)
                     onChanged.set(true)
                 } else {
                     printTextLog("[${obj::class.java.simpleName}] Duplicate detected for object with ID: ${obj.getField("id")}")
@@ -122,6 +114,20 @@ open class BaseRepository<T : Any>(private val obj: T) {
             if (repoData.isEmpty()) resetData()
             mutex.withLock {
                 repoData.any { it.getField("id") == id }
+            }
+        }
+    }
+
+    open suspend fun isHaveDataField(field: KMutableProperty1<T, *>, value: Any?): Boolean {
+        if (value == null) return false
+        if (!obj.haveField(field.name)) {
+            printTextLog("[isHaveDataField] object $obj dont have field ${field.name}")
+            return false
+        }
+        return withContext(Dispatchers.IO) {
+            if (repoData.isEmpty()) resetData()
+            mutex.withLock {
+                repoData.firstOrNull { field.get(it) == value } != null
             }
         }
     }

@@ -143,8 +143,7 @@ class AppTest {
             if (finded == null) {
                 araResult.add(stockDate)
             }
-            stockDate = stockDate.toInstant(TimeZone.UTC).plus((stockPeriod).minutes)
-                .toLocalDateTime(TimeZone.UTC)
+            stockDate = stockDate.toInstant(TimeZone.UTC).plus((stockPeriod).minutes).toLocalDateTime(TimeZone.UTC)
         }
 
         araResult.forEach(::println)

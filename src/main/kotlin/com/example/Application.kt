@@ -1,6 +1,7 @@
 package com.example
 
 import com.example.datamodel.configureTests
+import com.example.helpers.ENCRYPT_KEY
 import com.example.helpers.TOML_FILE_NAME
 import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.LogPlugin
@@ -12,6 +13,7 @@ import com.example.plugins.configureContentNegotiation
 import com.example.plugins.configureForwardedHeaders
 import com.example.plugins.configureRateLimit
 import com.example.plugins.configureStatusPages
+import com.example.security.AESEncryption
 import com.example.sockets.configureSockets
 import com.example.toml.TomlConfig
 import com.example.toml.readTomlFile
@@ -29,6 +31,14 @@ fun main() {
         printTextLog("[applicationTomlSettings] Error: dont find correct file settings: $TOML_FILE_NAME")
         return
     }
+
+    val checkDatabase = applicationTomlSettings!!.checkForCorrect()
+    if (checkDatabase != null) {
+        printTextLog("[applicationTomlSettings] Error: empty field in file $TOML_FILE_NAME: $checkDatabase")
+        return
+    }
+
+    AESEncryption.setKeyFromString(ENCRYPT_KEY)
 
     embeddedServer(Netty,
         configure = {

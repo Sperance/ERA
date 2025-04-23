@@ -15,7 +15,7 @@ plugins {
 }
 
 group = "com.example"
-version = "1.5.0"
+version = "1.5.1"
 
 application {
     mainClass.set("com.example.ApplicationKt")
@@ -54,11 +54,12 @@ tasks.withType<DokkaTask>().configureEach {
 }
 
 tasks {
-    // Настройка сборки shadow JAR
+    jar {
+        enabled = false
+    }
     shadowJar {
-        archiveBaseName.set("DesRPG")
-        archiveVersion.set("$version")
-        mergeServiceFiles() // Объединение сервисных файлов, чтобы избежать проблем с конфликтающими файлами
+        archiveFileName.set("ERAkt-${project.version}.jar")
+        mergeServiceFiles()
     }
 }
 

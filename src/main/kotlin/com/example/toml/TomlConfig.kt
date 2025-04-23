@@ -6,12 +6,20 @@ import com.example.logging.DailyLogger.printTextLog
 import kotlinx.serialization.Serializable
 import java.io.File
 
+interface IntTomlSettings {
+    fun checkForCorrect(): String?
+}
+
 @Serializable
 data class TomlConfig(
     val DATABASE: TomlDatabaseConfig = TomlDatabaseConfig(),
     val SETTINGS: TomlSettingsConfig = TomlSettingsConfig(),
     val LOGGING: TomlLogingConfig = TomlLogingConfig(),
-)
+) : IntTomlSettings {
+    override fun checkForCorrect(): String? {
+        return listOf(DATABASE, SETTINGS, LOGGING).map { it.checkForCorrect() }.firstOrNull { it != null }
+    }
+}
 
 fun readTomlFile(): TomlConfig? {
     val configFile = File(TOML_FILE_NAME)

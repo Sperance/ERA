@@ -56,7 +56,7 @@ data class Catalogs(
     override fun getBaseId() = id
     override fun baseParams(): RequestParams<Catalogs> {
         val params = RequestParams<Catalogs>()
-        params.checkings.add { CheckObj(repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null, 440, "В БД уже присутствует категория '${it.category}' со значнеием '${it.value}'") }
+        params.checkings.add { CheckObj(repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null, 409, "В БД уже присутствует категория '${it.category}' со значнеием '${it.value}'") }
         return params
     }
 
@@ -64,7 +64,6 @@ data class Catalogs(
         params.checkings.add { CheckObj(it.type.isNullOrEmpty(), 430, "Необходимо указать Тип категории(type) для элемента") }
         params.checkings.add { CheckObj(it.category.isNullOrEmpty(), 431, "Необходимо указать Категорию(category) для элемента") }
         params.checkings.add { CheckObj(it.value.isNullOrEmpty(), 432, "Необходимо указать Значение(value) элемента") }
-        params.checkings.add { CheckObj(repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null, 440, "В БД уже присутствует категория '${it.category}' со значнеием '${it.value}'") }
 
         return super.post(call, params, serializer)
     }

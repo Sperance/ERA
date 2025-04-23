@@ -1,7 +1,10 @@
 package com.example.toml
 
 import com.akuleshov7.ktoml.Toml
+import com.example.datamodel.clients.Clients
 import com.example.helpers.TOML_FILE_NAME
+import com.example.helpers.executeAddColumn
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import java.io.File
 

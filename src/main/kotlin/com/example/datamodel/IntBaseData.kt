@@ -1,7 +1,7 @@
 package com.example.datamodel
 
+import com.example.applicationTomlSettings
 import com.example.enums.EnumDataFilter
-import com.example.helpers.BASE_PATH
 import com.example.helpers.SYS_FIELDS_ARRAY
 import com.example.getCommentFieldAnnotation
 import com.example.getObjectRepository
@@ -74,7 +74,6 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
                     property.set(value)
                 }
 
-                params.onBeforeCompleted?.invoke(null)
                 val data = getObjectRepository(this)?.getRepositoryData()
 
                 return@withTransaction if (data == null) ResultResponse.Success(HttpStatusCode.OK, getData())
@@ -134,8 +133,6 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
                     property.set(res.second)
                 }
 
-                params.onBeforeCompleted?.invoke(null)
-
                 val resultList = getObjectRepository(this)?.getDataFilter(field, stateEnum, value)
                 return@withTransaction ResultResponse.Success(HttpStatusCode.OK, resultList as Collection<*>)
             } catch (e: Exception) {
@@ -150,7 +147,7 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
         var isNeedFile = false
         val checkings: ArrayList<suspend (T) -> CheckObj> = ArrayList()
         val defaults: ArrayList<suspend (T) -> Pair<KMutableProperty0<*>, Any?>> = ArrayList()
-        var onBeforeCompleted: (suspend (T?) -> Any)? = null
+        var onBeforeCompleted: (suspend (T) -> Any)? = null
         var checkOnUpdate: ((T, T) -> Any)? = null
     }
 
@@ -447,6 +444,7 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
                 }
 
                 newObject.forEach { item ->
+                    params.onBeforeCompleted?.invoke(item)
                     finishObject = item.create(null)
                     getObjectRepository(this)?.addData(finishObject)
                 }
@@ -460,8 +458,6 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
                     params.onBeforeCompleted?.invoke(finishObject!!)
                     finishObject = finishObject!!.update()
                     getObjectRepository(this)?.updateData(finishObject)
-                } else {
-                    params.onBeforeCompleted?.invoke(finishObject!!)
                 }
 
                 return@withTransaction ResultResponse.Success(HttpStatusCode.Created, finishObject as Any)
@@ -503,7 +499,7 @@ abstract class IntBaseDataImpl <T: IntBaseDataImpl<T>> {
         if (imageFile.exists()) imageFile.delete()
 
         imageFile.writeBytes(fileBytes)
-        newObject.putField("imageLink", "${BASE_PATH}files/${currectObjClassName.lowercase()}/" + imageFile.name)
+        newObject.putField("imageLink", "${applicationTomlSettings!!.SETTINGS.ENDPOINT}files/${currectObjClassName.lowercase()}/" + imageFile.name)
         newObject.putField("imageFormat", imageFile.extension)
 
         printTextLog("[saveImageToFields] Save file for $currectObjClassName ${imageFile.path}")

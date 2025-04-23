@@ -53,14 +53,13 @@ data class Stockfiles(
     override fun getBaseId() = id
     override fun baseParams(): RequestParams<Stockfiles> {
         val params = RequestParams<Stockfiles>()
-        params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), 441, "Необходимо указать Категорию файла") }
+        params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), 441, "Не найдена Категория файла с id ${it.service}") }
         return params
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Stockfiles>, serializer: KSerializer<List<Stockfiles>>): ResultResponse {
         params.isNeedFile = true
         params.checkings.add { CheckObj(it.category.isNullOrEmpty(), 431, "Необходимо указать Категорию файла") }
-        params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), 441, "Необходимо указать Категорию файла") }
 
         return super.post(call, params, serializer)
     }

@@ -26,6 +26,7 @@ import com.example.helpers.getField
 import com.example.helpers.haveField
 import com.example.helpers.putField
 import com.example.plus
+import com.example.security.AESEncryption
 import com.example.security.generateSalt
 import com.example.security.hashPassword
 import com.example.security.verifyPassword
@@ -114,6 +115,7 @@ data class Clients(
         params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), 441, "Не найдена Должность с id ${it.position}") }
         params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), 442, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()} ALL: ${Catalogs.repo_catalogs.getRepositoryData().joinToString("\n")}") }
         params.checkings.add { CheckObj(it.salt != null, 443, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
+        params.checkings.add { CheckObj(it.login != null && repo_clients.isHaveDataField(Clients::login, it.login), 409, "Клиент с указанным Логином уже существует") }
         return params
     }
 
@@ -284,13 +286,11 @@ data class Clients(
         params.checkings.add { CheckObj(it.firstName.isNullOrEmpty(), 431, "Необходимо указать Имя") }
         params.checkings.add { CheckObj(it.lastName.isNullOrEmpty(), 432, "Необходимо указать Фамилию") }
         params.checkings.add { CheckObj(it.phone.isNullOrEmpty(), 433, "Необходимо указать Телефон") }
-        params.checkings.add { CheckObj(it.login.isNullOrEmpty(), 434, "Необходимо указать Логин") }
-        params.checkings.add { CheckObj(it.password.isNullOrEmpty(), 435, "Необходимо указать Пароль") }
+//        params.checkings.add { CheckObj(it.password.isNullOrEmpty(), 435, "Необходимо указать Пароль") }
         params.checkings.add { CheckObj(it.email.isNullOrEmpty(), 436, "Необходимо указать Email") }
         params.checkings.add { CheckObj(it.gender.isNullOrZero(), 437, "Необходимо указать Пол") }
-        params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.login eq it.login }, 441, "Клиент с указанным Логином уже существует") }
-        params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.phone eq it.phone }, 442, "Клиент с указанным Номером телефона уже существует") }
-        params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.email eq it.email }, 443, "Клиент с указанным Почтовым адресом уже существует") }
+        params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.phone eq it.phone }, 409, "Клиент с указанным Номером телефона уже существует") }
+        params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.email eq it.email }, 409, "Клиент с указанным Почтовым адресом уже существует") }
         params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), 444, "Не найдена Должность с id ${it.position}") }
         params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), 445, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
 
@@ -304,7 +304,8 @@ data class Clients(
         params.defaults.add { it::salt to generateSalt() }
 
         params.onBeforeCompleted = { obj ->
-            obj!!.setNewPassword(obj.password!!)
+            obj.email = AESEncryption.encrypt(obj.email)
+            obj.setNewPassword(obj.password!!)
         }
 
         return super.post(call, params, serializer)

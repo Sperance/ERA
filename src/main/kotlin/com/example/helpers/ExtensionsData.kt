@@ -1,5 +1,8 @@
 package com.example.helpers
 
+import com.example.datamodel.IntBaseDataImpl
+import com.example.datamodel.clients.Clients.Companion.tbl_clients
+import com.example.enums.EnumSQLTypes
 import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.db
 import org.komapper.core.dsl.QueryDsl
@@ -9,6 +12,7 @@ import org.komapper.core.dsl.metamodel.EntityMetamodel
 import org.komapper.core.dsl.metamodel.PropertyMetamodel
 import org.komapper.core.dsl.metamodel.getAutoIncrementProperty
 import org.komapper.core.dsl.operator.count
+import org.komapper.core.dsl.query.Query
 import org.komapper.core.dsl.query.singleOrNull
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.createInstance
@@ -67,6 +71,10 @@ private fun <META : EntityMetamodel<Any, Any, META>> getInstanceClassForTbl(obj:
     return metaTable as META
 }
 
+private fun IntBaseDataImpl<*>.getTblName() : String {
+    return "tbl_${this::class.java.simpleName.lowercase()}"
+}
+
 @Suppress("UNCHECKED_CAST")
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.getData(declaration: WhereDeclaration? = null, sortExpression: SortExpression? = null) : List<TYPE> {
     val metaTable = getInstanceClassForTbl(this) as META
@@ -116,4 +124,31 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.getFromArra
     val whereExpr: WhereDeclaration = { (metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int>).inList(ids) }
     val result = db.runQuery { QueryDsl.from(metaTable).where(whereExpr).select() }
     return result.size == ids.size
+}
+
+private suspend fun executeScript(script: String): String? {
+    printTextLog("[executeScript] $script")
+    try {
+        db.runQuery {
+            QueryDsl.executeScript(script.trimIndent())
+        }
+        return null
+    } catch (e: Exception) {
+        printTextLog("[executeScript] Error: ${e.localizedMessage}")
+        return e.localizedMessage
+    }
+}
+
+suspend fun <T: IntBaseDataImpl<T>> IntBaseDataImpl<T>.executeAddColumn(columnName: String, columnType: EnumSQLTypes, defaultValue: Any? = null, notNull: Boolean = false): String? {
+    if (defaultValue == null && notNull == true) {
+        printTextLog("[executeAddColumn] defaultValue is NULL and notNull is TRUE")
+        return "defaultValue is NULL and notNull is TRUE"
+    }
+    var default = defaultValue
+    if (default is String) default = "'$default'"
+    return executeScript("""ALTER TABLE ${this.getTblName()} ADD COLUMN $columnName ${columnType.textValue} ${if (notNull) "NOT NULL" else ""} DEFAULT $default""")
+}
+
+suspend fun <T: IntBaseDataImpl<T>> IntBaseDataImpl<T>.executeDelColumn(columnName: String): String? {
+    return executeScript("""ALTER TABLE ${this.getTblName()} DROP COLUMN IF EXISTS $columnName RESTRICT""")
 }
