@@ -13,11 +13,10 @@ interface IntTomlSettings {
 @Serializable
 data class TomlConfig(
     val DATABASE: TomlDatabaseConfig = TomlDatabaseConfig(),
-    val SETTINGS: TomlSettingsConfig = TomlSettingsConfig(),
-    val LOGGING: TomlLogingConfig = TomlLogingConfig(),
+    val SETTINGS: TomlSettingsConfig = TomlSettingsConfig()
 ) : IntTomlSettings {
     override fun checkForCorrect(): String? {
-        return listOf(DATABASE, SETTINGS, LOGGING).map { it.checkForCorrect() }.firstOrNull { it != null }
+        return listOf(DATABASE, SETTINGS).map { it.checkForCorrect() }.firstOrNull { it != null }
     }
 }
 
@@ -27,7 +26,7 @@ fun readTomlFile(): TomlConfig? {
     return try {
         Toml.decodeFromString(TomlConfig.serializer(), configFile.readText())
     }catch (e: Exception) {
-        println("[applicationTomlSettings] Parse Error: ${e.localizedMessage}")
+        printTextLog("[applicationTomlSettings] Parse Error: ${e.localizedMessage}")
         null
     }
 }
@@ -37,8 +36,8 @@ fun createTomlFile(file: File) {
     val tomlString = Toml.encodeToString(TomlConfig.serializer(), config)
     try {
         file.writeText(tomlString)
-        println("[applicationTomlSettings] Configuration file '$TOML_FILE_NAME' created successfully. Path: ${file.absolutePath}")
+        printTextLog("[applicationTomlSettings] Configuration file '$TOML_FILE_NAME' created successfully. Path: ${file.absolutePath}")
     } catch (e: Exception) {
-        println("[applicationTomlSettings] Error creating configuration file: ${e.message}")
+        printTextLog("[applicationTomlSettings] Error creating configuration file: ${e.message}")
     }
 }

@@ -1,43 +1,39 @@
 package com.example.logging
 
-import com.example.applicationTomlSettings
 import com.example.currectDatetime
 import com.example.toFormatDateTime
-import io.ktor.server.application.Application
 import kotlinx.datetime.LocalDateTime
 import java.io.File
 import java.time.format.DateTimeFormatter
 
 object DailyLogger {
     private const val LOG_DIRECTORY = "logs" // Директория для хранения логов
-    private var logRetentionDays: Int = applicationTomlSettings!!.LOGGING.DAYS_LOGS // Количество дней хранения логов
-    private val enableLogs: Boolean = applicationTomlSettings!!.LOGGING.ENABLE_LOGS
+    private var logRetentionDays: Int = 30 // Количество дней хранения логов
     private val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
     private var currentLogFile: File? = null
     private var currentDate: LocalDateTime? = null
 
     init {
-        if (enableLogs) {
-            File(LOG_DIRECTORY).mkdirs()
-            printTextLog("[applicationTomlSettings] Logs is Active. Logs saved $logRetentionDays days")
-        } else {
-            printTextLog("[applicationTomlSettings] Logs is Disabled")
-        }
+        File(LOG_DIRECTORY).mkdirs()
+        printTextLog("")
+        printTextLog("")
+        printTextLog("")
+        printTextLog("[DailyLogger] Logs is Active. Logs saved $logRetentionDays days")
         updateLogFile()
         cleanupOldLogs()
     }
 
     @Synchronized
-    fun printTextLog(text: String) {
+    fun printTextLog(text: String, printToConsole: Boolean = true) {
         val now = LocalDateTime.currectDatetime()
-        if (enableLogs && currentDate != now) {
+        if (currentDate != now) {
             updateLogFile()
         }
 
         try {
             val curDTime = System.currentTimeMillis().toFormatDateTime()
-            println("$curDTime $text")
-            if (enableLogs) currentLogFile?.appendText("$curDTime $text\n")
+            if (printToConsole) println("$curDTime $text")
+            currentLogFile?.appendText("$curDTime $text\n")
         } catch (e: Exception) {
             println("[DailyLogger] Error writing to log file: ${e.message}")
             e.printStackTrace()
@@ -61,7 +57,6 @@ object DailyLogger {
     }
 
     private fun cleanupOldLogs() {
-        if (!enableLogs) return
         val logDir = File(LOG_DIRECTORY)
         val files = logDir.listFiles { file -> file.name.startsWith("log_") && file.name.endsWith(".txt") } ?: return
 

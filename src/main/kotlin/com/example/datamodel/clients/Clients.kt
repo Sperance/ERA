@@ -286,7 +286,6 @@ data class Clients(
         params.checkings.add { CheckObj(it.firstName.isNullOrEmpty(), 431, "Необходимо указать Имя") }
         params.checkings.add { CheckObj(it.lastName.isNullOrEmpty(), 432, "Необходимо указать Фамилию") }
         params.checkings.add { CheckObj(it.phone.isNullOrEmpty(), 433, "Необходимо указать Телефон") }
-//        params.checkings.add { CheckObj(it.password.isNullOrEmpty(), 435, "Необходимо указать Пароль") }
         params.checkings.add { CheckObj(it.email.isNullOrEmpty(), 436, "Необходимо указать Email") }
         params.checkings.add { CheckObj(it.gender.isNullOrZero(), 437, "Необходимо указать Пол") }
         params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.phone eq it.phone }, 409, "Клиент с указанным Номером телефона уже существует") }
@@ -313,11 +312,11 @@ data class Clients(
 
     override suspend fun delete(call: ApplicationCall, params: RequestParams<Clients>): ResultResponse {
         params.onBeforeCompleted = { obj ->
-            Records.repo_records.clearLinkEqual(Records::id_client_to, obj?.id)
-            Records.repo_records.clearLinkEqual(Records::id_client_from, obj?.id)
-            ClientsSchelude.repo_clientsschelude.clearLinkEqual(ClientsSchelude::idClient, obj?.id)
-            FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_client_to, obj?.id)
-            FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_client_from, obj?.id)
+            Records.repo_records.clearLinkEqual(Records::id_client_to, obj.id)
+            Records.repo_records.clearLinkEqual(Records::id_client_from, obj.id)
+            ClientsSchelude.repo_clientsschelude.clearLinkEqual(ClientsSchelude::idClient, obj.id)
+            FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_client_to, obj.id)
+            FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_client_from, obj.id)
         }
 
         return super.delete(call, params)

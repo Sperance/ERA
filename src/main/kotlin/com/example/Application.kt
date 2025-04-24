@@ -4,20 +4,16 @@ import com.example.datamodel.configureTests
 import com.example.helpers.ENCRYPT_KEY
 import com.example.helpers.TOML_FILE_NAME
 import com.example.logging.DailyLogger.printTextLog
-import com.example.plugins.LogPlugin
-import com.example.plugins.configureAutoHeadResponse
 import com.example.plugins.configureCORS
+import com.example.plugins.configureCallLogging
 import com.example.plugins.configureDatabases
-import com.example.plugins.configurePartialContent
 import com.example.plugins.configureContentNegotiation
-import com.example.plugins.configureForwardedHeaders
 import com.example.plugins.configureRateLimit
 import com.example.plugins.configureStatusPages
 import com.example.security.AESEncryption
 import com.example.sockets.configureSockets
 import com.example.toml.TomlConfig
 import com.example.toml.readTomlFile
-import io.ktor.server.application.*
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.engine.connector
@@ -48,14 +44,11 @@ fun main() {
             }
         },
         module = {
+            configureCallLogging()
             configureStatusPages()
-            install(LogPlugin)
-            configureForwardedHeaders()
             configureCORS()
             configureRateLimit()
-            configurePartialContent()
             configureContentNegotiation()
-            configureAutoHeadResponse()
             configureDatabases()
             configureSockets()
             configureTests()

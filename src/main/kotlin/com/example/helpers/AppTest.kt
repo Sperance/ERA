@@ -21,7 +21,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.komapper.core.dsl.QueryDsl
 import java.io.File
 import kotlin.time.Duration.Companion.minutes
