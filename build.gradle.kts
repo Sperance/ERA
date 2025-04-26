@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "com.example"
-version = "1.5.2"
+version = "1.6.1"
 
 application {
     mainClass.set("com.example.ApplicationKt")
@@ -45,7 +45,7 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation-jvm")
     implementation("io.ktor:ktor-server-netty-jvm")
     implementation("io.ktor:ktor-server-config-yaml")
-    implementation("io.ktor:ktor-server-websockets-jvm")
+    implementation("io.ktor:ktor-server-sse-jvm")
     implementation("io.ktor:ktor-server-rate-limit-jvm")
     implementation("io.ktor:ktor-server-call-logging-jvm")
     implementation("org.junit.jupiter:junit-jupiter:5.8.1")

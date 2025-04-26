@@ -9,8 +9,8 @@ import com.example.plugins.configureCallLogging
 import com.example.plugins.configureDatabases
 import com.example.plugins.configureContentNegotiation
 import com.example.plugins.configureRateLimit
+import com.example.plugins.configureSSE
 import com.example.security.AESEncryption
-import com.example.sockets.configureSockets
 import com.example.toml.TomlConfig
 import com.example.toml.readTomlFile
 import io.ktor.server.engine.embeddedServer
@@ -48,7 +48,7 @@ fun main() {
             configureRateLimit()
             configureContentNegotiation()
             configureDatabases()
-            configureSockets()
+            configureSSE()
             configureTests()
     }).start(wait = true)
 }

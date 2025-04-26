@@ -4,7 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class TomlSettingsConfig(
-    val WEB_SOCKET: Boolean = true,
     val ENDPOINT: String = "https://api.salon-era.ru/"
 ) : IntTomlSettings {
     override fun checkForCorrect(): String? {
