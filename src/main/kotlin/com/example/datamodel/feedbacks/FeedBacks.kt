@@ -2,10 +2,13 @@ package com.example.datamodel.feedbacks
 
 import com.example.helpers.CommentField
 import com.example.currectDatetime
-import com.example.datamodel.BaseRepository
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.ResultResponse
+import com.example.basemodel.BaseRepository
+import com.example.basemodel.CheckObj
+import com.example.basemodel.IntBaseDataImpl
+import com.example.basemodel.RequestParams
+import com.example.basemodel.ResultResponse
 import com.example.datamodel.clients.Clients
+import com.example.enums.EnumHttpCode
 import com.example.isNullOrZero
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
@@ -56,22 +59,25 @@ data class FeedBacks(
     }
 
     override fun getBaseId() = id
+    override fun getTblCode() = "T_FB_"
     override fun baseParams(): RequestParams<FeedBacks> {
         val params = RequestParams<FeedBacks>()
-        params.checkings.add { CheckObj(it.id_client_from != null && !Clients.repo_clients.isHaveData(it.id_client_from!!), 441, "Не существует Клиента с id ${it.id_client_from}") }
-        params.checkings.add { CheckObj(it.id_client_to != null && !Clients.repo_clients.isHaveData(it.id_client_to!!), 442, "Не существует Клиента с id ${it.id_client_to}") }
+        params.checkings.add { CheckObj(it.id_client_from != null && !Clients.repo_clients.isHaveData(it.id_client_from!!), EnumHttpCode.NOT_FOUND, 201, "Не существует Клиента с id ${it.id_client_from}") }
+        params.checkings.add { CheckObj(it.id_client_to != null && !Clients.repo_clients.isHaveData(it.id_client_to!!), EnumHttpCode.NOT_FOUND, 202, "Не существует Клиента с id ${it.id_client_to}") }
+        params.checkings.add { CheckObj(it.value != null && it.value!! < 0, EnumHttpCode.INCORRECT_PARAMETER, 203, "Оценка не может быть меньше 0") }
+        params.checkings.add { CheckObj(it.value != null && it.value!! > 10, EnumHttpCode.INCORRECT_PARAMETER, 204, "Оценка не может быть больше 10") }
         return params
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<FeedBacks>, serializer: KSerializer<List<FeedBacks>>): ResultResponse {
-        params.checkings.add { CheckObj(it.text.isNullOrEmpty(), 431, "Необходимо указать Текст отзыва") }
-        params.checkings.add { CheckObj(it.value.isNullOrZero(), 432, "Необходимо указать Оценку отзыва") }
-        params.checkings.add { CheckObj(it.id_client_from.isNullOrZero(), 433, "Необходимо указать id Клиента который оставляет отзыв") }
-        params.checkings.add { CheckObj(it.id_client_to.isNullOrZero(), 434, "Необходимо указать id Клиента, которому составляется отзыв") }
-        params.checkings.add { CheckObj(it.value!! < 0, 435, "Оценка не может быть меньше 0") }
-        params.checkings.add { CheckObj(it.value!! > 10, 435, "Оценка не может быть больше 10") }
-        params.checkings.add { CheckObj(!Clients.repo_clients.isHaveData(it.id_client_from!!), 441, "Не существует Клиента с id ${it.id_client_from}") }
-        params.checkings.add { CheckObj(!Clients.repo_clients.isHaveData(it.id_client_to!!), 442, "Не существует Клиента с id ${it.id_client_to}") }
+        params.checkings.add { CheckObj(it.text.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Текст отзыва") }
+        params.checkings.add { CheckObj(it.value.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Оценку отзыва") }
+        params.checkings.add { CheckObj(it.id_client_from.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать id Клиента который оставляет отзыв") }
+        params.checkings.add { CheckObj(it.id_client_to.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 304, "Необходимо указать id Клиента, которому составляется отзыв") }
+        params.checkings.add { CheckObj(it.value!! < 0, EnumHttpCode.INCORRECT_PARAMETER, 305, "Оценка не может быть меньше 0") }
+        params.checkings.add { CheckObj(it.value!! > 10, EnumHttpCode.INCORRECT_PARAMETER, 306, "Оценка не может быть больше 10") }
+        params.checkings.add { CheckObj(!Clients.repo_clients.isHaveData(it.id_client_from!!), EnumHttpCode.NOT_FOUND, 307, "Не существует Клиента с id ${it.id_client_from}") }
+        params.checkings.add { CheckObj(!Clients.repo_clients.isHaveData(it.id_client_to!!), EnumHttpCode.NOT_FOUND, 308, "Не существует Клиента с id ${it.id_client_to}") }
 
         params.defaults.add { it::value to 0.toByte() }
 

@@ -1,7 +1,6 @@
 package com.example.helpers
 
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.clients.Clients.Companion.tbl_clients
+import com.example.basemodel.IntBaseDataImpl
 import com.example.enums.EnumSQLTypes
 import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.db
@@ -12,7 +11,7 @@ import org.komapper.core.dsl.metamodel.EntityMetamodel
 import org.komapper.core.dsl.metamodel.PropertyMetamodel
 import org.komapper.core.dsl.metamodel.getAutoIncrementProperty
 import org.komapper.core.dsl.operator.count
-import org.komapper.core.dsl.query.Query
+import org.komapper.core.dsl.query.get
 import org.komapper.core.dsl.query.singleOrNull
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.createInstance
@@ -126,6 +125,23 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.getFromArra
     return result.size == ids.size
 }
 
+suspend fun <T: IntBaseDataImpl<T>> IntBaseDataImpl<T>.getColumns() : Collection<String> {
+    try {
+        val script = """SELECT column_name FROM information_schema.columns WHERE table_name = 'tbl_${this::class.simpleName?.lowercase()}'"""
+        printTextLog("[getColumns] $script")
+        val list = mutableListOf<String>()
+        db.runQuery {
+            QueryDsl.executeTemplate(script.trimIndent())
+                .returning()
+                .select { row -> list.add(row.get<String>(0)?:"") }
+        }
+        return list
+    } catch (e: Exception) {
+        printTextLog("[getColumns] Error: ${e.localizedMessage}")
+        return listOf()
+    }
+}
+
 private suspend fun executeScript(script: String): String? {
     printTextLog("[executeScript] $script")
     try {
@@ -150,5 +166,7 @@ suspend fun <T: IntBaseDataImpl<T>> IntBaseDataImpl<T>.executeAddColumn(columnNa
 }
 
 suspend fun <T: IntBaseDataImpl<T>> IntBaseDataImpl<T>.executeDelColumn(columnName: String): String? {
+    val columns = this.getColumns()
+    if (columns.find { it == columnName } == null) return "В таблице tbl_${this::class.simpleName} нет колонки $columnName"
     return executeScript("""ALTER TABLE ${this.getTblName()} DROP COLUMN IF EXISTS $columnName RESTRICT""")
 }

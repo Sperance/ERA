@@ -2,9 +2,12 @@ package com.example.datamodel.news
 
 import com.example.helpers.CommentField
 import com.example.currectDatetime
-import com.example.datamodel.BaseRepository
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.ResultResponse
+import com.example.basemodel.BaseRepository
+import com.example.basemodel.CheckObj
+import com.example.basemodel.IntBaseDataImpl
+import com.example.basemodel.RequestParams
+import com.example.basemodel.ResultResponse
+import com.example.enums.EnumHttpCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -47,10 +50,11 @@ data class News(
     }
 
     override fun getBaseId() = id
+    override fun getTblCode() = "T_NWS_"
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<News>, serializer: KSerializer<List<News>>): ResultResponse {
-        params.checkings.add { CheckObj(it.name.isNullOrEmpty(), 431, "Необходимо указать Наименование новости (name)") }
-        params.checkings.add { CheckObj(it.mainText.isNullOrEmpty(), 432, "Необходимо указать Текст новости (mainText)") }
+        params.checkings.add { CheckObj(it.name.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Наименование новости (name)") }
+        params.checkings.add { CheckObj(it.mainText.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Текст новости (mainText)") }
         return super.post(call, params, serializer)
     }
 }

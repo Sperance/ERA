@@ -2,12 +2,14 @@ package com.example.datamodel.catalogs
 
 import com.example.helpers.CommentField
 import com.example.currectDatetime
-import com.example.datamodel.BaseRepository
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.ResultResponse
+import com.example.basemodel.BaseRepository
+import com.example.basemodel.CheckObj
+import com.example.basemodel.IntBaseDataImpl
+import com.example.basemodel.RequestParams
+import com.example.basemodel.ResultResponse
 import com.example.datamodel.clients.Clients
 import com.example.datamodel.services.Services
-import io.ktor.http.HttpStatusCode
+import com.example.enums.EnumHttpCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -54,16 +56,17 @@ data class Catalogs(
     }
 
     override fun getBaseId() = id
+    override fun getTblCode() = "T_CTL_"
     override fun baseParams(): RequestParams<Catalogs> {
         val params = RequestParams<Catalogs>()
-        params.checkings.add { CheckObj(repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null, 409, "В БД уже присутствует категория '${it.category}' со значнеием '${it.value}'") }
+        params.checkings.add { CheckObj(repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null, EnumHttpCode.DUPLICATE, 201, "В БД уже присутствует категория '${it.category}' со значнеием '${it.value}'") }
         return params
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Catalogs>, serializer: KSerializer<List<Catalogs>>): ResultResponse {
-        params.checkings.add { CheckObj(it.type.isNullOrEmpty(), 430, "Необходимо указать Тип категории(type) для элемента") }
-        params.checkings.add { CheckObj(it.category.isNullOrEmpty(), 431, "Необходимо указать Категорию(category) для элемента") }
-        params.checkings.add { CheckObj(it.value.isNullOrEmpty(), 432, "Необходимо указать Значение(value) элемента") }
+        params.checkings.add { CheckObj(it.type.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Тип категории(type) для элемента") }
+        params.checkings.add { CheckObj(it.category.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Категорию(category) для элемента") }
+        params.checkings.add { CheckObj(it.value.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать Значение(value) элемента") }
 
         return super.post(call, params, serializer)
     }

@@ -2,10 +2,13 @@ package com.example.datamodel.clientsschelude
 
 import com.example.helpers.CommentField
 import com.example.currectDatetime
-import com.example.datamodel.BaseRepository
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.ResultResponse
+import com.example.basemodel.BaseRepository
+import com.example.basemodel.CheckObj
+import com.example.basemodel.IntBaseDataImpl
+import com.example.basemodel.RequestParams
+import com.example.basemodel.ResultResponse
 import com.example.datamodel.clients.Clients.Companion.repo_clients
+import com.example.enums.EnumHttpCode
 import com.example.isNullOrEmpty
 import com.example.isNullOrZero
 import io.ktor.server.application.ApplicationCall
@@ -52,20 +55,19 @@ data class ClientsSchelude(
     }
 
     override fun getBaseId() = id
+    override fun getTblCode() = "T_CLSC_"
     override fun baseParams(): RequestParams<ClientsSchelude> {
         val params = RequestParams<ClientsSchelude>()
-        params.checkings.add { CheckObj(it.idClient != null && !repo_clients.isHaveData(it.idClient), 431, "Не найден Client с id ${it.idClient}") }
-        params.checkings.add { CheckObj(it.scheludeDateStart != null && it.scheludeDateEnd != null && it.scheludeDateStart!! >= it.scheludeDateEnd!!, 432, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
+        params.checkings.add { CheckObj(it.idClient != null && !repo_clients.isHaveData(it.idClient), EnumHttpCode.NOT_FOUND, 201, "Не найден Client с id ${it.idClient}") }
+        params.checkings.add { CheckObj(it.scheludeDateStart.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 202, "Необходимо указать Дату/время начала работы") }
+        params.checkings.add { CheckObj(it.scheludeDateEnd.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 203, "Необходимо указать Дату/время конца работы") }
+        params.checkings.add { CheckObj(it.scheludeDateStart!! >= it.scheludeDateEnd!!, EnumHttpCode.INCORRECT_PARAMETER, 204, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
         return params
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<List<ClientsSchelude>>): ResultResponse {
-        params.checkings.add { CheckObj(it.idClient.isNullOrZero(), 431, "Необходимо указать id Клиента для графика работы") }
-        params.checkings.add { CheckObj(it.scheludeDateStart.isNullOrEmpty(), 432, "Необходимо указать Дату/время начала работы") }
-        params.checkings.add { CheckObj(it.scheludeDateEnd.isNullOrEmpty(), 433, "Необходимо указать Дату/время конца работы") }
-        params.checkings.add { CheckObj(it.scheludeDateStart!! >= it.scheludeDateEnd!!, 434, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
-        params.checkings.add { CheckObj(repo_clientsschelude.getRepositoryData().find { fil -> fil.idClient == it.idClient && fil.scheludeDateStart == it.scheludeDateStart && fil.scheludeDateEnd == it.scheludeDateEnd } != null, 409, "Запись с передаваемыми параметрами уже присутствует в базе данных") }
-        params.checkings.add { CheckObj(!repo_clients.isHaveData(it.idClient), 442, "Не найден Client с id ${it.idClient}") }
+        params.checkings.add { CheckObj(it.idClient.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать id Клиента для графика работы") }
+        params.checkings.add { CheckObj(!repo_clients.isHaveData(it.idClient), EnumHttpCode.NOT_FOUND, 302, "Не найден Client с id ${it.idClient}") }
 
         return super.post(call, params, serializer)
     }

@@ -34,11 +34,11 @@ import java.io.File
 
 private val connectionFactory: ConnectionFactoryOptions = ConnectionFactoryOptions.builder()
     .option(ConnectionFactoryOptions.DRIVER, "postgresql")
-    .option(ConnectionFactoryOptions.HOST, applicationTomlSettings!!.DATABASE.HOST)
-    .option(ConnectionFactoryOptions.PORT, applicationTomlSettings!!.DATABASE.PORT)
-    .option(ConnectionFactoryOptions.USER, applicationTomlSettings!!.DATABASE.USER)
-    .option(ConnectionFactoryOptions.PASSWORD, applicationTomlSettings!!.DATABASE.PASSWORD)
-    .option(ConnectionFactoryOptions.DATABASE, applicationTomlSettings!!.DATABASE.DATABASE)
+    .option(ConnectionFactoryOptions.HOST, applicationTomlSettings?.DATABASE?.HOST?:"localhost")
+    .option(ConnectionFactoryOptions.PORT, applicationTomlSettings?.DATABASE?.PORT?:5432)
+    .option(ConnectionFactoryOptions.USER, applicationTomlSettings?.DATABASE?.USER?:"postgres_rpg")
+    .option(ConnectionFactoryOptions.PASSWORD, applicationTomlSettings?.DATABASE?.PASSWORD?:"22322137")
+    .option(ConnectionFactoryOptions.DATABASE, applicationTomlSettings?.DATABASE?.DATABASE?:"postgres_rpg")
     .build()
 
 val db = R2dbcDatabase(connectionFactory, executionOptions = ExecutionOptions(suppressLogging = true))

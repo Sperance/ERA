@@ -1,11 +1,12 @@
 package com.example
 
-import com.example.datamodel.BaseRepository
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.ResultResponse
+import com.example.basemodel.BaseRepository
+import com.example.basemodel.IntBaseDataImpl
+import com.example.basemodel.ResultResponse
 import com.example.helpers.getField
 import com.example.helpers.putField
 import com.example.helpers.CommentField
+import com.example.logging.DailyLogger.printTextLog
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
 import io.ktor.server.util.toLocalDateTime
@@ -15,7 +16,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.datetime.toLocalDateTime
-import java.io.File
 import java.lang.reflect.Field
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -71,9 +71,18 @@ fun LocalDateTime.Companion.currentZeroDate() : LocalDateTime {
 fun LocalDateTime.Companion.currectDatetime() = Date().toLocalDateTime().toKotlinLocalDateTime()
 
 suspend fun ApplicationCall.respond(response: ResultResponse) {
-    when(response) {
-        is ResultResponse.Error -> respond(status = response.status, message = response.message)
-        is ResultResponse.Success -> respond(status = response.status, message = response.data)
+    try {
+        when(response) {
+            is ResultResponse.Error -> {
+                respond(
+                    status = response.status.httpCode,
+                    message = response.message)
+            }
+            is ResultResponse.Success -> respond(status = response.status.httpCode, message = response.data?:"")
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        printTextLog("[ApplicationCall] Error: ${e.localizedMessage}")
     }
 }
 
@@ -119,23 +128,4 @@ fun Field?.getCommentFieldAnnotation(): String {
     val ann = this?.getAnnotation(CommentField::class.java)
     if (ann == null) return ""
     return "[${ann.name}; обязательное: ${ann.required}]"
-}
-
-fun isSafeCommand(command: String): String? {
-    if (command.trim().isBlank()) return "<blank>"
-    if (command.trim() == "/") return "/"
-    if (command.trim() == "//") return "//"
-    val unsafePatterns = listOf(
-        "pstree", "nice", "renice", "ulimit", "dns", "www.", ".org", "/geoserver", "/script",
-        "http:", "/api.", ".php", "-stdin", "/json", ".com:443", ".asp", "-bin", ".env", ".pn:443",
-        "/robots", ".git", "/login", "goform", "_cfg", "/version",
-        "/versions", ".zip", ".html", "/gateway", "/login", "/hello.", "/formLogin", "/admin",
-        "/actuator", "/health", "/css", "ab2g", "ab2h", "ReportServer", ".rar",
-        "/webui", "/chec", "/powershell", "/sitemap", "/v1", ".tar", ".gz", "/metadata",
-        "/web/", "/doc/", ".7z", ".xml", "debug", ".cgi", "pro.", ".js", "/x.", "/owa/",
-        "/query", "/resolve", "/GponForm/", "/diag_", ".application", "/ecp/", "/microsoft",
-        "/aaa", "/aab", "/index", ".ico", "/device", "/onvif", "web.", ".in:", "config",
-        "/t4", "/teorema5", "/HNAP1", "-", "*", "#", "!", ":1", ":2", ":3", ":4", ":5",
-        ":6", ":7", ":8", ":9", ":0", "_profiler", "/env", "%")
-    return unsafePatterns.find { pat -> command.trim().lowercase().contains(pat.trim().lowercase()) }
 }

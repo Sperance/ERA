@@ -2,10 +2,13 @@ package com.example.datamodel.stockfiles
 
 import com.example.helpers.CommentField
 import com.example.currectDatetime
-import com.example.datamodel.BaseRepository
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.ResultResponse
+import com.example.basemodel.BaseRepository
+import com.example.basemodel.CheckObj
+import com.example.basemodel.IntBaseDataImpl
+import com.example.basemodel.RequestParams
+import com.example.basemodel.ResultResponse
 import com.example.datamodel.services.Services
+import com.example.enums.EnumHttpCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -51,15 +54,16 @@ data class Stockfiles(
     }
 
     override fun getBaseId() = id
+    override fun getTblCode() = "T_STF_"
     override fun baseParams(): RequestParams<Stockfiles> {
         val params = RequestParams<Stockfiles>()
-        params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), 441, "Не найдена Категория файла с id ${it.service}") }
+        params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), EnumHttpCode.NOT_FOUND, 201, "Не найдена Категория файла с id ${it.service}") }
         return params
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Stockfiles>, serializer: KSerializer<List<Stockfiles>>): ResultResponse {
         params.isNeedFile = true
-        params.checkings.add { CheckObj(it.category.isNullOrEmpty(), 431, "Необходимо указать Категорию файла") }
+        params.checkings.add { CheckObj(it.category.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Категорию файла") }
 
         return super.post(call, params, serializer)
     }

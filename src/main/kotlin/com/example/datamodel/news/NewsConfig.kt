@@ -1,11 +1,10 @@
 package com.example.datamodel.news
 
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.ResultResponse
+import com.example.basemodel.RequestParams
+import com.example.basemodel.ResultResponse
+import com.example.enums.EnumHttpCode
 import com.example.respond
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -18,32 +17,32 @@ fun Application.configureNews() {
         route("/news") {
 
             get("/structure") {
-                call.respond(ResultResponse.Success(HttpStatusCode.OK, News().getCommentArray()))
+                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, News().getCommentArray()))
             }
 
             get("/clearTable") {
                 News.repo_news.clearTable()
-                call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
+                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, "Таблица успешно очищена"))
             }
 
             get("/all") {
-                call.respond(News().get(call, IntBaseDataImpl.RequestParams()))
+                call.respond(News().get(call, RequestParams()))
             }
 
             get("/all/filter") {
-                call.respond(News().getFilter(call, IntBaseDataImpl.RequestParams()))
+                call.respond(News().getFilter(call, RequestParams()))
             }
 
             post("/update") {
-                call.respond(News().update(call, IntBaseDataImpl.RequestParams(), News.serializer()))
+                call.respond(News().update(call, RequestParams(), News.serializer()))
             }
 
             post {
-                call.respond(News().post(call, IntBaseDataImpl.RequestParams(), ListSerializer(News.serializer())))
+                call.respond(News().post(call, RequestParams(), ListSerializer(News.serializer())))
             }
 
             delete {
-                call.respond(News().delete(call, IntBaseDataImpl.RequestParams()))
+                call.respond(News().delete(call, RequestParams()))
             }
         }
     }

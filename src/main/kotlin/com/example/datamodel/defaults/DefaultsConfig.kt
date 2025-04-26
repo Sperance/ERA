@@ -5,6 +5,7 @@ import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.clients.Clients
 import com.example.helpers.createBatch
 import com.example.helpers.isEmpty
+import com.example.security.AESEncryption
 import com.example.security.generateSalt
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
@@ -18,23 +19,23 @@ private suspend fun defaultClients() {
     if (Clients().isEmpty()) {
         Clients().createBatch(listOf(
             Clients().apply {
-                firstName = "admin"
-                lastName = "admin"
+                firstName = AESEncryption.encrypt("admin")
+                lastName = AESEncryption.encrypt("admin")
                 login = "admin"
-                phone = "999"
+                phone = AESEncryption.encrypt("999")
                 salt = generateSalt()
-                email = "adm@adm.ru"
+                email = AESEncryption.encrypt("adm@adm.ru")
                 clientType = "admin"
                 dateWorkIn = LocalDateTime.currectDatetime()
                 setNewPassword("Password123.")
             },
             Clients().apply {
-                firstName = "Dmitriy"
-                lastName = "MMM"
+                firstName = AESEncryption.encrypt("Dmitriy")
+                lastName = AESEncryption.encrypt("MMM")
                 login = "tandine"
-                phone = "+79779999999"
+                phone = AESEncryption.encrypt("+79779999999")
                 salt = generateSalt()
-                email = "mde@mde.ru"
+                email = AESEncryption.encrypt("mde@mde.ru")
                 dateWorkIn = LocalDateTime.currectDatetime()
                 setNewPassword("32543254")
             })

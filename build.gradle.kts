@@ -47,7 +47,6 @@ dependencies {
     implementation("io.ktor:ktor-server-config-yaml")
     implementation("io.ktor:ktor-server-websockets-jvm")
     implementation("io.ktor:ktor-server-rate-limit-jvm")
-    implementation("io.ktor:ktor-server-status-pages-jvm")
     implementation("io.ktor:ktor-server-call-logging-jvm")
     implementation("org.junit.jupiter:junit-jupiter:5.8.1")
     implementation("io.ktor:ktor-network-tls-certificates-jvm")

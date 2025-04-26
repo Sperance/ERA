@@ -1,13 +1,11 @@
 package com.example.datamodel.catalogs
 
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.ResultResponse
-import com.example.datamodel.clients.Clients
+import com.example.basemodel.IntBaseDataImpl
+import com.example.basemodel.RequestParams
+import com.example.basemodel.ResultResponse
+import com.example.enums.EnumHttpCode
 import com.example.respond
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
-import io.ktor.server.response.respond
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -20,32 +18,40 @@ fun Application.configureCatalogs() {
         route("/catalogs") {
 
             get("/structure") {
-                call.respond(ResultResponse.Success(HttpStatusCode.OK, Catalogs().getCommentArray()))
+                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, Catalogs().getCommentArray()))
             }
 
             get("/clearTable") {
                 Catalogs.repo_catalogs.clearTable()
-                call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
+                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, "Таблица успешно очищена"))
             }
 
             get("/all") {
-                call.respond(Catalogs().get(call, IntBaseDataImpl.RequestParams()))
+                call.respond(Catalogs().get(call, RequestParams()))
             }
 
             get("/all/filter") {
-                call.respond(Catalogs().getFilter(call, IntBaseDataImpl.RequestParams()))
+                call.respond(Catalogs().getFilter(call, RequestParams()))
             }
 
             post("/update") {
-                call.respond(Catalogs().update(call, IntBaseDataImpl.RequestParams(), Catalogs.serializer()))
+                call.respond(Catalogs().update(call, RequestParams(), Catalogs.serializer()))
+            }
+
+            post("/addColumn") {
+                call.respond(Catalogs().addColumn(call))
+            }
+
+            post("/delColumn") {
+                call.respond(Catalogs().delColumn(call))
             }
 
             post {
-                call.respond(Catalogs().post(call, IntBaseDataImpl.RequestParams(), ListSerializer(Catalogs.serializer())))
+                call.respond(Catalogs().post(call, RequestParams(), ListSerializer(Catalogs.serializer())))
             }
 
             delete {
-                call.respond(Catalogs().delete(call, IntBaseDataImpl.RequestParams()))
+                call.respond(Catalogs().delete(call, RequestParams()))
             }
         }
     }

@@ -3,9 +3,11 @@ package com.example.datamodel.clients
 import com.example.helpers.CommentField
 import com.example.currectDatetime
 import com.example.currentZeroDate
-import com.example.datamodel.BaseRepository
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.ResultResponse
+import com.example.basemodel.BaseRepository
+import com.example.basemodel.CheckObj
+import com.example.basemodel.IntBaseDataImpl
+import com.example.basemodel.RequestParams
+import com.example.basemodel.ResultResponse
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.clientsschelude.ClientsSchelude
 import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.tbl_clientsschelude
@@ -17,6 +19,7 @@ import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.serverhistory.ServerHistory
 import com.example.datamodel.services.Services.Companion.repo_services
+import com.example.enums.EnumHttpCode
 import com.example.helpers.update
 import com.example.isNullOrZero
 import com.example.minus
@@ -32,18 +35,14 @@ import com.example.security.hashPassword
 import com.example.security.verifyPassword
 import com.example.toDateTimePossible
 import com.example.toIntPossible
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
-import io.r2dbc.spi.R2dbcType
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import org.komapper.annotation.*
 import org.komapper.core.dsl.Meta
-import org.komapper.core.type.ClobString
-import java.sql.JDBCType
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.time.Duration.Companion.days
@@ -110,13 +109,46 @@ data class Clients(
     }
 
     override fun getBaseId() = id
+    override fun getTblCode() = "T_CLN_"
     override fun baseParams(): RequestParams<Clients> {
         val params = RequestParams<Clients>()
-        params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), 441, "Не найдена Должность с id ${it.position}") }
-        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), 442, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()} ALL: ${Catalogs.repo_catalogs.getRepositoryData().joinToString("\n")}") }
-        params.checkings.add { CheckObj(it.salt != null, 443, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
-        params.checkings.add { CheckObj(it.login != null && repo_clients.isHaveDataField(Clients::login, it.login), 409, "Клиент с указанным Логином уже существует") }
+        params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), EnumHttpCode.NOT_FOUND, 201, "Не найдена Должность с id ${it.position}") }
+        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), EnumHttpCode.NOT_FOUND, 202, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()} ALL: ${Catalogs.repo_catalogs.getRepositoryData().joinToString("\n")}") }
+        params.checkings.add { CheckObj(it.salt != null, EnumHttpCode.BAD_REQUEST, 203, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
+        params.checkings.add { CheckObj(it.login != null && repo_clients.isHaveDataField(Clients::login, it.login), EnumHttpCode.DUPLICATE, 204, "Клиент с указанным Логином уже существует") }
+
+        params.onBeforeCompleted = { obj ->
+            if (obj.lastName != null) obj.lastName = AESEncryption.encrypt(obj.lastName)
+            if (obj.firstName != null) obj.firstName = AESEncryption.encrypt(obj.firstName)
+            if (obj.patronymic != null) obj.patronymic = AESEncryption.encrypt(obj.patronymic)
+            if (obj.email != null) obj.email = AESEncryption.encrypt(obj.email)
+            if (obj.phone != null) obj.phone = AESEncryption.encrypt(obj.phone)
+            if (obj.password != null) obj.setNewPassword(obj.password!!)
+        }
+
         return params
+    }
+
+    override suspend fun post(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<List<Clients>>): ResultResponse {
+        params.checkings.add { CheckObj(it.firstName.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Имя") }
+        params.checkings.add { CheckObj(it.lastName.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Фамилию") }
+        params.checkings.add { CheckObj(it.phone.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать Телефон") }
+        params.checkings.add { CheckObj(it.email.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 304, "Необходимо указать Email") }
+        params.checkings.add { CheckObj(it.gender.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 305, "Необходимо указать Пол") }
+        params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.phone eq it.phone }, EnumHttpCode.DUPLICATE, 306, "Клиент с указанным Номером телефона уже существует") }
+        params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.email eq it.email }, EnumHttpCode.DUPLICATE, 307, "Клиент с указанным Почтовым адресом уже существует") }
+        params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), EnumHttpCode.NOT_FOUND, 308, "Не найдена Должность с id ${it.position}") }
+
+        val size = Clients().getSize()
+        params.defaults.add { it::dateBirthday to LocalDateTime.nullDatetime() }
+        params.defaults.add { it::dateWorkIn to LocalDateTime.nullDatetime() }
+        params.defaults.add { it::dateWorkOut to LocalDateTime.nullDatetime() }
+        params.defaults.add { it::login to "base_client_$size" }
+        params.defaults.add { it::password to generateShortClientPassword(size) }
+        params.defaults.add { it::arrayTypeWork to arrayOf<Int>() }
+        params.defaults.add { it::salt to generateSalt() }
+
+        return super.post(call, params, serializer)
     }
 
     private fun generateEmailRecoveryCode() : String {
@@ -163,30 +195,32 @@ data class Clients(
     }
 
     suspend fun getTimeSlots(call: ApplicationCall): ResultResponse {
+        val methodName = "GET_TIMESLOTS"
         try {
             val _clientId = call.parameters["clientId"]
             val _servceLength = call.parameters["servceLength"]
 
-            if (_clientId == null || !_clientId.toIntPossible()) return ResultResponse.Error(HttpStatusCode(430, ""), "Incorrect parameter 'clientId'($_clientId). This parameter must be 'Int' type")
-            if (_servceLength == null || !_servceLength.toIntPossible()) return ResultResponse.Error(HttpStatusCode(431, ""), "Incorrect parameter 'servceLength'($_servceLength). This parameter must be 'Int' type")
+            if (_clientId == null || !_clientId.toIntPossible()) return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 101 to "Incorrect parameter 'clientId'($_clientId). This parameter must be 'Int' type"))
+            if (_servceLength == null || !_servceLength.toIntPossible()) return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 102 to "Incorrect parameter 'servceLength'($_servceLength). This parameter must be 'Int' type"))
 
-            return ResultResponse.Success(HttpStatusCode.OK, _getTimeSlots(_clientId.toInt(), _servceLength.toInt()))
+            return ResultResponse.Success(EnumHttpCode.COMPLETED, _getTimeSlots(_clientId.toInt(), _servceLength.toInt()))
         } catch (e: Exception) {
-            return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage?:"")
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(methodName, 440 to e.localizedMessage))
         }
     }
 
     suspend fun getSlots(call: ApplicationCall): ResultResponse {
+        val methodName = "GET_SLOTS"
         try {
             val _id = call.parameters["id"]
             val _data = call.parameters["data"]
 
             if (_id == null || !_id.toIntPossible())
-                return ResultResponse.Error(HttpStatusCode(431, ""), "Incorrect parameter 'id'($_id). This parameter must be 'Int' type")
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 101 to "Incorrect parameter 'id'($_id). This parameter must be 'Int' type"))
             if (_data.isNullOrEmpty())
-                return ResultResponse.Error(HttpStatusCode(432, ""), "Необходимо указать дату")
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 102 to "Необходимо указать дату"))
             if (!_data.toDateTimePossible())
-                return ResultResponse.Error(HttpStatusCode(433, ""), "Неверный формат даты")
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 103 to "Неверный формат даты"))
 
             val id = _id.toInt()
             val data = LocalDateTime.parse(_data)
@@ -196,46 +230,48 @@ data class Clients(
 
             val currentDayRecords = Records().getData({ tbl_records.id_client_to eq id ; tbl_records.dateRecord.between(dateStart..dateEnd) })
 
-            return ResultResponse.Success(HttpStatusCode.OK, currentDayRecords)
+            return ResultResponse.Success(EnumHttpCode.COMPLETED, currentDayRecords)
         } catch (e: Exception) {
-            return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(methodName, 440 to e.localizedMessage))
         }
     }
 
     suspend fun auth(call: ApplicationCall): ResultResponse {
+        val methodName = "AUTH"
         try {
             val user = call.receive<Clients>()
 
             if (user.login.isNullOrEmpty())
-                return ResultResponse.Error(HttpStatusCode(431, ""), "Необходимо указать Логин(login)")
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 101 to "Необходимо указать Логин(login)"))
 
             if (user.password.isNullOrEmpty())
-                return ResultResponse.Error(HttpStatusCode(432, ""), "Необходимо указать Пароль(password)")
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 102 to "Необходимо указать Пароль(password)"))
 
             val client = repo_clients.getRepositoryData().find { it.login == user.login && verifyPassword(it.password, it.salt, user.password) }
             if (client == null)
-                return ResultResponse.Error(HttpStatusCode.BadRequest, "Не найден пользователь с указанным Логином и Паролем")
+                return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(methodName, 103 to "Не найден пользователь с указанным Логином и Паролем"))
 
             ServerHistory.addRecord(11, "Авторизация пользователя ${client.id}", client.toStringLow())
-            return ResultResponse.Success(HttpStatusCode.OK, client)
+            return ResultResponse.Success(EnumHttpCode.COMPLETED, client)
         } catch (e: Exception) {
-            return ResultResponse.Error(HttpStatusCode.Conflict, e.localizedMessage)
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(methodName, 440 to e.localizedMessage))
         }
     }
 
     suspend fun changePasswordFromEmail(call: ApplicationCall): ResultResponse {
+        val methodName = "CHG_PASS_EMAIL"
         try {
             val email = call.parameters["email"]
             val password = call.parameters["password"]
 
             if (email.isNullOrEmpty())
-                return ResultResponse.Error(HttpStatusCode(431, ""), "Incorrect parameter 'email'($email). This parameter must be 'String' type")
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 101 to "Incorrect parameter 'email'($email). This parameter must be 'String' type"))
             if (password.isNullOrEmpty())
-                return ResultResponse.Error(HttpStatusCode(432, ""), "Incorrect parameter 'password'($password). This parameter must be 'String' type")
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 102 to "Incorrect parameter 'password'($password). This parameter must be 'String' type"))
 
             val findedClient = repo_clients.getRepositoryData().find { it.email == email }
             if (findedClient == null)
-                return ResultResponse.Error(HttpStatusCode(433, ""), "Не найден Клиент с адресом $email")
+                return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(methodName, 103 to "Не найден Клиент с адресом $email"))
 
             findedClient.setNewPassword(password)
             val updated = findedClient.update()
@@ -244,29 +280,30 @@ data class Clients(
 
             ServerHistory.addRecord(12, "Изменение пароля пользователя ${updated.id}", password)
 
-            return ResultResponse.Success(HttpStatusCode.OK, updated)
+            return ResultResponse.Success(EnumHttpCode.COMPLETED, updated)
         } catch (e: Exception) {
-            return ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(methodName, 440 to e.localizedMessage))
         }
     }
 
     suspend fun postRecoveryPassword(call: ApplicationCall): ResultResponse {
+        val methodName = "POST_REC_PASS"
         try {
             val email = call.parameters["email"]
             val send = call.parameters["send"]
 
             if (email.isNullOrEmpty())
-                return ResultResponse.Error(HttpStatusCode(431, ""), "Incorrect parameter 'email'($email). This parameter must be 'String' type")
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 101 to "Incorrect parameter 'email'($email). This parameter must be 'String' type"))
 
             val findedClient = repo_clients.getRepositoryData().find { it.email == email }
             if (findedClient == null)
-                return ResultResponse.Error(HttpStatusCode(432, ""), "Не найден Клиент с адресом $email")
+                return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(methodName, 102 to "Не найден Клиент с адресом $email"))
 
             val generatedPassword = generateEmailRecoveryCode()
             if (send != null) {
                 val boolSend = send.toBooleanStrictOrNull()
                 if (boolSend == null) {
-                    return ResultResponse.Error(HttpStatusCode(433, ""), "Параметр send($send) должен быть boolean")
+                    return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 103 to "Параметр send($send) должен быть boolean"))
                 }
                 if (boolSend) {
                     GMailSender().sendMail("Восстановление пароля", "Код для восстановления пароля: $generatedPassword", email)
@@ -275,39 +312,11 @@ data class Clients(
 
             ServerHistory.addRecord(13, "Отправлен запрос на $email на восстановление пароля", generatedPassword)
 
-            return ResultResponse.Success(HttpStatusCode.OK, generatedPassword)
+            return ResultResponse.Success(EnumHttpCode.COMPLETED, generatedPassword)
 
         } catch (e: Exception) {
-            return ResultResponse.Error(HttpStatusCode.BadRequest, e.localizedMessage)
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(methodName, 440 to e.localizedMessage))
         }
-    }
-
-    override suspend fun post(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<List<Clients>>): ResultResponse {
-        params.checkings.add { CheckObj(it.firstName.isNullOrEmpty(), 431, "Необходимо указать Имя") }
-        params.checkings.add { CheckObj(it.lastName.isNullOrEmpty(), 432, "Необходимо указать Фамилию") }
-        params.checkings.add { CheckObj(it.phone.isNullOrEmpty(), 433, "Необходимо указать Телефон") }
-        params.checkings.add { CheckObj(it.email.isNullOrEmpty(), 436, "Необходимо указать Email") }
-        params.checkings.add { CheckObj(it.gender.isNullOrZero(), 437, "Необходимо указать Пол") }
-        params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.phone eq it.phone }, 409, "Клиент с указанным Номером телефона уже существует") }
-        params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.email eq it.email }, 409, "Клиент с указанным Почтовым адресом уже существует") }
-        params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), 444, "Не найдена Должность с id ${it.position}") }
-        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), 445, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
-
-        val size = Clients().getSize()
-        params.defaults.add { it::dateBirthday to LocalDateTime.nullDatetime() }
-        params.defaults.add { it::dateWorkIn to LocalDateTime.nullDatetime() }
-        params.defaults.add { it::dateWorkOut to LocalDateTime.nullDatetime() }
-        params.defaults.add { it::login to "base_client_$size" }
-        params.defaults.add { it::password to generateShortClientPassword(size) }
-        params.defaults.add { it::arrayTypeWork to arrayOf<Int>() }
-        params.defaults.add { it::salt to generateSalt() }
-
-        params.onBeforeCompleted = { obj ->
-            obj.email = AESEncryption.encrypt(obj.email)
-            obj.setNewPassword(obj.password!!)
-        }
-
-        return super.post(call, params, serializer)
     }
 
     override suspend fun delete(call: ApplicationCall, params: RequestParams<Clients>): ResultResponse {

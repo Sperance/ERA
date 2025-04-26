@@ -1,11 +1,11 @@
 package com.example.datamodel.clients
 
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.ResultResponse
+import com.example.basemodel.IntBaseDataImpl
+import com.example.basemodel.RequestParams
+import com.example.basemodel.ResultResponse
+import com.example.enums.EnumHttpCode
 import com.example.respond
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -17,12 +17,12 @@ fun Application.configureClients() {
     routing {
         route("/clients") {
             get("/structure") {
-                call.respond(ResultResponse.Success(HttpStatusCode.OK, Clients().getCommentArray()))
+                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, Clients().getCommentArray()))
             }
 
             get("/clearTable") {
                 Clients.repo_clients.clearTable()
-                call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
+                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, "Таблица успешно очищена"))
             }
 
             get ("/timeslot/{clientId}/{servceLength}") {
@@ -30,11 +30,11 @@ fun Application.configureClients() {
             }
 
             get("/all") {
-                call.respond(Clients().get(call, IntBaseDataImpl.RequestParams()))
+                call.respond(Clients().get(call, RequestParams()))
             }
 
             get("/all/filter") {
-                call.respond(Clients().getFilter(call, IntBaseDataImpl.RequestParams()))
+                call.respond(Clients().getFilter(call, RequestParams()))
             }
 
             get("/slots/{id}/{data}") {
@@ -46,11 +46,11 @@ fun Application.configureClients() {
             }
 
             post("/update") {
-                call.respond(Clients().update(call, IntBaseDataImpl.RequestParams(), Clients.serializer()))
+                call.respond(Clients().update(call, RequestParams(), Clients.serializer()))
             }
 
             post {
-                call.respond(Clients().post(call, IntBaseDataImpl.RequestParams(), ListSerializer(Clients.serializer())))
+                call.respond(Clients().post(call, RequestParams(), ListSerializer(Clients.serializer())))
             }
 
             post("/recoveryPassword") {
@@ -62,7 +62,7 @@ fun Application.configureClients() {
             }
 
             delete {
-                call.respond(Clients().delete(call, IntBaseDataImpl.RequestParams()))
+                call.respond(Clients().delete(call, RequestParams()))
             }
         }
     }

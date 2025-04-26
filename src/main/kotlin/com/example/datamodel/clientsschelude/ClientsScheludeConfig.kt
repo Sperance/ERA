@@ -1,13 +1,11 @@
 package com.example.datamodel.clientsschelude
 
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.ResultResponse
-import com.example.datamodel.catalogs.Catalogs
+import com.example.basemodel.IntBaseDataImpl
+import com.example.basemodel.RequestParams
+import com.example.basemodel.ResultResponse
+import com.example.enums.EnumHttpCode
 import com.example.respond
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
-import io.ktor.server.response.respond
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -20,36 +18,36 @@ fun Application.configureClientsSchelude() {
         route("/clientsschelude") {
 
             get("/structure") {
-                call.respond(ResultResponse.Success(HttpStatusCode.OK, ClientsSchelude().getCommentArray()))
+                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, ClientsSchelude().getCommentArray()))
             }
 
             get("/clearTable") {
                 ClientsSchelude.repo_clientsschelude.clearTable()
-                call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
+                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, "Таблица успешно очищена"))
             }
 
             get("/all") {
-                call.respond(ClientsSchelude().get(call, IntBaseDataImpl.RequestParams()))
+                call.respond(ClientsSchelude().get(call, RequestParams()))
             }
 
             get("/all/filter") {
-                call.respond(ClientsSchelude().getFilter(call, IntBaseDataImpl.RequestParams()))
+                call.respond(ClientsSchelude().getFilter(call, RequestParams()))
             }
 
             post("/update") {
-                call.respond(ClientsSchelude().update(call, IntBaseDataImpl.RequestParams(), ClientsSchelude.serializer()))
+                call.respond(ClientsSchelude().update(call, RequestParams(), ClientsSchelude.serializer()))
             }
 
             post("/update/many") {
-                call.respond(ClientsSchelude().updateMany(call, IntBaseDataImpl.RequestParams(), ListSerializer(ClientsSchelude.serializer())))
+                call.respond(ClientsSchelude().updateMany(call, RequestParams(), ListSerializer(ClientsSchelude.serializer())))
             }
 
             post {
-                call.respond(ClientsSchelude().post(call, IntBaseDataImpl.RequestParams(), ListSerializer(ClientsSchelude.serializer())))
+                call.respond(ClientsSchelude().post(call, RequestParams(), ListSerializer(ClientsSchelude.serializer())))
             }
 
             delete {
-                call.respond(ClientsSchelude().delete(call, IntBaseDataImpl.RequestParams()))
+                call.respond(ClientsSchelude().delete(call, RequestParams()))
             }
         }
     }

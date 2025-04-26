@@ -37,6 +37,14 @@ data class Recordsdata(
 class AppTest {
 
     @Test
+    fun testColumns() {
+        runBlocking {
+            val obj = Catalogs()
+            println(obj.getColumns().joinToString("\n"))
+        }
+    }
+
+    @Test
     fun testTranscation() {
         printTextLog("[START]")
         runBlocking {

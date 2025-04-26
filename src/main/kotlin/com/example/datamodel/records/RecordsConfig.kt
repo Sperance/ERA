@@ -1,11 +1,10 @@
 package com.example.datamodel.records
 
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.ResultResponse
+import com.example.basemodel.RequestParams
+import com.example.basemodel.ResultResponse
+import com.example.enums.EnumHttpCode
 import com.example.respond
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -18,32 +17,32 @@ fun Application.configureRecords() {
         route("/records") {
 
             get("/structure") {
-                call.respond(ResultResponse.Success(HttpStatusCode.OK, Records().getCommentArray()))
+                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, Records().getCommentArray()))
             }
 
             get("/clearTable") {
                 Records.repo_records.clearTable()
-                call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
+                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, "Таблица успешно очищена"))
             }
 
             get("/all") {
-                call.respond(Records().get(call, IntBaseDataImpl.RequestParams()))
+                call.respond(Records().get(call, RequestParams()))
             }
 
             get("/all/filter") {
-                call.respond(Records().getFilter(call, IntBaseDataImpl.RequestParams()))
+                call.respond(Records().getFilter(call, RequestParams()))
             }
 
             post("/update") {
-                call.respond(Records().update(call, IntBaseDataImpl.RequestParams(), Records.serializer()))
+                call.respond(Records().update(call, RequestParams(), Records.serializer()))
             }
 
             post {
-                call.respond(Records().post(call, IntBaseDataImpl.RequestParams(), ListSerializer(Records.serializer())))
+                call.respond(Records().post(call, RequestParams(), ListSerializer(Records.serializer())))
             }
 
             delete {
-                call.respond(Records().delete(call, IntBaseDataImpl.RequestParams()))
+                call.respond(Records().delete(call, RequestParams()))
             }
         }
     }

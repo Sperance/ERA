@@ -1,6 +1,6 @@
 package com.example
 
-import com.example.datamodel.configureTests
+import com.example.basemodel.configureTests
 import com.example.helpers.ENCRYPT_KEY
 import com.example.helpers.TOML_FILE_NAME
 import com.example.logging.DailyLogger.printTextLog
@@ -9,7 +9,6 @@ import com.example.plugins.configureCallLogging
 import com.example.plugins.configureDatabases
 import com.example.plugins.configureContentNegotiation
 import com.example.plugins.configureRateLimit
-import com.example.plugins.configureStatusPages
 import com.example.security.AESEncryption
 import com.example.sockets.configureSockets
 import com.example.toml.TomlConfig
@@ -45,7 +44,6 @@ fun main() {
         },
         module = {
             configureCallLogging()
-            configureStatusPages()
             configureCORS()
             configureRateLimit()
             configureContentNegotiation()

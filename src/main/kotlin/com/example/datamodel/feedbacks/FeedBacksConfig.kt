@@ -1,11 +1,11 @@
 package com.example.datamodel.feedbacks
 
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.ResultResponse
+import com.example.basemodel.IntBaseDataImpl
+import com.example.basemodel.RequestParams
+import com.example.basemodel.ResultResponse
+import com.example.enums.EnumHttpCode
 import com.example.respond
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -18,32 +18,32 @@ fun Application.configureFeedbacks() {
         route("/feedbacks") {
 
             get("/structure") {
-                call.respond(ResultResponse.Success(HttpStatusCode.OK, FeedBacks().getCommentArray()))
+                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, FeedBacks().getCommentArray()))
             }
 
             get("/clearTable") {
                 FeedBacks.repo_feedbacks.clearTable()
-                call.respond(ResultResponse.Success(HttpStatusCode.OK, "Таблица успешно очищена"))
+                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, "Таблица успешно очищена"))
             }
 
             get("/all") {
-                call.respond(FeedBacks().get(call, IntBaseDataImpl.RequestParams()))
+                call.respond(FeedBacks().get(call, RequestParams()))
             }
 
             get("/all/filter") {
-                call.respond(FeedBacks().getFilter(call, IntBaseDataImpl.RequestParams()))
+                call.respond(FeedBacks().getFilter(call, RequestParams()))
             }
 
             post("/update") {
-                call.respond(FeedBacks().update(call, IntBaseDataImpl.RequestParams(), FeedBacks.serializer()))
+                call.respond(FeedBacks().update(call, RequestParams(), FeedBacks.serializer()))
             }
 
             post {
-                call.respond(FeedBacks().post(call, IntBaseDataImpl.RequestParams(), ListSerializer(FeedBacks.serializer())))
+                call.respond(FeedBacks().post(call, RequestParams(), ListSerializer(FeedBacks.serializer())))
             }
 
             delete {
-                call.respond(FeedBacks().delete(call, IntBaseDataImpl.RequestParams()))
+                call.respond(FeedBacks().delete(call, RequestParams()))
             }
         }
     }

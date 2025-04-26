@@ -2,12 +2,15 @@ package com.example.datamodel.services
 
 import com.example.helpers.CommentField
 import com.example.currectDatetime
-import com.example.datamodel.BaseRepository
-import com.example.datamodel.IntBaseDataImpl
-import com.example.datamodel.ResultResponse
+import com.example.basemodel.BaseRepository
+import com.example.basemodel.CheckObj
+import com.example.basemodel.IntBaseDataImpl
+import com.example.basemodel.RequestParams
+import com.example.basemodel.ResultResponse
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.records.Records
 import com.example.datamodel.stockfiles.Stockfiles
+import com.example.enums.EnumHttpCode
 import com.example.isNullOrZero
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
@@ -65,18 +68,19 @@ data class Services(
     }
 
     override fun getBaseId() = id
+    override fun getTblCode() = "T_SRV_"
     override fun baseParams(): RequestParams<Services> {
         val params = RequestParams<Services>()
-        params.checkings.add { CheckObj(it.category != null && !Catalogs.repo_catalogs.isHaveData(it.category), 441, "Не найдена Категория с id ${it.category}") }
+        params.checkings.add { CheckObj(it.category != null && !Catalogs.repo_catalogs.isHaveData(it.category), EnumHttpCode.NOT_FOUND, 201, "Не найдена Категория с id ${it.category}") }
         return params
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Services>, serializer: KSerializer<List<Services>>): ResultResponse {
-        params.checkings.add { CheckObj(it.name.isNullOrEmpty(), 431, "Необходимо указать Наименование услуги") }
-        params.checkings.add { CheckObj(it.priceLow.isNullOrZero(), 432, "Необходимо указать Минимальную стоимость услуги") }
-        params.checkings.add { CheckObj(it.duration.isNullOrZero(), 435, "Необходимо указать Продолжительность услуги (не может быть 0)") }
-        params.checkings.add { CheckObj((it.priceLow != null && it.priceMax != null) && (it.priceMax!! < it.priceLow!!), 436, "Максимальная стоимость услуги(${it.priceMax}) не может быть меньше минимальной(${it.priceLow})") }
-        params.checkings.add { CheckObj(!Catalogs.repo_catalogs.isHaveData(it.category), 441, "Не найдена Категория с id ${it.category}") }
+        params.checkings.add { CheckObj(it.name.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Наименование услуги") }
+        params.checkings.add { CheckObj(it.priceLow.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Минимальную стоимость услуги") }
+        params.checkings.add { CheckObj(it.duration.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать Продолжительность услуги (не может быть 0)") }
+        params.checkings.add { CheckObj((it.priceLow != null && it.priceMax != null) && (it.priceMax!! < it.priceLow!!), EnumHttpCode.INCORRECT_PARAMETER, 304, "Максимальная стоимость услуги(${it.priceMax}) не может быть меньше минимальной(${it.priceLow})") }
+        params.checkings.add { CheckObj(!Catalogs.repo_catalogs.isHaveData(it.category), EnumHttpCode.NOT_FOUND, 305, "Не найдена Категория с id ${it.category}") }
 
         params.defaults.add { it::gender to -1 }
 

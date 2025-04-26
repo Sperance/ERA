@@ -1,4 +1,4 @@
-package com.example.datamodel
+package com.example.basemodel
 
 import com.example.datamodel.clients.Clients
 import com.example.enums.EnumSQLTypes
