@@ -11,6 +11,7 @@ import org.komapper.core.dsl.metamodel.EntityMetamodel
 import org.komapper.core.dsl.metamodel.PropertyMetamodel
 import org.komapper.core.dsl.metamodel.getAutoIncrementProperty
 import org.komapper.core.dsl.operator.count
+import org.komapper.core.dsl.query.Query
 import org.komapper.core.dsl.query.get
 import org.komapper.core.dsl.query.singleOrNull
 import kotlin.reflect.KMutableProperty1
@@ -23,9 +24,19 @@ fun Any.putField(name: String, value: Any?) = this::class.java.declaredFields.fi
 @Suppress("UNCHECKED_CAST")
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.update() : TYPE {
     val metaTable = getInstanceClassForTbl(this) as META
-    val result = db.runQuery { QueryDsl.update(metaTable).single(this@update) } as TYPE
+    val result = db.runQuery { QueryDsl.update(metaTable).single(this@update).returning() } as TYPE
     printTextLog("[Update object '${this::class.java.simpleName}' with id '${result.getField("id")}']")
     return result
+}
+
+@Suppress("UNCHECKED_CAST")
+private fun <META : EntityMetamodel<Any, Any, META>> getInstanceClassForTbl(obj: Any) : META {
+    val nameClass = "com.example.datamodel.${obj::class.java.simpleName.lowercase()}.${obj::class.java.simpleName}"
+    val instance = Class.forName(nameClass).kotlin.createInstance()
+    val metaTable = instance.getField("tbl_${obj::class.java.simpleName.lowercase()}")
+        ?: throw IllegalArgumentException("not finded field with name tbl_${obj::class.java.simpleName.lowercase()}) in class $nameClass")
+
+    return metaTable as META
 }
 
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> TYPE.isDuplicate(declaration: WhereDeclaration): Boolean {
@@ -58,16 +69,6 @@ suspend fun <META : EntityMetamodel<Any, Any, META>> Any.delete() {
     val metaTable = getInstanceClassForTbl(this) as META
     printTextLog("[Delete object '${this::class.java.simpleName}' with id '${this@delete.getField("id")}']")
     db.runQuery { QueryDsl.delete(metaTable).where { metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> eq this@delete.getField("id") as Int } }
-}
-
-@Suppress("UNCHECKED_CAST")
-private fun <META : EntityMetamodel<Any, Any, META>> getInstanceClassForTbl(obj: Any) : META {
-    val nameClass = "com.example.datamodel.${obj::class.java.simpleName.lowercase()}.${obj::class.java.simpleName}"
-    val instance = Class.forName(nameClass).kotlin.createInstance()
-    val metaTable = instance.getField("tbl_${obj::class.java.simpleName.lowercase()}")
-        ?: throw IllegalArgumentException("not finded field with name tbl_${obj::class.java.simpleName.lowercase()}) in class $nameClass")
-
-    return metaTable as META
 }
 
 private fun IntBaseDataImpl<*>.getTblName() : String {

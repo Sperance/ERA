@@ -8,6 +8,7 @@ import com.example.basemodel.CheckObj
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
+import com.example.datamodel.authentications.Authentications
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.clientsschelude.ClientsSchelude
 import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.tbl_clientsschelude
@@ -19,15 +20,18 @@ import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.serverhistory.ServerHistory
 import com.example.datamodel.services.Services.Companion.repo_services
+import com.example.enums.EnumBearerRoles
 import com.example.enums.EnumHttpCode
 import com.example.helpers.update
 import com.example.isNullOrZero
 import com.example.minus
 import com.example.nullDatetime
 import com.example.helpers.GMailSender
+import com.example.helpers.delete
 import com.example.helpers.getField
 import com.example.helpers.haveField
 import com.example.helpers.putField
+import com.example.logging.DailyLogger.printTextLog
 import com.example.plus
 import com.example.security.AESEncryption
 import com.example.security.generateSalt
@@ -37,6 +41,9 @@ import com.example.toDateTimePossible
 import com.example.toIntPossible
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -251,9 +258,28 @@ data class Clients(
             if (client == null)
                 return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(methodName, 103 to "Не найден пользователь с указанным Логином и Паролем"))
 
+            var token = Authentications.getTokenFromClient(client)
+            printTextLog("[Clients::auth] token: $token")
+            if (token == null) {
+                token = Authentications.createToken(client, EnumBearerRoles.USER)
+            } else {
+                if (token.isExpires()) {
+                    printTextLog("[Clients] Токен просрочен. Удаляем и создаём новый")
+                    val deleteId = token.id
+                    token.delete()
+                    Authentications.repo_authentications.deleteData(deleteId)
+                    token = Authentications.createToken(client, EnumBearerRoles.USER)
+                } else {
+                    token.dateUsed = LocalDateTime.currectDatetime()
+                    token = token.update()
+                    Authentications.repo_authentications.updateData(token)
+                }
+            }
+
             ServerHistory.addRecord(11, "Авторизация пользователя ${client.id}", client.toStringLow())
-            return ResultResponse.Success(EnumHttpCode.COMPLETED, client)
+            return ResultResponse.Success(EnumHttpCode.COMPLETED, client, mapOf("Authorization" to  "Bearer " + token.token!!))
         } catch (e: Exception) {
+            e.printStackTrace()
             return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(methodName, 440 to e.localizedMessage))
         }
     }
@@ -279,7 +305,6 @@ data class Clients(
             repo_clients.resetData()
 
             ServerHistory.addRecord(12, "Изменение пароля пользователя ${updated.id}", password)
-
             return ResultResponse.Success(EnumHttpCode.COMPLETED, updated)
         } catch (e: Exception) {
             return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(methodName, 440 to e.localizedMessage))
@@ -311,7 +336,6 @@ data class Clients(
             }
 
             ServerHistory.addRecord(13, "Отправлен запрос на $email на восстановление пароля", generatedPassword)
-
             return ResultResponse.Success(EnumHttpCode.COMPLETED, generatedPassword)
 
         } catch (e: Exception) {
@@ -326,6 +350,7 @@ data class Clients(
             ClientsSchelude.repo_clientsschelude.clearLinkEqual(ClientsSchelude::idClient, obj.id)
             FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_client_to, obj.id)
             FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_client_from, obj.id)
+            Authentications.repo_authentications.clearLinkEqual(Authentications::clientId, obj.id, true)
         }
 
         return super.delete(call, params)

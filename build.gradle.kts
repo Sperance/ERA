@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "com.example"
-version = "1.6.1"
+version = "1.6.2"
 
 application {
     mainClass.set("com.example.ApplicationKt")
@@ -48,6 +48,7 @@ dependencies {
     implementation("io.ktor:ktor-server-sse-jvm")
     implementation("io.ktor:ktor-server-rate-limit-jvm")
     implementation("io.ktor:ktor-server-call-logging-jvm")
+    implementation("io.ktor:ktor-server-auth-jvm")
     implementation("org.junit.jupiter:junit-jupiter:5.8.1")
     implementation("io.ktor:ktor-network-tls-certificates-jvm")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0-RC.2")

@@ -4,6 +4,7 @@ import com.example.basemodel.configureTests
 import com.example.helpers.ENCRYPT_KEY
 import com.example.helpers.TOML_FILE_NAME
 import com.example.logging.DailyLogger.printTextLog
+import com.example.plugins.configureAuthentication
 import com.example.plugins.configureCORS
 import com.example.plugins.configureCallLogging
 import com.example.plugins.configureDatabases
@@ -47,6 +48,7 @@ fun main() {
             configureCORS()
             configureRateLimit()
             configureContentNegotiation()
+            configureAuthentication()
             configureDatabases()
             configureSSE()
             configureTests()

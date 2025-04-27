@@ -1,15 +1,22 @@
 package com.example.basemodel
 
+import com.example.currectDatetime
+import com.example.datamodel.authentications.Authentications
 import com.example.datamodel.clients.Clients
 import com.example.enums.EnumSQLTypes
 import com.example.minus
 import com.example.helpers.GMailSender
 import com.example.helpers.executeAddColumn
 import com.example.helpers.executeDelColumn
+import com.example.helpers.update
+import com.example.logging.DailyLogger.printTextLog
 import com.example.plus
 import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.auth.UserIdPrincipal
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.principal
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -37,6 +44,27 @@ fun Application.configureTests() {
                 Clients.repo_clients.clearLinkEqual(Clients::position, 16)
                 call.respond(HttpStatusCode.OK)
             }
+            authenticate("auth-bearer") {
+                get ("/getdata") {
+                    val part = call.principal<UserIdPrincipal>()
+
+                    var findToken = Authentications.repo_authentications.getRepositoryData().find { it.token == part?.name }!!
+                    findToken.dateUsed = LocalDateTime.currectDatetime()
+//                    findToken.description = "DATE: ${LocalDateTime.currectDatetime()}"
+
+                    printTextLog("")
+                    printTextLog("")
+                    printTextLog("")
+                    printTextLog("[TEST::getdata] current token: $findToken")
+                    printTextLog("[TEST::getdata] all tokens: ${Authentications.repo_authentications.getRepositoryData().joinToString("\n")}")
+
+                    findToken = findToken.update()
+                    Authentications.repo_authentications.updateData(findToken)
+
+                    call.respond(HttpStatusCode.OK, "Hello $findToken")
+                }
+            }
+
             post ("/emailMessage") {
                 val email = call.parameters["email"]
 

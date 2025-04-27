@@ -78,7 +78,12 @@ suspend fun ApplicationCall.respond(response: ResultResponse) {
                     status = response.status.httpCode,
                     message = response.message)
             }
-            is ResultResponse.Success -> respond(status = response.status.httpCode, message = response.data?:"")
+            is ResultResponse.Success -> {
+                response.headers?.forEach { (key, value) ->
+                    this.response.headers.append(key, value)
+                }
+                respond(status = response.status.httpCode, message = response.data ?: "")
+            }
         }
     } catch (e: Exception) {
         e.printStackTrace()

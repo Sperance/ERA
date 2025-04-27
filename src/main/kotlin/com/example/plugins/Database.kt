@@ -1,6 +1,7 @@
 package com.example.plugins
 
 import com.example.applicationTomlSettings
+import com.example.datamodel.authentications.Authentications.Companion.tbl_authentications
 import com.example.datamodel.catalogs.Catalogs.Companion.tbl_catalogs
 import com.example.datamodel.catalogs.configureCatalogs
 import com.example.datamodel.clients.Clients.Companion.tbl_clients
@@ -55,6 +56,7 @@ fun Application.configureDatabases() {
             db.runQuery { QueryDsl.create(tbl_news) }
             db.runQuery { QueryDsl.create(tbl_clientsschelude) }
             db.runQuery { QueryDsl.create(tbl_catalogs) }
+            db.runQuery { QueryDsl.create(tbl_authentications) }
         }
         routing {
             staticFiles("/files", File("files"))

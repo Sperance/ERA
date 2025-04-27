@@ -2,6 +2,9 @@ package com.example.datamodel.serverhistory
 
 import com.example.currectDatetime
 import com.example.helpers.create
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -33,8 +36,10 @@ data class ServerHistory(
     companion object {
         val tbl_serverhistory = Meta.serverHistory
 
-        suspend fun addRecord(code: Int, message: String, value: String) {
-            ServerHistory(code = code, message = message, value = value).create(null)
+        fun addRecord(code: Int, message: String, value: String) {
+            CoroutineScope(Dispatchers.IO).launch {
+                ServerHistory(code = code, message = message, value = value).create(null)
+            }
         }
     }
 }

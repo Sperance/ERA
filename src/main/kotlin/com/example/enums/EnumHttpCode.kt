@@ -7,6 +7,7 @@ enum class EnumHttpCode(val httpCode: HttpStatusCode) {
     DUPLICATE(HttpStatusCode.Conflict),
     BAD_REQUEST(HttpStatusCode.BadRequest),
     INCORRECT_PARAMETER(HttpStatusCode.PreconditionFailed),
+    AUTHORISATION(HttpStatusCode.Unauthorized),
 
     COMPLETED(HttpStatusCode.OK),
 }

@@ -40,7 +40,7 @@ import kotlin.reflect.KMutableProperty0
 sealed class ResultResponse {
     abstract val status: EnumHttpCode
 
-    class Success(override val status: EnumHttpCode, val data: Any?) : ResultResponse()
+    class Success(override val status: EnumHttpCode, val data: Any?, val headers: Map<String, String>? = null) : ResultResponse()
     class Error(override val status: EnumHttpCode, val message: MutableMap<String, String>) :
         ResultResponse()
 }

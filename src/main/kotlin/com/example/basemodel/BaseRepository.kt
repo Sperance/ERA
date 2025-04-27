@@ -3,6 +3,7 @@ package com.example.basemodel
 import com.example.datamodel.serverhistory.ServerHistory
 import com.example.enums.EnumDataFilter
 import com.example.helpers.clearTable
+import com.example.helpers.delete
 import com.example.helpers.getData
 import com.example.helpers.getField
 import com.example.helpers.haveField
@@ -29,6 +30,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
             mutex.withLock {
                 repoData.clear()
                 repoData.addAll(newData)
+                printTextLog("[BaseRepository::${obj::class.simpleName}] resetData size: ${newData.size}")
             }
         }
     }
@@ -69,7 +71,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
             mutex.withLock {
                 val existingObj = repoData.find { it.getField("id") == obj.getField("id") }
                 if (existingObj != null) {
-                    if (repoData.remove(existingObj)) {
+                    if (repoData.removeIf{ rem -> rem.getField("id") == existingObj.getField("id") }) {
                         repoData.add(obj)
                         onChanged.set(true)
                     }
@@ -87,6 +89,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
             if (repoData.isEmpty()) resetData()
             mutex.withLock {
                 if (repoData.none { it.getField("id") == obj.getField("id") }) {
+                    printTextLog("[BaseRepository::${obj::class.simpleName}][addData]: $obj")
                     repoData.add(obj)
                     onChanged.set(true)
                 } else {
@@ -103,9 +106,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
                 repoData.clear()
             }
         }
-        CoroutineScope(Dispatchers.IO).launch {
-            ServerHistory.addRecord(1, "Очистка таблицы ${obj::class.java.simpleName}", "")
-        }
+        ServerHistory.addRecord(1, "Очистка таблицы ${obj::class.java.simpleName}", "")
     }
 
     open suspend fun isHaveData(id: Int?): Boolean {
@@ -144,7 +145,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
         }
     }
 
-    open suspend fun clearLinkEqual(field: KMutableProperty1<T, Int?>, index: Int?) {
+    open suspend fun clearLinkEqual(field: KMutableProperty1<T, Int?>, index: Int?, needDelete: Boolean = false) {
         if (index == null) return
         val toUpdate = mutableListOf<T>()
 
@@ -159,8 +160,14 @@ open class BaseRepository<T : Any>(private val obj: T) {
 
             toUpdate.forEach { item ->
                 printTextLog("[clearLinkEqual ${obj::class.java.simpleName}] index: $index object: $item")
-                item.update()
-                updateData(item)
+                if (needDelete) {
+                    val deleteId = item.getField("id").toString().toIntOrNull()?:0
+                    item.delete()
+                    deleteData(deleteId)
+                } else {
+                    item.update()
+                    updateData(item)
+                }
             }
         }
     }
