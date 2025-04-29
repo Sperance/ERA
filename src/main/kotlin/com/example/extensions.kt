@@ -74,11 +74,13 @@ suspend fun ApplicationCall.respond(response: ResultResponse) {
     try {
         when(response) {
             is ResultResponse.Error -> {
+                this.response.headers.append("Answer-TimeStamp", LocalDateTime.currectDatetime().toString())
                 respond(
                     status = response.status.httpCode,
                     message = response.message)
             }
             is ResultResponse.Success -> {
+                this.response.headers.append("Answer-TimeStamp", LocalDateTime.currectDatetime().toString())
                 response.headers?.forEach { (key, value) ->
                     this.response.headers.append(key, value)
                 }
@@ -89,13 +91,6 @@ suspend fun ApplicationCall.respond(response: ResultResponse) {
         e.printStackTrace()
         printTextLog("[ApplicationCall] Error: ${e.localizedMessage}")
     }
-}
-
-@Suppress("UNCHECKED_CAST")
-fun <T: Any> getObjectRepository(obj: T) : BaseRepository<T>? {
-    val simpleClass = obj::class.java
-    val instance = simpleClass.kotlin.companionObject?.declaredMembers?.find { it.name == "repo_${simpleClass.simpleName.lowercase()}" }
-    return instance?.call(simpleClass.kotlin.companionObjectInstance) as BaseRepository<T>?
 }
 
 fun Any?.isAllNullOrEmpty() : Boolean {

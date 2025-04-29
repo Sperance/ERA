@@ -10,7 +10,7 @@ import com.example.plugins.configureCallLogging
 import com.example.plugins.configureDatabases
 import com.example.plugins.configureContentNegotiation
 import com.example.plugins.configureRateLimit
-import com.example.plugins.configureSSE
+import com.example.plugins.configureSockets
 import com.example.security.AESEncryption
 import com.example.toml.TomlConfig
 import com.example.toml.readTomlFile
@@ -50,7 +50,7 @@ fun main() {
             configureContentNegotiation()
             configureAuthentication()
             configureDatabases()
-            configureSSE()
+            configureSockets()
             configureTests()
     }).start(wait = true)
 }

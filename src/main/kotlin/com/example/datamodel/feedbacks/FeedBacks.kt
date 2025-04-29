@@ -22,6 +22,7 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
+import org.komapper.core.dsl.metamodel.EntityMetamodel
 
 /**
  * Список отзывов о сотрудниках
@@ -33,7 +34,7 @@ data class FeedBacks(
     @KomapperId
     @KomapperAutoIncrement
     @KomapperColumn(name = "feedback_id")
-    val id: Int = 0,
+    override val id: Int = 0,
     @CommentField("Имя клиента оставившего отзыв", true)
     var firstName: String? = null,
     @CommentField("Фамилия клиента оставившего отзыв", true)
@@ -48,9 +49,9 @@ data class FeedBacks(
     var value: Byte? = null,
     @Transient
     @KomapperVersion
-    val version: Int = 0,
+    override val version: Int = 0,
     @CommentField("Дата создания строки", false)
-    val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<FeedBacks>() {
 
     companion object {
@@ -58,8 +59,8 @@ data class FeedBacks(
         val repo_feedbacks = BaseRepository(FeedBacks())
     }
 
-    override fun getBaseId() = id
-    override fun getTblCode() = "T_FB_"
+    override fun getTable() = tbl_feedbacks
+    override fun getRepository() = repo_feedbacks
     override fun baseParams(): RequestParams<FeedBacks> {
         val params = RequestParams<FeedBacks>()
         params.checkings.add { CheckObj(it.id_client_from != null && !Clients.repo_clients.isHaveData(it.id_client_from!!), EnumHttpCode.NOT_FOUND, 201, "Не существует Клиента с id ${it.id_client_from}") }

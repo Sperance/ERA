@@ -7,7 +7,6 @@ import com.example.datamodel.clients.Clients.Companion.tbl_clients
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.services.Services
-import com.example.getObjectRepository
 import com.example.logging.DailyLogger.printTextLog
 import com.example.minus
 import com.example.plugins.db
@@ -22,6 +21,7 @@ import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import org.junit.jupiter.api.Test
+import org.komapper.core.dsl.Meta
 import org.komapper.core.dsl.QueryDsl
 import java.io.File
 import kotlin.time.Duration.Companion.minutes
@@ -39,8 +39,10 @@ class AppTest {
     @Test
     fun testColumns() {
         runBlocking {
-            val obj = Catalogs()
-            println(obj.getColumns().joinToString("\n"))
+            val obj = Meta.all()
+            obj.forEach {
+                println("TABLE: ${it.tableName()}")
+            }
         }
     }
 
@@ -51,7 +53,7 @@ class AppTest {
             db.withTransaction { tx ->
                 try {
                     printTextLog("[IN START]")
-                    val newCatalog = Catalogs().apply { type = "testType2"; category = "testCat2"; value = "testVal2" }.create(null)
+                    val newCatalog = Catalogs().apply { type = "testType2"; category = "testCat2"; value = "testVal2" }.create()
                     testLaunchTransaction()
 //               tx.setRollbackOnly()
                     printTextLog("[IN END]")
@@ -69,12 +71,6 @@ class AppTest {
         if (true) throw Exception("SampleEx")
         findCatal?.value = "updated"
         findCatal?.update()
-    }
-
-    @Test
-    fun testCompanion() {
-        val cl = Clients()
-        getObjectRepository(cl)
     }
 
     @Test

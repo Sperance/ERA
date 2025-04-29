@@ -22,6 +22,7 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
+import org.komapper.core.dsl.metamodel.EntityMetamodel
 import java.util.UUID
 import kotlin.time.Duration.Companion.days
 
@@ -35,7 +36,7 @@ data class Authentications(
     @KomapperId
     @KomapperAutoIncrement
     @KomapperColumn(name = "authentications_id")
-    val id: Int = 0,
+    override val id: Int = 0,
     var clientId: Int? = null,
     var token: String? = null,
     var dateExpired: LocalDateTime? = null,
@@ -44,9 +45,9 @@ data class Authentications(
     var description: String? = null,
     @Transient
     @KomapperVersion
-    val version: Int = 0,
+    override val version: Int = 0,
     @Transient
-    val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Authentications>() {
 
     companion object {
@@ -63,7 +64,7 @@ data class Authentications(
                 role = role.name,
                 description = description
             )
-            val newauth = auth.create(null)
+            val newauth = auth.create()
             repo_authentications.addData(newauth)
             return newauth
         }
@@ -77,6 +78,9 @@ data class Authentications(
         }
     }
 
+    override fun getTable() = tbl_authentications
+    override fun getRepository() = repo_authentications
+
     fun isExpires(): Boolean {
         if (dateExpired == null) return true
         return dateExpired!! <= LocalDateTime.currentZeroDate()
@@ -86,9 +90,6 @@ data class Authentications(
         if (role == null) return null
         return EnumBearerRoles.valueOf(role!!)
     }
-
-    override fun getBaseId() = id
-    override fun getTblCode() = "T_AUTH_"
 
     override fun toString(): String {
         return "Authentications(id=$id, clientId=$clientId, token=$token, dateExpired=$dateExpired, dateUsed=$dateUsed, description=$description, version=$version)"

@@ -6,17 +6,17 @@ import com.example.enums.EnumHttpCode
 import com.example.enums.EnumSQLTypes
 import com.example.helpers.SYS_FIELDS_ARRAY
 import com.example.getCommentFieldAnnotation
-import com.example.getObjectRepository
 import com.example.helpers.create
 import com.example.helpers.delete
 import com.example.helpers.executeAddColumn
 import com.example.helpers.executeDelColumn
-import com.example.helpers.getData
 import com.example.helpers.getDataOne
 import com.example.helpers.getField
 import com.example.helpers.haveField
 import com.example.helpers.putField
 import com.example.helpers.update
+import com.example.interfaces.IntPostgreTable
+import com.example.interfaces.IntPostgreTableRepository
 import com.example.isAllNullOrEmpty
 import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.db
@@ -41,31 +41,23 @@ sealed class ResultResponse {
     abstract val status: EnumHttpCode
 
     class Success(override val status: EnumHttpCode, val data: Any?, val headers: Map<String, String>? = null) : ResultResponse()
-    class Error(override val status: EnumHttpCode, val message: MutableMap<String, String>) :
-        ResultResponse()
+    class Error(override val status: EnumHttpCode, val message: MutableMap<String, String>) : ResultResponse()
 }
 
 @Suppress("UNCHECKED_CAST")
-abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
-
-    abstract fun getBaseId(): Int
-    open fun getTblCode(): String {
-        return ""
-    }
+abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableRepository<T> {
 
     open fun baseParams(): RequestParams<T> {
         return RequestParams()
     }
 
-    fun generateMapError(
-        methodCode: String,
-        errorPair: Pair<Int, String>
-    ): MutableMap<String, String> {
+    fun generateMapError(methodCode: String, errorPair: Pair<Int, String>): MutableMap<String, String> {
         val map = mutableMapOf<String, String>()
-        map["errorKey"] = getTblCode() + methodCode + "_" + errorPair.first.toString()
+        map["errorKey"] = getTable().tableName().uppercase() + "_" + methodCode + "_" + errorPair.first.toString()
         map["errorCode"] = errorPair.first.toString()
         map["errorDescription"] = errorPair.second
         map["errorMethod"] = methodCode
+        map["errorTable"] = getTable().tableName()
         return map
     }
 
@@ -85,10 +77,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
             if (columnName.isNullOrEmpty()) {
                 return ResultResponse.Error(
                     EnumHttpCode.INCORRECT_PARAMETER,
-                    generateMapError(
-                        methodCode,
-                        101 to "Dont find parameter 'columnName'. This parameter must be String type"
-                    )
+                    generateMapError(methodCode, 101 to "Dont find parameter 'columnName'. This parameter must be String type")
                 )
             }
 
@@ -193,13 +182,9 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
                     property.set(value)
                 }
 
-                val data = getObjectRepository(this)?.getRepositoryData()
+                val data = getRepository().getRepositoryData()
 
-                return@withTransaction if (data == null) ResultResponse.Success(
-                    EnumHttpCode.COMPLETED,
-                    getData()
-                )
-                else ResultResponse.Success(EnumHttpCode.COMPLETED, data)
+                return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, data)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
@@ -292,7 +277,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
                     property.set(res.second)
                 }
 
-                val resultList = getObjectRepository(this)?.getDataFilter(field, stateEnum, value)
+                val resultList = getRepository().getDataFilter(field, stateEnum, value)
                 return@withTransaction ResultResponse.Success(
                     EnumHttpCode.COMPLETED,
                     resultList as Collection<*>
@@ -344,8 +329,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
                 }
 
                 val currectObjClassName = this::class.simpleName!!
-                val tblObj =
-                    getField("tbl_${currectObjClassName.lowercase()}") as EntityMetamodel<*, *, *>
+                val tblObj = getField("tbl_${currectObjClassName.lowercase()}") as EntityMetamodel<*, *, *>
                 val auProp = tblObj.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int>
                 val findedObj = getDataOne({ auProp eq id.toInt() })
                 if (findedObj == null) {
@@ -364,7 +348,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
                 getFileImageIcon(findedObj, currectObjClassName.lowercase())?.delete()
                 findedObj.delete()
 
-                getObjectRepository(this)?.deleteData(id.toInt())
+                getRepository().deleteData(id.toInt())
 
                 ResultResponse.Success(
                     EnumHttpCode.COMPLETED,
@@ -373,7 +357,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
-                getObjectRepository(this)?.resetData()
+                getRepository().resetData()
                 return@withTransaction ResultResponse.Error(
                     EnumHttpCode.BAD_REQUEST,
                     generateMapError(methodCode, 440 to e.localizedMessage)
@@ -468,14 +452,14 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
                 val tblObj =
                     getField("tbl_${currectObjClassName.lowercase()}") as EntityMetamodel<*, *, *>
                 val auProp = tblObj.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int>
-                val findedObj = getDataOne({ auProp eq newObject?.getBaseId() })
+                val findedObj = getDataOne({ auProp eq newObject?.id })
                 if (findedObj == null) {
                     tx.setRollbackOnly()
                     return@withTransaction ResultResponse.Error(
                         EnumHttpCode.NOT_FOUND,
                         generateMapError(
                             methodCode,
-                            103 to "Not found $currectObjClassName with id ${newObject?.getBaseId()}"
+                            103 to "Not found $currectObjClassName with id ${newObject?.id}"
                         )
                     )
                 }
@@ -501,7 +485,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
                 baseParams().onBeforeCompleted?.invoke(findedObj as T)
 
                 val updated = findedObj.update()
-                getObjectRepository(this)?.updateData(updated)
+                getRepository().updateData(updated)
 
                 return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, updated)
             } catch (e: Exception) {
@@ -592,14 +576,14 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
 
                 val resultArray = arrayListOf<IntBaseDataImpl<T>>()
                 newObject.forEach { item ->
-                    val findedObj = getDataOne({ auProp eq item.getBaseId() as Int? })
+                    val findedObj = getDataOne({ auProp eq item.id as Int? })
                     if (findedObj == null) {
                         tx.setRollbackOnly()
                         return@withTransaction ResultResponse.Error(
                             EnumHttpCode.NOT_FOUND,
                             generateMapError(
                                 methodCode,
-                                102 to "Not found $currectObjClassName with id ${item.getBaseId()}"
+                                102 to "Not found $currectObjClassName with id ${item.id}"
                             )
                         )
                     }
@@ -611,7 +595,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
                     baseParams().onBeforeCompleted?.invoke(findedObj as T)
 
                     val updated = findedObj.update()
-                    getObjectRepository(this)?.updateData(updated)
+                    getRepository().updateData(updated)
                     resultArray.add(updated)
                 }
 
@@ -630,11 +614,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
     private fun getFileImageIcon(findedObj: IntBaseDataImpl<T>, pathName: String): File? {
         if (!findedObj.haveField("imageLink")) return null
         val currentFile = File(
-            Paths.get("").absolutePathString() + "/files/$pathName/icon_${findedObj.getBaseId()}.${
-                findedObj.getField(
-                    "imageFormat"
-                )
-            }"
+            Paths.get("").absolutePathString() + "/files/$pathName/icon_${findedObj.id}.${findedObj.getField("imageFormat")}"
         )
         if (!currentFile.exists()) return null
         return currentFile
@@ -738,8 +718,8 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
                     params.onBeforeCompleted?.invoke(item)
                     baseParams().onBeforeCompleted?.invoke(item)
 
-                    finishObject = item.create(null)
-                    getObjectRepository(this)?.addData(finishObject)
+                    finishObject = item.create()
+                    getRepository().addData(finishObject)
                 }
 
                 if (fileBytes != null) {
@@ -758,7 +738,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
                     baseParams().onBeforeCompleted?.invoke(finishObject as T)
 
                     finishObject = finishObject!!.update()
-                    getObjectRepository(this)?.updateData(finishObject)
+                    getRepository().updateData(finishObject)
                 }
 
                 return@withTransaction ResultResponse.Success(
@@ -768,7 +748,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> {
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
-                getObjectRepository(this)?.resetData()
+                getRepository().resetData()
                 return@withTransaction ResultResponse.Error(
                     EnumHttpCode.BAD_REQUEST,
                     generateMapError(methodCode, 440 to e.localizedMessage)

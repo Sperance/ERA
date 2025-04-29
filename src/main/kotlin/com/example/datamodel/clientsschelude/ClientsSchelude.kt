@@ -23,6 +23,7 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
+import org.komapper.core.dsl.metamodel.EntityMetamodel
 
 /**
  * График работы сотрудников
@@ -34,7 +35,7 @@ data class ClientsSchelude(
     @KomapperId
     @KomapperAutoIncrement
     @KomapperColumn(name = "clientsschelude_id")
-    val id: Int = 0,
+    override val id: Int = 0,
     @CommentField("Клиент", true)
     var idClient: Int? = null,
     @CommentField("Работа начало", true)
@@ -43,10 +44,10 @@ data class ClientsSchelude(
     var scheludeDateEnd: LocalDateTime? = null,
     @Transient
     @KomapperVersion
-    val version: Int = 0,
+    override val version: Int = 0,
     @Transient
     @CommentField("Дата создания строки", false)
-    val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<ClientsSchelude>() {
 
     companion object {
@@ -54,8 +55,8 @@ data class ClientsSchelude(
         val repo_clientsschelude = BaseRepository(ClientsSchelude())
     }
 
-    override fun getBaseId() = id
-    override fun getTblCode() = "T_CLSC_"
+    override fun getTable() = tbl_clientsschelude
+    override fun getRepository() = repo_clientsschelude
     override fun baseParams(): RequestParams<ClientsSchelude> {
         val params = RequestParams<ClientsSchelude>()
         params.checkings.add { CheckObj(it.idClient != null && !repo_clients.isHaveData(it.idClient), EnumHttpCode.NOT_FOUND, 201, "Не найден Client с id ${it.idClient}") }

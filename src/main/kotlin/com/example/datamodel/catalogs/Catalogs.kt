@@ -22,6 +22,7 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
+import org.komapper.core.dsl.metamodel.EntityMetamodel
 
 /**
  * Справочник информации
@@ -33,7 +34,7 @@ data class Catalogs(
     @KomapperId
     @KomapperAutoIncrement
     @KomapperColumn(name = "catalogs_id")
-    val id: Int = 0,
+    override val id: Int = 0,
     @CommentField("Тип категории", true)
     var type: String? = null,
     @CommentField("Категория", true)
@@ -44,10 +45,10 @@ data class Catalogs(
     var description: String? = null,
     @Transient
     @KomapperVersion
-    val version: Int = 0,
+    override val version: Int = 0,
     @Transient
     @CommentField("Дата создания строки", false)
-    val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Catalogs>() {
 
     companion object {
@@ -55,8 +56,8 @@ data class Catalogs(
         val repo_catalogs = BaseRepository(Catalogs())
     }
 
-    override fun getBaseId() = id
-    override fun getTblCode() = "T_CTL_"
+    override fun getTable() = tbl_catalogs
+    override fun getRepository() = repo_catalogs
     override fun baseParams(): RequestParams<Catalogs> {
         val params = RequestParams<Catalogs>()
         params.checkings.add { CheckObj(repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null, EnumHttpCode.DUPLICATE, 201, "В БД уже присутствует категория '${it.category}' со значнеием '${it.value}'") }

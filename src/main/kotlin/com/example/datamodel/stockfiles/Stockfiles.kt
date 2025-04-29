@@ -29,7 +29,7 @@ data class Stockfiles(
     @KomapperId
     @KomapperAutoIncrement
     @KomapperColumn(name = "stockfiles_id")
-    val id: Int = 0,
+    override val id: Int = 0,
     @CommentField("Ссылка на услугу", false)
     var service: Int? = null,
     @CommentField("Наименование файла", false)
@@ -42,10 +42,10 @@ data class Stockfiles(
     var imageFormat: String? = null,
     @Transient
     @KomapperVersion
-    val version: Int = 0,
+    override val version: Int = 0,
     @Transient
     @CommentField("Дата создания строки", false)
-    val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Stockfiles>() {
 
     companion object {
@@ -53,8 +53,8 @@ data class Stockfiles(
         val repo_stockfiles = BaseRepository(Stockfiles())
     }
 
-    override fun getBaseId() = id
-    override fun getTblCode() = "T_STF_"
+    override fun getTable() = tbl_stockfiles
+    override fun getRepository() = repo_stockfiles
     override fun baseParams(): RequestParams<Stockfiles> {
         val params = RequestParams<Stockfiles>()
         params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), EnumHttpCode.NOT_FOUND, 201, "Не найдена Категория файла с id ${it.service}") }

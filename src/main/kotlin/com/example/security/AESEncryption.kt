@@ -1,6 +1,5 @@
 package com.example.security
 
-import com.example.logging.DailyLogger.printTextLog
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -24,7 +23,6 @@ object AESEncryption {
     fun setKeyFromString(keyString: String) {
         val decodedKey = Base64.getDecoder().decode(keyString)
         secretKey = SecretKeySpec(decodedKey, 0, decodedKey.size, ALGORITHM)
-        printTextLog("[AESEncryption] Encryption key successfully apllied")
     }
 
     // Метод для шифрования строки

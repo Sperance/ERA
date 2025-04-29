@@ -20,6 +20,7 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
+import org.komapper.core.dsl.metamodel.EntityMetamodel
 
 @Serializable
 @KomapperEntity
@@ -28,7 +29,7 @@ data class News(
     @KomapperId
     @KomapperAutoIncrement
     @KomapperColumn(name = "news_id")
-    val id: Int = 0,
+    override val id: Int = 0,
     @CommentField("Наименование новости", true)
     var name: String? = null,
     @CommentField("Текст новости", true)
@@ -39,9 +40,9 @@ data class News(
     var imageFormat: String? = null,
     @Transient
     @KomapperVersion
-    val version: Int = 0,
+    override val version: Int = 0,
     @CommentField("Дата создания строки", false)
-    val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<News>() {
 
     companion object {
@@ -49,8 +50,8 @@ data class News(
         val repo_news = BaseRepository(News())
     }
 
-    override fun getBaseId() = id
-    override fun getTblCode() = "T_NWS_"
+    override fun getTable() = tbl_news
+    override fun getRepository() = repo_news
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<News>, serializer: KSerializer<List<News>>): ResultResponse {
         params.checkings.add { CheckObj(it.name.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Наименование новости (name)") }

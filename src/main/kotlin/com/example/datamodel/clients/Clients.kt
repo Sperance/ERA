@@ -15,7 +15,6 @@ import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.tbl_clien
 import com.example.datamodel.feedbacks.FeedBacks
 import com.example.helpers.getData
 import com.example.helpers.getSize
-import com.example.helpers.isDuplicate
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.serverhistory.ServerHistory
@@ -41,15 +40,13 @@ import com.example.toDateTimePossible
 import com.example.toIntPossible
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import org.komapper.annotation.*
 import org.komapper.core.dsl.Meta
+import org.komapper.core.dsl.metamodel.EntityMetamodel
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.time.Duration.Companion.days
@@ -64,7 +61,7 @@ data class Clients(
     @KomapperId
     @KomapperAutoIncrement
     @KomapperColumn(name = "client_id")
-    val id: Int = 0,
+    override val id: Int = 0,
     @CommentField("Имя клиента", true)
     var firstName: String? = null,
     @CommentField("Фамилия клиента", true)
@@ -104,10 +101,10 @@ data class Clients(
     var salt: String? = null,
     @Transient
     @KomapperVersion
-    val version: Int = 0,
+    override val version: Int = 0,
     @Transient
     @CommentField("Дата создания строки", false)
-    val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Clients>() {
 
     companion object {
@@ -115,8 +112,8 @@ data class Clients(
         val repo_clients = BaseRepository(Clients())
     }
 
-    override fun getBaseId() = id
-    override fun getTblCode() = "T_CLN_"
+    override fun getTable() = tbl_clients
+    override fun getRepository() = repo_clients
     override fun baseParams(): RequestParams<Clients> {
         val params = RequestParams<Clients>()
         params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), EnumHttpCode.NOT_FOUND, 201, "Не найдена Должность с id ${it.position}") }
@@ -142,8 +139,8 @@ data class Clients(
         params.checkings.add { CheckObj(it.phone.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать Телефон") }
         params.checkings.add { CheckObj(it.email.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 304, "Необходимо указать Email") }
         params.checkings.add { CheckObj(it.gender.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 305, "Необходимо указать Пол") }
-        params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.phone eq it.phone }, EnumHttpCode.DUPLICATE, 306, "Клиент с указанным Номером телефона уже существует") }
-        params.checkings.add { CheckObj(it.isDuplicate { tbl_clients.email eq it.email }, EnumHttpCode.DUPLICATE, 307, "Клиент с указанным Почтовым адресом уже существует") }
+        params.checkings.add { CheckObj(repo_clients.isHaveDataField(Clients::phone, it.phone), EnumHttpCode.DUPLICATE, 306, "Клиент с указанным Номером телефона уже существует") }
+        params.checkings.add { CheckObj(repo_clients.isHaveDataField(Clients::email, it.email), EnumHttpCode.DUPLICATE, 307, "Клиент с указанным Почтовым адресом уже существует") }
         params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), EnumHttpCode.NOT_FOUND, 308, "Не найдена Должность с id ${it.position}") }
 
         val size = Clients().getSize()
@@ -170,7 +167,7 @@ data class Clients(
         val endDate = startDate.plus((daysLoaded).days)
 
         val currentRecords = Records().getData({ tbl_records.id_client_to eq clientId ; tbl_records.dateRecord.between(startDate..endDate) ; tbl_records.status lessEq 100 })
-        val currentSheludes = ClientsSchelude().getData({ tbl_clientsschelude.idClient eq clientId })
+        val currentSheludes = ClientsSchelude().getData({ ClientsSchelude().getTable().idClient eq clientId })
         val allServices = repo_services.getRepositoryData()
 
         val stockPeriod = 30

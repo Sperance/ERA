@@ -24,6 +24,7 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
+import org.komapper.core.dsl.metamodel.EntityMetamodel
 
 /**
  * Список услуг.
@@ -35,7 +36,7 @@ data class Services(
     @KomapperId
     @KomapperAutoIncrement
     @KomapperColumn(name = "services_id")
-    val id: Int = 0,
+    override val id: Int = 0,
     @CommentField("Наименование услуги", true)
     var name: String? = null,
     @CommentField("Описание услуги", false)
@@ -56,10 +57,10 @@ data class Services(
     var imageFormat: String? = null,
     @Transient
     @KomapperVersion
-    val version: Int = 0,
+    override val version: Int = 0,
     @Transient
     @CommentField("Дата создания строки", false)
-    val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Services>() {
 
     companion object {
@@ -67,8 +68,8 @@ data class Services(
         val repo_services = BaseRepository(Services())
     }
 
-    override fun getBaseId() = id
-    override fun getTblCode() = "T_SRV_"
+    override fun getTable() = tbl_services
+    override fun getRepository() = repo_services
     override fun baseParams(): RequestParams<Services> {
         val params = RequestParams<Services>()
         params.checkings.add { CheckObj(it.category != null && !Catalogs.repo_catalogs.isHaveData(it.category), EnumHttpCode.NOT_FOUND, 201, "Не найдена Категория с id ${it.category}") }

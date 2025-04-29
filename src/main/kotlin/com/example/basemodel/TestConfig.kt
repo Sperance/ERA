@@ -50,13 +50,6 @@ fun Application.configureTests() {
 
                     var findToken = Authentications.repo_authentications.getRepositoryData().find { it.token == part?.name }!!
                     findToken.dateUsed = LocalDateTime.currectDatetime()
-//                    findToken.description = "DATE: ${LocalDateTime.currectDatetime()}"
-
-                    printTextLog("")
-                    printTextLog("")
-                    printTextLog("")
-                    printTextLog("[TEST::getdata] current token: $findToken")
-                    printTextLog("[TEST::getdata] all tokens: ${Authentications.repo_authentications.getRepositoryData().joinToString("\n")}")
 
                     findToken = findToken.update()
                     Authentications.repo_authentications.updateData(findToken)

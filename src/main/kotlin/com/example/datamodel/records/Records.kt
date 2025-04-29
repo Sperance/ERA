@@ -28,6 +28,7 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
+import org.komapper.core.dsl.metamodel.EntityMetamodel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -42,7 +43,7 @@ data class Records(
     @KomapperId
     @KomapperAutoIncrement
     @KomapperColumn(name = "record_id")
-    val id: Int = 0,
+    override val id: Int = 0,
     @CommentField("Идентификатор клиента который записался на приём", true)
     var id_client_from: Int? = null,
     @CommentField("Идентификатор сотрудника, к которому записались на приём", true)
@@ -65,10 +66,10 @@ data class Records(
     var payStatus: Int? = null,
     @Transient
     @KomapperVersion
-    val version: Int = 0,
+    override val version: Int = 0,
     @Transient
     @CommentField("Дата создания строки", false)
-    val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Records>() {
 
     companion object {
@@ -76,14 +77,13 @@ data class Records(
         val repo_records = BaseRepository(Records())
     }
 
-    override fun getBaseId() = id
-    override fun getTblCode() = "T_RCD_"
+    override fun getTable() = tbl_records
+    override fun getRepository() = repo_records
     override fun baseParams(): RequestParams<Records> {
         val params = RequestParams<Records>()
         params.checkings.add { CheckObj(it.id_client_from != null && !Clients.repo_clients.isHaveData(it.id_client_from!!), EnumHttpCode.NOT_FOUND, 201, "Не существует Клиента с id ${it.id_client_from}") }
         params.checkings.add { CheckObj(it.id_client_to != null && !Clients.repo_clients.isHaveData(it.id_client_to!!), EnumHttpCode.NOT_FOUND, 202, "Не существует Клиента с id ${it.id_client_to}") }
         params.checkings.add { CheckObj(it.id_service != null && !Services.repo_services.isHaveData(it.id_service!!), EnumHttpCode.NOT_FOUND, 203, "Не существует Услуги с id ${it.id_service}") }
-
         return params
     }
 
@@ -145,3 +145,4 @@ data class Records(
         return "$datePart-$randomPart"
     }
 }
+

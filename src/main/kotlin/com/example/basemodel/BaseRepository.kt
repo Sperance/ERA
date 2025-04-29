@@ -8,20 +8,25 @@ import com.example.helpers.getData
 import com.example.helpers.getField
 import com.example.helpers.haveField
 import com.example.helpers.update
+import com.example.interfaces.IntPostgreTable
 import com.example.logging.DailyLogger.printTextLog
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KMutableProperty1
 
-open class BaseRepository<T : Any>(private val obj: T) {
+open class BaseRepository<T : IntPostgreTable<T>>(private val obj: IntPostgreTable<T>) {
 
     private val repoData = mutableSetOf<T>()
     private val mutex = Mutex()
     val onChanged = java.util.concurrent.atomic.AtomicBoolean(false)
+    val onChangedObject = ConcurrentHashMap<T?, String>()
+
+    private val CH_DELETE = "DELETE"
+    private val CH_CREATE = "CREATE"
+    private val CH_UPDATE = "UPDATE"
 
     // Безопасная загрузка данных снаружи блока lock
     open suspend fun resetData() {
@@ -30,7 +35,6 @@ open class BaseRepository<T : Any>(private val obj: T) {
             mutex.withLock {
                 repoData.clear()
                 repoData.addAll(newData)
-                printTextLog("[BaseRepository::${obj::class.simpleName}] resetData size: ${newData.size}")
             }
         }
     }
@@ -44,6 +48,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
                 val removed = repoData.removeIf { it.getField("id") == obj.getField("id") }
                 if (removed) {
                     onChanged.set(true)
+                    onChangedObject[obj] = CH_DELETE
                 }
             }
         }
@@ -55,9 +60,10 @@ open class BaseRepository<T : Any>(private val obj: T) {
         withContext(Dispatchers.IO) {
             if (repoData.isEmpty()) resetData()
             mutex.withLock {
-                val removed = repoData.removeIf { it.getField("id").toString() == id.toString() }
-                if (removed) {
+                val deleteObj = repoData.find { it.getField("id").toString() == id.toString() }
+                if (repoData.remove(deleteObj)) {
                     onChanged.set(true)
+                    onChangedObject[deleteObj] = CH_DELETE
                 }
             }
         }
@@ -74,6 +80,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
                     if (repoData.removeIf{ rem -> rem.getField("id") == existingObj.getField("id") }) {
                         repoData.add(obj)
                         onChanged.set(true)
+                        onChangedObject[obj] = CH_UPDATE
                     }
                 } else {
                     printTextLog("[${obj::class.java.simpleName}] Object not found for update with ID: ${obj.getField("id")}")
@@ -92,6 +99,7 @@ open class BaseRepository<T : Any>(private val obj: T) {
                     printTextLog("[BaseRepository::${obj::class.simpleName}][addData]: $obj")
                     repoData.add(obj)
                     onChanged.set(true)
+                    onChangedObject[obj] = CH_CREATE
                 } else {
                     printTextLog("[${obj::class.java.simpleName}] Duplicate detected for object with ID: ${obj.getField("id")}")
                 }
