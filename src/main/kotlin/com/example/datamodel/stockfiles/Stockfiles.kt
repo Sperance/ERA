@@ -30,13 +30,13 @@ data class Stockfiles(
     @KomapperAutoIncrement
     @KomapperColumn(name = "stockfiles_id")
     override val id: Int = 0,
-    @CommentField("Ссылка на услугу", false)
+    @CommentField("Ссылка на услугу")
     var service: Int? = null,
-    @CommentField("Наименование файла", false)
+    @CommentField("Наименование файла")
     var name: String? = null,
-    @CommentField("Категория файла", true)
+    @CommentField("Категория файла")
     var category: String? = null,
-    @CommentField("Ссылка на файл", false)
+    @CommentField("Ссылка на файл")
     var imageLink: String? = null,
     @Transient
     var imageFormat: String? = null,
@@ -44,7 +44,7 @@ data class Stockfiles(
     @KomapperVersion
     override val version: Int = 0,
     @Transient
-    @CommentField("Дата создания строки", false)
+    @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Stockfiles>() {
 

@@ -127,6 +127,16 @@ open class BaseRepository<T : IntPostgreTable<T>>(private val obj: IntPostgreTab
         }
     }
 
+    open suspend fun getDataFromId(id: Int?): T? {
+        if (id == null) return null
+        return withContext(Dispatchers.IO) {
+            if (repoData.isEmpty()) resetData()
+            mutex.withLock {
+                repoData.find { it.getField("id") == id }
+            }
+        }
+    }
+
     open suspend fun isHaveDataField(field: KMutableProperty1<T, *>, value: Any?): Boolean {
         if (value == null) return false
         if (!obj.haveField(field.name)) {

@@ -35,19 +35,19 @@ data class Catalogs(
     @KomapperAutoIncrement
     @KomapperColumn(name = "catalogs_id")
     override val id: Int = 0,
-    @CommentField("Тип категории", true)
+    @CommentField("Тип категории")
     var type: String? = null,
-    @CommentField("Категория", true)
+    @CommentField("Категория")
     var category: String? = null,
-    @CommentField("Значение", true)
+    @CommentField("Значение")
     var value: String? = null,
-    @CommentField("Описание", false)
+    @CommentField("Описание")
     var description: String? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
     @Transient
-    @CommentField("Дата создания строки", false)
+    @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Catalogs>() {
 

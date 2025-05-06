@@ -16,6 +16,7 @@ import com.example.isNullOrEmpty
 import com.example.isNullOrZero
 import com.example.logging.DailyLogger.printTextLog
 import com.example.nullDatetime
+import com.example.toIntPossible
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -44,31 +45,31 @@ data class Records(
     @KomapperAutoIncrement
     @KomapperColumn(name = "record_id")
     override val id: Int = 0,
-    @CommentField("Идентификатор клиента который записался на приём", true)
+    @CommentField("Идентификатор клиента который записался на приём")
     var id_client_from: Int? = null,
-    @CommentField("Идентификатор сотрудника, к которому записались на приём", true)
+    @CommentField("Идентификатор сотрудника, к которому записались на приём")
     var id_client_to: Int? = null,
-    @CommentField("Идентификатор услуги", true)
+    @CommentField("Идентификатор услуги")
     var id_service: Int? = null,
-    @CommentField("Номер заказа (генерируется автоматически)", false)
+    @CommentField("Номер заказа (генерируется автоматически)")
     var number: String? = null,
-    @CommentField("Дата и время на которую записан клиент", true)
+    @CommentField("Дата и время на которую записан клиент")
     var dateRecord: LocalDateTime? = null,
-    @CommentField("Статус записи (по умолчанию '0 - Создана')", false)
+    @CommentField("Статус записи (по умолчанию '0 - Создана')")
     var status: Int? = null,
-    @CommentField("Просмотрен ли заказ после изменения статуса (при смене статуса ставится false)", false)
+    @CommentField("Просмотрен ли заказ после изменения статуса (при смене статуса ставится false)")
     var statusViewed: Boolean? = null,
-    @CommentField("Стоимость записи", false)
+    @CommentField("Стоимость записи")
     var price: Double? = null,
-    @CommentField("Тип оплаты", false)
+    @CommentField("Тип оплаты")
     var payType: String? = null,
-    @CommentField("Статус оплаты", false)
+    @CommentField("Статус оплаты")
     var payStatus: Int? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
     @Transient
-    @CommentField("Дата создания строки", false)
+    @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Records>() {
 
@@ -102,6 +103,16 @@ data class Records(
             )
         }
         return listResults
+    }
+
+    suspend fun getFromId(call: ApplicationCall): ResultResponse {
+        val methodCode = "GET_FROM_id"
+        val id = call.parameters["id"]
+        if (id == null || !id.toIntPossible()) {
+            return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodCode, 101 to "Incorrect parameter 'id'($id). This parameter must be 'Int' type"))
+        }
+
+        return ResultResponse.Success(EnumHttpCode.COMPLETED, getFilledRecords().find { it.record?.id == id.toIntOrNull() })
     }
 
     override suspend fun get(call: ApplicationCall, params: RequestParams<Records>): ResultResponse {

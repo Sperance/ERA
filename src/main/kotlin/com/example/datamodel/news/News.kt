@@ -30,18 +30,18 @@ data class News(
     @KomapperAutoIncrement
     @KomapperColumn(name = "news_id")
     override val id: Int = 0,
-    @CommentField("Наименование новости", true)
+    @CommentField("Наименование новости")
     var name: String? = null,
-    @CommentField("Текст новости", true)
+    @CommentField("Текст новости")
     var mainText: String? = null,
-    @CommentField("Прямая ссылка на картинку", false)
+    @CommentField("Прямая ссылка на картинку")
     var imageLink: String? = null,
     @Transient
     var imageFormat: String? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
-    @CommentField("Дата создания строки", false)
+    @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<News>() {
 

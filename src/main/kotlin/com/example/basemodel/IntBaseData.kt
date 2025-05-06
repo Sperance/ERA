@@ -396,7 +396,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                         is PartData.BinaryItem -> {}
                     }
                 }
-
                 if (params.isNeedFile && fileBytes == null) {
                     tx.setRollbackOnly()
                     return@withTransaction ResultResponse.Error(
@@ -407,7 +406,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                         )
                     )
                 }
-
                 if (newObject == null) {
                     tx.setRollbackOnly()
                     return@withTransaction ResultResponse.Error(
@@ -418,7 +416,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                         )
                     )
                 }
-
                 params.checkings.forEach { check ->
                     val res = check.invoke(newObject!!)
                     if (res.result) {
@@ -429,7 +426,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                         )
                     }
                 }
-
                 baseParams().checkings.forEach { check ->
                     val res = check.invoke(newObject!!)
                     if (res.result) {
@@ -440,7 +436,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                         )
                     }
                 }
-
                 params.defaults.forEach { def ->
                     val res = def.invoke(newObject!!)
                     val property = res.first as KMutableProperty0<Any?>
@@ -448,11 +443,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     val value = res.second
                     property.set(value)
                 }
-
-                val tblObj =
-                    getField("tbl_${currectObjClassName.lowercase()}") as EntityMetamodel<*, *, *>
-                val auProp = tblObj.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int>
-                val findedObj = getDataOne({ auProp eq newObject?.id })
+                val findedObj = getRepository().getDataFromId(newObject?.id)
                 if (findedObj == null) {
                     tx.setRollbackOnly()
                     return@withTransaction ResultResponse.Error(
@@ -463,7 +454,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                         )
                     )
                 }
-
                 if (fileBytes != null) {
                     if (!newObject!!.isHaveImageFields()) {
                         tx.setRollbackOnly()
@@ -480,9 +470,9 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
 
                 params.checkOnUpdate?.invoke(findedObj as T, newObject!!)
 
+                params.onBeforeCompleted?.invoke(newObject!!)
+                baseParams().onBeforeCompleted?.invoke(newObject!!)
                 findedObj.updateFromNullable(newObject!!)
-                params.onBeforeCompleted?.invoke(findedObj as T)
-                baseParams().onBeforeCompleted?.invoke(findedObj as T)
 
                 val updated = findedObj.update()
                 getRepository().updateData(updated)
@@ -590,9 +580,9 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
 
                     params.checkOnUpdate?.invoke(findedObj as T, item)
 
+                    params.onBeforeCompleted?.invoke(item)
+                    baseParams().onBeforeCompleted?.invoke(item)
                     findedObj.updateFromNullable(item as Any)
-                    params.onBeforeCompleted?.invoke(findedObj as T)
-                    baseParams().onBeforeCompleted?.invoke(findedObj as T)
 
                     val updated = findedObj.update()
                     getRepository().updateData(updated)
@@ -780,19 +770,13 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
 
         val currectObjClassName = this::class.simpleName!!
 
-        val imagePath = File(
-            Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}"
-        )
+        val imagePath = File(Paths.get("").toAbsolutePath().toString() + "/files/${currectObjClassName.lowercase()}")
         if (!imagePath.exists()) imagePath.mkdirs()
-        val imageFile =
-            File("${imagePath.absolutePath}/icon_${newObject.getField("id")}.$fileExtension")
+        val imageFile = File("${imagePath.absolutePath}/icon_${newObject.getField("id")}.$fileExtension")
         if (imageFile.exists()) imageFile.delete()
 
         imageFile.writeBytes(fileBytes)
-        newObject.putField(
-            "imageLink",
-            "${applicationTomlSettings!!.SETTINGS.ENDPOINT}files/${currectObjClassName.lowercase()}/" + imageFile.name
-        )
+        newObject.putField("imageLink", "${applicationTomlSettings!!.SETTINGS.ENDPOINT}files/${currectObjClassName.lowercase()}/" + imageFile.name)
         newObject.putField("imageFormat", imageFile.extension)
 
         printTextLog("[saveImageToFields] Save file for $currectObjClassName ${imageFile.path}")

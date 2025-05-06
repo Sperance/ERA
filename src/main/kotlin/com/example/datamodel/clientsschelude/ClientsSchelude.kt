@@ -36,17 +36,17 @@ data class ClientsSchelude(
     @KomapperAutoIncrement
     @KomapperColumn(name = "clientsschelude_id")
     override val id: Int = 0,
-    @CommentField("Клиент", true)
+    @CommentField("Клиент")
     var idClient: Int? = null,
-    @CommentField("Работа начало", true)
+    @CommentField("Работа начало")
     var scheludeDateStart: LocalDateTime? = null,
-    @CommentField("Работа конец", true)
+    @CommentField("Работа конец")
     var scheludeDateEnd: LocalDateTime? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
     @Transient
-    @CommentField("Дата создания строки", false)
+    @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<ClientsSchelude>() {
 

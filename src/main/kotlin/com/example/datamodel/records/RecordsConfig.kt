@@ -33,6 +33,10 @@ fun Application.configureRecords() {
                 call.respond(Records().getFilter(call, RequestParams()))
             }
 
+            get("/id") {
+                call.respond(Records().getFromId(call))
+            }
+
             post("/update") {
                 call.respond(Records().update(call, RequestParams(), Records.serializer()))
             }

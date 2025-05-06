@@ -35,22 +35,22 @@ data class FeedBacks(
     @KomapperAutoIncrement
     @KomapperColumn(name = "feedback_id")
     override val id: Int = 0,
-    @CommentField("Имя клиента оставившего отзыв", true)
+    @CommentField("Имя клиента оставившего отзыв")
     var firstName: String? = null,
-    @CommentField("Фамилия клиента оставившего отзыв", true)
+    @CommentField("Фамилия клиента оставившего отзыв")
     var lastName: String? = null,
-    @CommentField("Идентификатор клиента оставившего отзыв", true)
+    @CommentField("Идентификатор клиента оставившего отзыв")
     var id_client_from: Int? = null,
-    @CommentField("Идентификатор сотрудника кому оставили отзыв", true)
+    @CommentField("Идентификатор сотрудника кому оставили отзыв")
     var id_client_to: Int? = null,
-    @CommentField("Текст отзыва", true)
+    @CommentField("Текст отзыва")
     var text: String? = null,
-    @CommentField("Поставленная оценка сотруднику", true)
+    @CommentField("Поставленная оценка сотруднику")
     var value: Byte? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
-    @CommentField("Дата создания строки", false)
+    @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<FeedBacks>() {
 

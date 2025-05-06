@@ -37,21 +37,21 @@ data class Services(
     @KomapperAutoIncrement
     @KomapperColumn(name = "services_id")
     override val id: Int = 0,
-    @CommentField("Наименование услуги", true)
+    @CommentField("Наименование услуги")
     var name: String? = null,
-    @CommentField("Описание услуги", false)
+    @CommentField("Описание услуги")
     var description: String? = null,
-    @CommentField("Категория услуги", true)
+    @CommentField("Категория услуги")
     var category: Int? = null,
-    @CommentField("Минимальная стоимость", true)
+    @CommentField("Минимальная стоимость")
     var priceLow: Double? = null,
-    @CommentField("Максимальная стоимость", false)
+    @CommentField("Максимальная стоимость")
     var priceMax: Double? = null,
-    @CommentField("Продолжительность услуги (1 пункт = 15 мин, т.е. если услуга длится 60 мин, то необходимо указать (60 / 15) = 4 пункта)", true)
+    @CommentField("Продолжительность услуги (1 пункт = 15 мин, т.е. если услуга длится 60 мин, то необходимо указать (60 / 15) = 4 пункта)")
     var duration: Byte? = null,
-    @CommentField("К какому полу относится услуга (по умолчанию -1 (к любому полу))", false)
+    @CommentField("К какому полу относится услуга (по умолчанию -1 (к любому полу))")
     var gender: Byte? = null,
-    @CommentField("Ссылка на изображение услуги", false)
+    @CommentField("Ссылка на изображение услуги")
     var imageLink: String? = null,
     @Transient
     var imageFormat: String? = null,
@@ -59,7 +59,7 @@ data class Services(
     @KomapperVersion
     override val version: Int = 0,
     @Transient
-    @CommentField("Дата создания строки", false)
+    @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Services>() {
 

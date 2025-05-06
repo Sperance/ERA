@@ -75,6 +75,7 @@ suspend fun ApplicationCall.respond(response: ResultResponse) {
         when(response) {
             is ResultResponse.Error -> {
                 this.response.headers.append("Answer-TimeStamp", LocalDateTime.currectDatetime().toString())
+                this.response.headers.append("Answer-Error", response.message.toString())
                 respond(
                     status = response.status.httpCode,
                     message = response.message)
@@ -127,5 +128,5 @@ fun Long.toFormatDateTime() : String {
 fun Field?.getCommentFieldAnnotation(): String {
     val ann = this?.getAnnotation(CommentField::class.java)
     if (ann == null) return ""
-    return "[${ann.name}; обязательное: ${ann.required}]"
+    return "[${ann.name}]"
 }

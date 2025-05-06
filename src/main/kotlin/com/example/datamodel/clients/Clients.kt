@@ -62,48 +62,48 @@ data class Clients(
     @KomapperAutoIncrement
     @KomapperColumn(name = "client_id")
     override val id: Int = 0,
-    @CommentField("Имя клиента", true)
+    @CommentField("Имя клиента")
     var firstName: String? = null,
-    @CommentField("Фамилия клиента", true)
+    @CommentField("Фамилия клиента")
     var lastName: String? = null,
-    @CommentField("Отчество клиента", false)
+    @CommentField("Отчество клиента")
     var patronymic: String? = null,
-    @CommentField("Логин от личного кабинета", true)
+    @CommentField("Логин от личного кабинета")
     var login: String? = null,
-    @CommentField("Пароль от личного кабинета", true)
+    @CommentField("Пароль от личного кабинета")
     var password: String? = null,
-    @CommentField("Контактный телефон", true)
+    @CommentField("Контактный телефон")
     var phone: String? = null,
-    @CommentField("Почтовый адрес", true)
+    @CommentField("Почтовый адрес")
     var email: String? = null,
-    @CommentField("Дата рождения", false)
+    @CommentField("Дата рождения")
     var dateBirthday: LocalDateTime? = null,
-    @CommentField("Дата принятия на работу сотрудника", false)
+    @CommentField("Дата принятия на работу сотрудника")
     var dateWorkIn: LocalDateTime? = null,
-    @CommentField("Дата увольнения сотрудника", false)
+    @CommentField("Дата увольнения сотрудника")
     var dateWorkOut: LocalDateTime? = null,
-    @CommentField("Должность сотрудника", false)
+    @CommentField("Должность сотрудника")
     var position: Int? = null,
-    @CommentField("Описание сотрудника", false)
+    @CommentField("Описание сотрудника")
     var description: String? = null,
-    @CommentField("Тип клиента", false)
+    @CommentField("Тип клиента")
     var clientType: String? = null,
-    @CommentField("Пол клиента", true)
+    @CommentField("Пол клиента")
     var gender: Byte? = null,
-    @CommentField("Прямая ссылка на картинку", false)
+    @CommentField("Прямая ссылка на картинку")
     var imageLink: String? = null,
     @Transient
     var imageFormat: String? = null,
-    @CommentField("Массив ссылок на работы сотрудника", false)
+    @CommentField("Массив ссылок на работы сотрудника")
     var arrayTypeWork: Array<Int>? = null,
     @Transient
-    @CommentField("Соль для шифрования", false)
+    @CommentField("Соль для шифрования")
     var salt: String? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
     @Transient
-    @CommentField("Дата создания строки", false)
+    @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
 ) : IntBaseDataImpl<Clients>() {
 
@@ -122,6 +122,7 @@ data class Clients(
         params.checkings.add { CheckObj(it.login != null && repo_clients.isHaveDataField(Clients::login, it.login), EnumHttpCode.DUPLICATE, 204, "Клиент с указанным Логином уже существует") }
 
         params.onBeforeCompleted = { obj ->
+            printTextLog("[Clients::onBeforeCompleted] obj: $obj")
             if (obj.lastName != null) obj.lastName = AESEncryption.encrypt(obj.lastName)
             if (obj.firstName != null) obj.firstName = AESEncryption.encrypt(obj.firstName)
             if (obj.patronymic != null) obj.patronymic = AESEncryption.encrypt(obj.patronymic)
@@ -251,7 +252,7 @@ data class Clients(
             if (user.password.isNullOrEmpty())
                 return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 102 to "Необходимо указать Пароль(password)"))
 
-            val client = repo_clients.getRepositoryData().find { it.login == user.login && verifyPassword(it.password, it.salt, user.password) }
+            val client = repo_clients.getRepositoryData().find { it.login?.lowercase() == user.login?.lowercase() && verifyPassword(it.password, it.salt, user.password) }
             if (client == null)
                 return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(methodName, 103 to "Не найден пользователь с указанным Логином и Паролем"))
 
@@ -292,14 +293,14 @@ data class Clients(
             if (password.isNullOrEmpty())
                 return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 102 to "Incorrect parameter 'password'($password). This parameter must be 'String' type"))
 
-            val findedClient = repo_clients.getRepositoryData().find { it.email == email }
+            val findedClient = repo_clients.getRepositoryData().find { it.email == AESEncryption.encrypt(email) }
             if (findedClient == null)
                 return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(methodName, 103 to "Не найден Клиент с адресом $email"))
 
             findedClient.setNewPassword(password)
             val updated = findedClient.update()
 
-            repo_clients.resetData()
+            repo_clients.updateData(updated)
 
             ServerHistory.addRecord(12, "Изменение пароля пользователя ${updated.id}", password)
             return ResultResponse.Success(EnumHttpCode.COMPLETED, updated)
@@ -317,7 +318,7 @@ data class Clients(
             if (email.isNullOrEmpty())
                 return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 101 to "Incorrect parameter 'email'($email). This parameter must be 'String' type"))
 
-            val findedClient = repo_clients.getRepositoryData().find { it.email == email }
+            val findedClient = repo_clients.getRepositoryData().find { it.email == AESEncryption.encrypt(email) }
             if (findedClient == null)
                 return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(methodName, 102 to "Не найден Клиент с адресом $email"))
 
@@ -374,5 +375,9 @@ data class Clients(
 
     private fun toStringLow(): String {
         return "{id=$id, firstName=$firstName, login=$login, password=$password, email=$email, clientType=$clientType}"
+    }
+
+    override fun toString(): String {
+        return "Clients(id=$id, firstName=$firstName, lastName=$lastName, patronymic=$patronymic, login=$login, password=$password, phone=$phone, email=$email, position=$position, description=$description, imageLink=$imageLink, arrayTypeWork=${arrayTypeWork?.contentToString()})"
     }
 }
