@@ -53,7 +53,7 @@ class AppTest {
             db.withTransaction { tx ->
                 try {
                     printTextLog("[IN START]")
-                    val newCatalog = Catalogs().apply { type = "testType2"; category = "testCat2"; value = "testVal2" }.create()
+                    val newCatalog = Catalogs().apply { type = "testType2"; category = "testCat2"; value = "testVal2" }.create("test")
                     testLaunchTransaction()
 //               tx.setRollbackOnly()
                     printTextLog("[IN END]")
@@ -70,7 +70,7 @@ class AppTest {
         val findCatal = Catalogs().getDataOne({ tbl_catalogs.type eq "testType" })
         if (true) throw Exception("SampleEx")
         findCatal?.value = "updated"
-        findCatal?.update()
+        findCatal?.update("testLaunchTransaction")
     }
 
     @Test

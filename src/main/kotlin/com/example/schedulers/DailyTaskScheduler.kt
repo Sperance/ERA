@@ -13,7 +13,7 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import kotlin.time.Duration.Companion.days
 
-class DailyTaskScheduler {
+object DailyTaskScheduler {
     private val scope = CoroutineScope(Dispatchers.Default)
 
     fun start() {
@@ -34,7 +34,7 @@ class DailyTaskScheduler {
     /**
      * Очистка старых графиков работ (60+ дней)
      */
-    private suspend fun execute_clearClientsSheluders() {
+    suspend fun execute_clearClientsSheluders() {
         printTextLog("[Scheduler '${this::class.java.simpleName}' checked at ${LocalDateTime.now()}]")
         val currentDate = kotlinx.datetime.LocalDateTime.currentZeroDate().minus((60).days)
         val dataRemove = repo_clientsschelude.getRepositoryData().filter { fil -> fil.scheludeDateEnd!! < currentDate }

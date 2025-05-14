@@ -24,6 +24,7 @@ import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.companionObjectInstance
 import kotlin.reflect.full.declaredMembers
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 
 fun String?.toIntPossible() : Boolean {
     if (this == null) return false
@@ -64,11 +65,11 @@ fun LocalDateTime.Companion.nullDatetime() = LocalDateTime(2000, 1, 1, 0, 0, 0)
 
 fun LocalDateTime.Companion.currentZeroDate() : LocalDateTime {
     val curDate = currectDatetime()
-    return LocalDateTime(curDate.year, curDate.monthNumber, curDate.dayOfMonth, 0, 0)
+    return LocalDateTime(curDate.year, curDate.monthNumber, curDate.dayOfMonth, 0, 0).minus((3).hours)
 }
 
 @OptIn(InternalAPI::class)
-fun LocalDateTime.Companion.currectDatetime() = Date().toLocalDateTime().toKotlinLocalDateTime()
+fun LocalDateTime.Companion.currectDatetime() = Date().toLocalDateTime().toKotlinLocalDateTime().minus((3).hours)
 
 suspend fun ApplicationCall.respond(response: ResultResponse) {
     try {

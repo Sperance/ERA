@@ -474,7 +474,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 baseParams().onBeforeCompleted?.invoke(newObject!!)
                 findedObj.updateFromNullable(newObject!!)
 
-                val updated = findedObj.update()
+                val updated = findedObj.update("IntBaseData::update")
                 getRepository().updateData(updated)
 
                 return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, updated)
@@ -584,7 +584,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     baseParams().onBeforeCompleted?.invoke(item)
                     findedObj.updateFromNullable(item as Any)
 
-                    val updated = findedObj.update()
+                    val updated = findedObj.update("IntBaseData::updateMany")
                     getRepository().updateData(updated)
                     resultArray.add(updated)
                 }
@@ -708,7 +708,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     params.onBeforeCompleted?.invoke(item)
                     baseParams().onBeforeCompleted?.invoke(item)
 
-                    finishObject = item.create()
+                    finishObject = item.create("IntBaseDataImpl::post")
                     getRepository().addData(finishObject)
                 }
 
@@ -727,7 +727,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     params.onBeforeCompleted?.invoke(finishObject!!)
                     baseParams().onBeforeCompleted?.invoke(finishObject as T)
 
-                    finishObject = finishObject!!.update()
+                    finishObject = finishObject!!.update("IntBaseData::post")
                     getRepository().updateData(finishObject)
                 }
 

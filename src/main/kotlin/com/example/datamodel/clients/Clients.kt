@@ -38,9 +38,14 @@ import com.example.security.hashPassword
 import com.example.security.verifyPassword
 import com.example.toDateTimePossible
 import com.example.toIntPossible
+import io.ktor.http.Cookie
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
+import io.ktor.server.sessions.SameSite
+import io.ktor.util.date.GMTDate
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -50,6 +55,7 @@ import org.komapper.core.dsl.metamodel.EntityMetamodel
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 /**
  * Список клиентов.
@@ -259,23 +265,32 @@ data class Clients(
             var token = Authentications.getTokenFromClient(client)
             printTextLog("[Clients::auth] token: $token")
             if (token == null) {
-                token = Authentications.createToken(client, EnumBearerRoles.USER)
+                token = Authentications.createToken(client)
             } else {
                 if (token.isExpires()) {
                     printTextLog("[Clients] Токен просрочен. Удаляем и создаём новый")
                     val deleteId = token.id
                     token.delete()
                     Authentications.repo_authentications.deleteData(deleteId)
-                    token = Authentications.createToken(client, EnumBearerRoles.USER)
-                } else {
-                    token.dateUsed = LocalDateTime.currectDatetime()
-                    token = token.update()
-                    Authentications.repo_authentications.updateData(token)
+                    token = Authentications.createToken(client)
                 }
             }
 
+            call.response.cookies.append(
+                Cookie(
+                    name = "era_auth_token",
+                    value = token.token?:"",
+                    path = "/",
+                    domain = "salon-era.ru",
+                    httpOnly = true,
+                    secure = true,
+                    expires = GMTDate(token.dateExpired!!.toInstant(TimeZone.UTC).toEpochMilliseconds()),
+                    extensions = mapOf("SameSite" to "Lax")
+                )
+            )
+
             ServerHistory.addRecord(11, "Авторизация пользователя ${client.id}", client.toStringLow())
-            return ResultResponse.Success(EnumHttpCode.COMPLETED, client, mapOf("Authorization" to  "Bearer " + token.token!!))
+            return ResultResponse.Success(EnumHttpCode.COMPLETED, client)
         } catch (e: Exception) {
             e.printStackTrace()
             return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(methodName, 440 to e.localizedMessage))
@@ -298,7 +313,7 @@ data class Clients(
                 return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(methodName, 103 to "Не найден Клиент с адресом $email"))
 
             findedClient.setNewPassword(password)
-            val updated = findedClient.update()
+            val updated = findedClient.update("Clients::changePasswordFromEmail")
 
             repo_clients.updateData(updated)
 

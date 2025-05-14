@@ -25,7 +25,7 @@ private suspend fun defaultClients() {
                 phone = AESEncryption.encrypt("999")
                 salt = generateSalt()
                 email = AESEncryption.encrypt("adm@adm.ru")
-                clientType = "admin"
+                clientType = "ADMIN"
                 dateWorkIn = LocalDateTime.currectDatetime()
                 setNewPassword("Password123.")
             },
@@ -36,8 +36,9 @@ private suspend fun defaultClients() {
                 phone = AESEncryption.encrypt("+79779999999")
                 salt = generateSalt()
                 email = AESEncryption.encrypt("mde@mde.ru")
+                clientType = "ADMIN"
                 dateWorkIn = LocalDateTime.currectDatetime()
-                setNewPassword("32543254")
+                setNewPassword("Ckjy32543254.")
             })
         )
     }

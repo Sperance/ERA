@@ -11,7 +11,7 @@ fun Application.configureCORS() {
         allowHost("www.salon-era.ru", schemes = listOf("https"))
         allowHost("salon-era.ru", schemes = listOf("https"))
         allowHost("localhost:3000", schemes = listOf("http"))
-        allowHost("127.0.0.1", schemes = listOf("http", "https"))
+//        allowHost("127.0.0.1", schemes = listOf("http", "https"))
 
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
@@ -19,8 +19,8 @@ fun Application.configureCORS() {
 
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Authorization)
-        exposeHeader(HttpHeaders.Authorization)
         allowHeader(HttpHeaders.Accept)
+//        exposeHeader(HttpHeaders.Authorization)
 
         allowCredentials = true
     }

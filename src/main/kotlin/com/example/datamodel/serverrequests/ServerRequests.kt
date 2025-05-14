@@ -60,7 +60,7 @@ data class ServerRequests(
                     dateInRequest = call.response.headers["Request-TimeStamp"]?.toLocalDateTime(),
                     dateOutRequest = call.response.headers["Answer-TimeStamp"]?.toLocalDateTime(),
                     errorMessage = call.response.headers["Answer-Error"]
-                ).create()
+                ).create("ServerRequests::addServerRecord")
             }
         }
     }

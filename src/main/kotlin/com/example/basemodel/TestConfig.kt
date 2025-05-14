@@ -1,5 +1,7 @@
 package com.example.basemodel
 
+import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
 import com.example.currectDatetime
 import com.example.datamodel.authentications.Authentications
 import com.example.datamodel.clients.Clients
@@ -9,15 +11,22 @@ import com.example.helpers.GMailSender
 import com.example.helpers.executeAddColumn
 import com.example.helpers.executeDelColumn
 import com.example.helpers.update
-import com.example.logging.DailyLogger.printTextLog
+import com.example.plugins.JWT_AUDIENCE
+import com.example.plugins.JWT_AUTH_NAME
+import com.example.plugins.JWT_HMAC
+import com.example.plugins.JWT_ISSUER
 import com.example.plus
 import com.example.toIntPossible
+import io.ktor.http.Cookie
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.auth.UserIdPrincipal
 import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
+import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
@@ -26,6 +35,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import java.util.Date
 import kotlin.time.Duration.Companion.minutes
 
 fun Application.configureTests() {
@@ -44,20 +54,6 @@ fun Application.configureTests() {
                 Clients.repo_clients.clearLinkEqual(Clients::position, 16)
                 call.respond(HttpStatusCode.OK)
             }
-            authenticate("auth-bearer") {
-                get ("/getdata") {
-                    val part = call.principal<UserIdPrincipal>()
-
-                    var findToken = Authentications.repo_authentications.getRepositoryData().find { it.token == part?.name }!!
-                    findToken.dateUsed = LocalDateTime.currectDatetime()
-
-                    findToken = findToken.update()
-                    Authentications.repo_authentications.updateData(findToken)
-
-                    call.respond(HttpStatusCode.OK, "Hello $findToken")
-                }
-            }
-
             post ("/emailMessage") {
                 val email = call.parameters["email"]
 
@@ -124,6 +120,64 @@ fun Application.configureTests() {
                     resultString += "$it\n"
                 }
                 call.respond(HttpStatusCode.OK, resultString)
+            }
+
+            route("/bearer") {
+                authenticate(JWT_AUTH_NAME) {
+                    get ("/getdata") {
+                        val part = call.principal<JWTPrincipal>()!!
+
+                        val checkAuth = Authentications.checkCorrectJWT(part)
+                        if (checkAuth.errorText != null) {
+                            call.respond(HttpStatusCode.OK, "Authenticate error: ${checkAuth.errorText}")
+                            return@get
+                        }
+
+                        call.respond(HttpStatusCode.OK, "Hello")
+                    }
+                }
+            }
+            route("/jwt") {
+                post("/login") {
+                    val username = call.receiveText()
+
+                    if (username.isBlank()) {
+                        call.respondText("Username must be set")
+                        return@post
+                    }
+
+                    val tokenDuration = (60).minutes
+
+                    // Здесь должна быть логика проверки пароля
+                    val token = JWT.create()
+                        .withAudience(JWT_AUDIENCE)
+                        .withIssuer(JWT_ISSUER)
+                        .withClaim("username", username)
+                        .withExpiresAt(Date(System.currentTimeMillis() + tokenDuration.inWholeMilliseconds))
+                        .sign(Algorithm.HMAC256(JWT_HMAC))
+
+                    call.response.cookies.append(
+                        Cookie(
+                            name = "era_auth_token",
+                            value = token,
+                            path = "/",
+                            httpOnly = true,
+                            secure = true,
+                            maxAge = tokenDuration.inWholeSeconds.toInt(),
+                            extensions = mapOf("SameSite" to "None")
+                        )
+                    )
+
+                    call.respondText("Logged in `$username` as $token")
+                }
+
+                authenticate("auth-jwt-cookie") {
+                    get("/protected") {
+                        val principal = call.principal<JWTPrincipal>()!!
+                        val username = principal.payload.getClaim("username").asString()
+                        call.respondText("Hello, $username! You have access to protected route")
+                    }
+                }
             }
         }
     }

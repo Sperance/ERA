@@ -27,7 +27,9 @@ fun Application.configureCallLogging() {
     }
 
     intercept(ApplicationCallPipeline.Call) {
-        call.response.headers.append("Request-TimeStamp", LocalDateTime.currectDatetime().toString())
-        call.response.headers.append("ERA-key", UUID.randomUUID().toString().replace("-", ""))
+        try {
+            call.response.headers.append("Request-TimeStamp", LocalDateTime.currectDatetime().toString())
+            call.response.headers.append("ERA-key", UUID.randomUUID().toString().replace("-", ""))
+        }catch (_: Exception) { }
     }
 }

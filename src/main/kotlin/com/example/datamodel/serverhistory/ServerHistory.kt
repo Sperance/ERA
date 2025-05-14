@@ -42,7 +42,7 @@ data class ServerHistory(
 
         fun addRecord(code: Int, message: String, value: String) {
             CoroutineScope(Dispatchers.IO).launch {
-                ServerHistory(code = code, message = message, value = value).create()
+                ServerHistory(code = code, message = message, value = value).create("ServerHistory::addRecord")
             }
         }
     }

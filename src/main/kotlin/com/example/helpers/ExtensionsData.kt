@@ -1,6 +1,5 @@
 package com.example.helpers
 
-import com.example.basemodel.IntBaseDataImpl
 import com.example.enums.EnumSQLTypes
 import com.example.interfaces.IntPostgreTable
 import com.example.logging.DailyLogger.printTextLog
@@ -21,18 +20,18 @@ fun Any.getField(name: String) = this::class.java.declaredFields.find { it.isAcc
 fun Any.putField(name: String, value: Any?) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name }?.set(this, value)
 
 @Suppress("UNCHECKED_CAST")
-suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.update() : TYPE {
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.update(fromClass: String) : TYPE {
     val metaTable = getTable() as META
     val result = db.runQuery { QueryDsl.update(metaTable).single(this@update).returning() } as TYPE
-    printTextLog("[Update object '${this::class.java.simpleName}' with id '${result.getField("id")}']")
+    printTextLog("[UPDATE::$fromClass object '${this::class.java.simpleName}' with id '${result.getField("id")}']")
     return result
 }
 
 @Suppress("UNCHECKED_CAST")
-suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.create(): TYPE {
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.create(fromClass: String): TYPE {
     val metaTable = getTable() as META
     val result = db.runQuery { QueryDsl.insert(metaTable).single(this@create) }
-    printTextLog("[Create object '${this::class.java.simpleName}' with id '${result.getField("id")}']")
+    printTextLog("[CREATE::$fromClass object '${this::class.java.simpleName}' with id '${result.getField("id")}']")
     return result as TYPE
 }
 
@@ -46,7 +45,7 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<
 @Suppress("UNCHECKED_CAST")
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.delete() {
     val metaTable = getTable() as META
-    printTextLog("[Delete object '${this::class.java.simpleName}' with id '${this@delete.getField("id")}']")
+    printTextLog("[DELETE object '${this::class.java.simpleName}' with id '${this@delete.getField("id")}']")
     db.runQuery { QueryDsl.delete(metaTable).where { metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> eq this@delete.getField("id") as Int } }
 }
 

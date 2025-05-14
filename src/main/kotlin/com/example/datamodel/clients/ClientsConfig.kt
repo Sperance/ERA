@@ -42,6 +42,7 @@ fun Application.configureClients() {
             }
 
             post("/auth") {
+//                call.response.cookies.
                 call.respond(Clients().auth(call))
             }
 

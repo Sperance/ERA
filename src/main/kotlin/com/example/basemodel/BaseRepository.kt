@@ -100,8 +100,6 @@ open class BaseRepository<T : IntPostgreTable<T>>(private val obj: IntPostgreTab
                     repoData.add(obj)
                     onChanged.set(true)
                     onChangedObject[obj] = CH_CREATE
-                } else {
-                    printTextLog("[${obj::class.java.simpleName}] Duplicate detected for object with ID: ${obj.getField("id")}")
                 }
             }
         }
@@ -183,7 +181,7 @@ open class BaseRepository<T : IntPostgreTable<T>>(private val obj: IntPostgreTab
                     item.delete()
                     deleteData(deleteId)
                 } else {
-                    item.update()
+                    item.update("clearLinkEqual")
                     updateData(item)
                 }
             }
@@ -207,7 +205,7 @@ open class BaseRepository<T : IntPostgreTable<T>>(private val obj: IntPostgreTab
 
             toUpdate.forEach { item ->
                 printTextLog("[clearLinkEqualArray ${obj::class.java.simpleName}] index: $index object: $item")
-                item.update()
+                item.update("clearLinkEqualArray")
                 updateData(item)
             }
         }
