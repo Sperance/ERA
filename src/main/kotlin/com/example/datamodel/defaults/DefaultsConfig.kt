@@ -17,7 +17,7 @@ fun defaultsConfig() = runBlocking {
 
 private suspend fun defaultClients() {
     if (Clients().isEmpty()) {
-        Clients().createBatch(listOf(
+        Clients().createBatch("defaultClients", listOf(
             Clients().apply {
                 firstName = AESEncryption.encrypt("admin")
                 lastName = AESEncryption.encrypt("admin")
@@ -46,7 +46,7 @@ private suspend fun defaultClients() {
 
 private suspend fun defaultCatalogs() {
     if (Catalogs().isEmpty()) {
-        Catalogs().createBatch(listOf(
+        Catalogs().createBatch("defaultCatalogs", listOf(
             Catalogs().apply {
                 type = "Типы работ"
                 category = "Женские стрижки"

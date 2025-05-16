@@ -4,13 +4,16 @@ import com.example.currectDatetime
 import com.example.datamodel.serverhistory.ServerHistory
 import com.example.datamodel.serverhistory.serverHistory
 import com.example.helpers.create
+import com.example.helpers.createBatch
 import com.example.interfaces.IntPostgreTable
+import com.example.logging.DailyLogger.printTextLog
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
 import io.ktor.server.request.uri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toLocalDateTime
@@ -25,6 +28,7 @@ import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
 import org.komapper.core.dsl.metamodel.EntityMetamodel
 import java.util.UUID
+import kotlin.time.Duration.Companion.minutes
 
 @Serializable
 @KomapperEntity
@@ -49,18 +53,29 @@ data class ServerRequests(
 ) : IntPostgreTable<ServerRequests> {
     companion object {
         val tbl_serverrequests = Meta.serverRequests
+        private val array_requests = ArrayList<ServerRequests>()
 
         fun addServerRecord(call: ApplicationCall) {
-            CoroutineScope(Dispatchers.IO).launch {
-                ServerRequests(
-                    url = call.request.path(),
-                    clientUrl = "${call.request.local.remoteAddress}::${call.request.httpMethod.value}",
-                    uniqueKey = call.response.headers["ERA-key"],
-                    code = call.response.status()?.value?:0,
-                    dateInRequest = call.response.headers["Request-TimeStamp"]?.toLocalDateTime(),
-                    dateOutRequest = call.response.headers["Answer-TimeStamp"]?.toLocalDateTime(),
-                    errorMessage = call.response.headers["Answer-Error"]
-                ).create("ServerRequests::addServerRecord")
+            val request = ServerRequests(
+                url = call.request.path(),
+                clientUrl = "${call.request.local.remoteAddress}::${call.request.httpMethod.value}",
+                uniqueKey = call.response.headers["ERA-key"],
+                code = call.response.status()?.value?:0,
+                dateInRequest = call.response.headers["Request-TimeStamp"]?.toLocalDateTime(),
+                dateOutRequest = call.response.headers["Answer-TimeStamp"]?.toLocalDateTime(),
+                errorMessage = call.response.headers["Answer-Error"]
+            )
+            array_requests.add(request)
+        }
+
+        fun lauchBatchedWriteDB() = CoroutineScope(Dispatchers.IO).launch {
+            while (true) {
+                delay((1).minutes)
+                if (array_requests.isNotEmpty()) {
+                    ServerRequests().createBatch("lauchBatchedWriteDB", array_requests)
+                    printTextLog("[ServerRequests::lauchBatchedWriteDB] added ${array_requests.size} records")
+                    array_requests.clear()
+                }
             }
         }
     }

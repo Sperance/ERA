@@ -40,6 +40,7 @@ import com.example.toDateTimePossible
 import com.example.toIntPossible
 import io.ktor.http.Cookie
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.plugins.origin
 import io.ktor.server.request.receive
 import io.ktor.server.sessions.SameSite
 import io.ktor.util.date.GMTDate
@@ -281,11 +282,12 @@ data class Clients(
                     name = "era_auth_token",
                     value = token.token?:"",
                     path = "/",
-                    domain = "salon-era.ru",
+//                    domain = call.request.origin.localHost,
+                    domain = "api.salon-era.ru",
                     httpOnly = true,
                     secure = true,
                     expires = GMTDate(token.dateExpired!!.toInstant(TimeZone.UTC).toEpochMilliseconds()),
-                    extensions = mapOf("SameSite" to "Lax")
+                    extensions = mapOf("SameSite" to SameSite.None)
                 )
             )
 

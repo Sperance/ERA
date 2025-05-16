@@ -23,7 +23,7 @@ fun Any.putField(name: String, value: Any?) = this::class.java.declaredFields.fi
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.update(fromClass: String) : TYPE {
     val metaTable = getTable() as META
     val result = db.runQuery { QueryDsl.update(metaTable).single(this@update).returning() } as TYPE
-    printTextLog("[UPDATE::$fromClass object '${this::class.java.simpleName}' with id '${result.getField("id")}']")
+    printTextLog("[UPDATE-$fromClass object '${this::class.java.simpleName}' with id '${result.getField("id")}']")
     return result
 }
 
@@ -31,14 +31,15 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.create(fromClass: String): TYPE {
     val metaTable = getTable() as META
     val result = db.runQuery { QueryDsl.insert(metaTable).single(this@create) }
-    printTextLog("[CREATE::$fromClass object '${this::class.java.simpleName}' with id '${result.getField("id")}']")
+    printTextLog("[CREATE-$fromClass object '${this::class.java.simpleName}' with id '${result.getField("id")}']")
     return result as TYPE
 }
 
 @Suppress("UNCHECKED_CAST")
-suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.createBatch(values: List<TYPE>): TYPE {
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.createBatch(fromClass: String, values: List<TYPE>): TYPE {
     val metaTable = getTable() as META
     val result = db.runQuery { QueryDsl.insert(metaTable).multiple(values) }
+    printTextLog("[CREATE_BATCH-$fromClass object '${this::class.java.simpleName}' count '${result.size}']")
     return result as TYPE
 }
 

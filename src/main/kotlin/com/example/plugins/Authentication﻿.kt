@@ -87,15 +87,6 @@ fun Application.configureAuthentication() {
         val cookieToken = call.request.cookies["era_auth_token"]
         val verify = verifyJwtToken(cookieToken)
         if (cookieToken != null && verify == null) {
-            call.response.cookies.append(
-                "era_auth_token",
-                cookieToken,
-                maxAge = 0,
-                expires = GMTDate(),
-                secure = true,
-                httpOnly = true,
-                extensions = mapOf("SameSite" to "Lax")
-            )
             hoursTaskScheduler.execute_clearUnusedTokens()
             call.respond(HttpStatusCode.Unauthorized)
             return@intercept

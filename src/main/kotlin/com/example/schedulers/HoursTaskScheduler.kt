@@ -37,7 +37,6 @@ object HoursTaskScheduler {
         printTextLog("[Scheduler '${this::class.java.simpleName}' checked at ${LocalDateTime.now()}]")
         val dataRemove = repo_authentications.getRepositoryData().filter { fil -> fil.dateExpired!! <= kotlinx.datetime.LocalDateTime.currectDatetime() }
         dataRemove.forEach { dat ->
-            printTextLog("[DELETE] $dat - on expired by date (${dat.dateExpired}) < ${kotlinx.datetime.LocalDateTime.currectDatetime()}")
             repo_authentications.deleteData(dat)
             dat.delete()
         }

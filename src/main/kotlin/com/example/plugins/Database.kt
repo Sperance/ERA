@@ -17,6 +17,7 @@ import com.example.datamodel.news.configureNews
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.records.configureRecords
 import com.example.datamodel.serverhistory.ServerHistory.Companion.tbl_serverhistory
+import com.example.datamodel.serverrequests.ServerRequests
 import com.example.datamodel.serverrequests.ServerRequests.Companion.tbl_serverrequests
 import com.example.datamodel.services.Services.Companion.tbl_services
 import com.example.datamodel.services.configureServices
@@ -82,6 +83,9 @@ fun Application.configureDatabases() {
         defaultsConfig()
     }.invokeOnCompletion {
         configureSchedulers()
+
+        ServerRequests.lauchBatchedWriteDB()
+
         printTextLog("[configureDatabases] Server is Started")
     }
 }
