@@ -1,6 +1,5 @@
 package com.example
 
-import com.example.basemodel.BaseRepository
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.ResultResponse
 import com.example.helpers.getField
@@ -8,6 +7,8 @@ import com.example.helpers.putField
 import com.example.helpers.CommentField
 import com.example.logging.DailyLogger.printTextLog
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.request.httpMethod
+import io.ktor.server.request.uri
 import io.ktor.server.response.respond
 import io.ktor.server.util.toLocalDateTime
 import io.ktor.utils.io.InternalAPI
@@ -20,9 +21,6 @@ import java.lang.reflect.Field
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.reflect.full.companionObject
-import kotlin.reflect.full.companionObjectInstance
-import kotlin.reflect.full.declaredMembers
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
@@ -130,4 +128,26 @@ fun Field?.getCommentFieldAnnotation(): String {
     val ann = this?.getAnnotation(CommentField::class.java)
     if (ann == null) return ""
     return "[${ann.name}]"
+}
+
+fun IntBaseDataImpl<*>.generateMapError(call: ApplicationCall, errorPair: Pair<Int, String>): MutableMap<String, String> {
+    val map = mutableMapOf<String, String>()
+    map["errorKey"] = getTable().tableName().uppercase() + "_" + errorPair.first.toString()
+    map["errorCode"] = errorPair.first.toString()
+    map["errorDescription"] = errorPair.second
+    map["errorType"] = call.request.httpMethod.value
+    map["errorUri"] = call.request.uri
+    map["errorTable"] = getTable().tableName()
+    map["requestKey"] = call.response.headers["ERA-key"].toString()
+    return map
+}
+
+fun generateMapError(call: ApplicationCall, errorPair: Pair<Int, String>): MutableMap<String, String> {
+    val map = mutableMapOf<String, String>()
+    map["errorCode"] = errorPair.first.toString()
+    map["errorDescription"] = errorPair.second
+    map["errorType"] = call.request.httpMethod.value
+    map["errorUri"] = call.request.uri
+    map["requestKey"] = call.response.headers["ERA-key"].toString()
+    return map
 }

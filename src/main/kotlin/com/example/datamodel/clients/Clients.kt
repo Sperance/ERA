@@ -11,16 +11,15 @@ import com.example.basemodel.ResultResponse
 import com.example.datamodel.authentications.Authentications
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.clientsschelude.ClientsSchelude
-import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.tbl_clientsschelude
 import com.example.datamodel.feedbacks.FeedBacks
 import com.example.helpers.getData
 import com.example.helpers.getSize
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
-import com.example.datamodel.serverhistory.ServerHistory
 import com.example.datamodel.services.Services.Companion.repo_services
 import com.example.enums.EnumBearerRoles
 import com.example.enums.EnumHttpCode
+import com.example.generateMapError
 import com.example.helpers.update
 import com.example.isNullOrZero
 import com.example.minus
@@ -40,7 +39,6 @@ import com.example.toDateTimePossible
 import com.example.toIntPossible
 import io.ktor.http.Cookie
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.plugins.origin
 import io.ktor.server.request.receive
 import io.ktor.server.sessions.SameSite
 import io.ktor.util.date.GMTDate
@@ -52,11 +50,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import org.komapper.annotation.*
 import org.komapper.core.dsl.Meta
-import org.komapper.core.dsl.metamodel.EntityMetamodel
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 /**
  * Список клиентов.
@@ -89,12 +85,12 @@ data class Clients(
     var dateWorkIn: LocalDateTime? = null,
     @CommentField("Дата увольнения сотрудника")
     var dateWorkOut: LocalDateTime? = null,
-    @CommentField("Должность сотрудника")
+    @CommentField("Должность")
     var position: Int? = null,
-    @CommentField("Описание сотрудника")
+    @CommentField("Описание")
     var description: String? = null,
-    @CommentField("Тип клиента")
-    var clientType: String? = null,
+    @CommentField("Роль клиента")
+    var role: String? = null,
     @CommentField("Пол клиента")
     var gender: Byte? = null,
     @CommentField("Прямая ссылка на картинку")
@@ -103,8 +99,9 @@ data class Clients(
     var imageFormat: String? = null,
     @CommentField("Массив ссылок на работы сотрудника")
     var arrayTypeWork: Array<Int>? = null,
+    @CommentField("Клиент или Сотрудник (true = сотрудник)")
+    var employee: Boolean? = null,
     @Transient
-    @CommentField("Соль для шифрования")
     var salt: String? = null,
     @Transient
     @KomapperVersion
@@ -127,6 +124,8 @@ data class Clients(
         params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), EnumHttpCode.NOT_FOUND, 202, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()} ALL: ${Catalogs.repo_catalogs.getRepositoryData().joinToString("\n")}") }
         params.checkings.add { CheckObj(it.salt != null, EnumHttpCode.BAD_REQUEST, 203, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
         params.checkings.add { CheckObj(it.login != null && repo_clients.isHaveDataField(Clients::login, it.login), EnumHttpCode.DUPLICATE, 204, "Клиент с указанным Логином уже существует") }
+        params.checkings.add { CheckObj(EnumBearerRoles.getFromNameOrNull(it.role) == null, EnumHttpCode.INCORRECT_PARAMETER, 205, "Роль Клиента 'role - ${it.role}' не соответствует одному из доступных: ${EnumBearerRoles.entries.joinToString { role -> role.name }}") }
+        params.checkings.add { CheckObj(it.employee == null, EnumHttpCode.INCORRECT_PARAMETER, 206, "Не заполнено поле 'employee(Boolean)'. True - сотрудник, False - клиент") }
 
         params.onBeforeCompleted = { obj ->
             printTextLog("[Clients::onBeforeCompleted] obj: $obj")
@@ -207,32 +206,30 @@ data class Clients(
     }
 
     suspend fun getTimeSlots(call: ApplicationCall): ResultResponse {
-        val methodName = "GET_TIMESLOTS"
         try {
             val _clientId = call.parameters["clientId"]
             val _servceLength = call.parameters["servceLength"]
 
-            if (_clientId == null || !_clientId.toIntPossible()) return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 101 to "Incorrect parameter 'clientId'($_clientId). This parameter must be 'Int' type"))
-            if (_servceLength == null || !_servceLength.toIntPossible()) return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 102 to "Incorrect parameter 'servceLength'($_servceLength). This parameter must be 'Int' type"))
+            if (_clientId == null || !_clientId.toIntPossible()) return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'clientId'($_clientId). This parameter must be 'Int' type"))
+            if (_servceLength == null || !_servceLength.toIntPossible()) return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Incorrect parameter 'servceLength'($_servceLength). This parameter must be 'Int' type"))
 
             return ResultResponse.Success(EnumHttpCode.COMPLETED, _getTimeSlots(_clientId.toInt(), _servceLength.toInt()))
         } catch (e: Exception) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(methodName, 440 to e.localizedMessage))
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
         }
     }
 
     suspend fun getSlots(call: ApplicationCall): ResultResponse {
-        val methodName = "GET_SLOTS"
         try {
             val _id = call.parameters["id"]
             val _data = call.parameters["data"]
 
             if (_id == null || !_id.toIntPossible())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 101 to "Incorrect parameter 'id'($_id). This parameter must be 'Int' type"))
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'id'($_id). This parameter must be 'Int' type"))
             if (_data.isNullOrEmpty())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 102 to "Необходимо указать дату"))
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Необходимо указать дату"))
             if (!_data.toDateTimePossible())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 103 to "Неверный формат даты"))
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 103 to "Неверный формат даты"))
 
             val id = _id.toInt()
             val data = LocalDateTime.parse(_data)
@@ -244,24 +241,23 @@ data class Clients(
 
             return ResultResponse.Success(EnumHttpCode.COMPLETED, currentDayRecords)
         } catch (e: Exception) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(methodName, 440 to e.localizedMessage))
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
         }
     }
 
     suspend fun auth(call: ApplicationCall): ResultResponse {
-        val methodName = "AUTH"
         try {
             val user = call.receive<Clients>()
 
             if (user.login.isNullOrEmpty())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 101 to "Необходимо указать Логин(login)"))
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Необходимо указать Логин(login)"))
 
             if (user.password.isNullOrEmpty())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 102 to "Необходимо указать Пароль(password)"))
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Необходимо указать Пароль(password)"))
 
             val client = repo_clients.getRepositoryData().find { it.login?.lowercase() == user.login?.lowercase() && verifyPassword(it.password, it.salt, user.password) }
             if (client == null)
-                return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(methodName, 103 to "Не найден пользователь с указанным Логином и Паролем"))
+                return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 103 to "Не найден пользователь с указанным Логином и Паролем"))
 
             var token = Authentications.getTokenFromClient(client)
             printTextLog("[Clients::auth] token: $token")
@@ -282,7 +278,6 @@ data class Clients(
                     name = "era_auth_token",
                     value = token.token?:"",
                     path = "/",
-//                    domain = call.request.origin.localHost,
                     domain = "api.salon-era.ru",
                     httpOnly = true,
                     secure = true,
@@ -291,70 +286,65 @@ data class Clients(
                 )
             )
 
-            ServerHistory.addRecord(11, "Авторизация пользователя ${client.id}", client.toStringLow())
             return ResultResponse.Success(EnumHttpCode.COMPLETED, client)
         } catch (e: Exception) {
             e.printStackTrace()
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(methodName, 440 to e.localizedMessage))
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
         }
     }
 
     suspend fun changePasswordFromEmail(call: ApplicationCall): ResultResponse {
-        val methodName = "CHG_PASS_EMAIL"
         try {
             val email = call.parameters["email"]
             val password = call.parameters["password"]
 
             if (email.isNullOrEmpty())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 101 to "Incorrect parameter 'email'($email). This parameter must be 'String' type"))
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'email'($email). This parameter must be 'String' type"))
             if (password.isNullOrEmpty())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 102 to "Incorrect parameter 'password'($password). This parameter must be 'String' type"))
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Incorrect parameter 'password'($password). This parameter must be 'String' type"))
 
             val findedClient = repo_clients.getRepositoryData().find { it.email == AESEncryption.encrypt(email) }
             if (findedClient == null)
-                return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(methodName, 103 to "Не найден Клиент с адресом $email"))
+                return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 103 to "Не найден Клиент с адресом $email"))
 
             findedClient.setNewPassword(password)
             val updated = findedClient.update("Clients::changePasswordFromEmail")
 
             repo_clients.updateData(updated)
 
-            ServerHistory.addRecord(12, "Изменение пароля пользователя ${updated.id}", password)
             return ResultResponse.Success(EnumHttpCode.COMPLETED, updated)
         } catch (e: Exception) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(methodName, 440 to e.localizedMessage))
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
         }
     }
 
     suspend fun postRecoveryPassword(call: ApplicationCall): ResultResponse {
-        val methodName = "POST_REC_PASS"
         try {
             val email = call.parameters["email"]
             val send = call.parameters["send"]
 
             if (email.isNullOrEmpty())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 101 to "Incorrect parameter 'email'($email). This parameter must be 'String' type"))
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'email'($email). This parameter must be 'String' type"))
 
             val findedClient = repo_clients.getRepositoryData().find { it.email == AESEncryption.encrypt(email) }
             if (findedClient == null)
-                return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(methodName, 102 to "Не найден Клиент с адресом $email"))
+                return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 102 to "Не найден Клиент с адресом $email"))
 
             val generatedPassword = generateEmailRecoveryCode()
             if (send != null) {
                 val boolSend = send.toBooleanStrictOrNull()
                 if (boolSend == null) {
-                    return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodName, 103 to "Параметр send($send) должен быть boolean"))
+                    return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 103 to "Параметр send($send) должен быть boolean"))
                 }
                 if (boolSend) {
                     GMailSender().sendMail("Восстановление пароля", "Код для восстановления пароля: $generatedPassword", email)
                 }
             }
 
-            ServerHistory.addRecord(13, "Отправлен запрос на $email на восстановление пароля", generatedPassword)
             return ResultResponse.Success(EnumHttpCode.COMPLETED, generatedPassword)
 
         } catch (e: Exception) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(methodName, 440 to e.localizedMessage))
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
         }
     }
 
@@ -390,8 +380,8 @@ data class Clients(
         return "PWD_" + (randomPass + allRecords)
     }
 
-    private fun toStringLow(): String {
-        return "{id=$id, firstName=$firstName, login=$login, password=$password, email=$email, clientType=$clientType}"
+    fun getRoleAsEnum() : EnumBearerRoles {
+        return EnumBearerRoles.getFromName(role)
     }
 
     override fun toString(): String {

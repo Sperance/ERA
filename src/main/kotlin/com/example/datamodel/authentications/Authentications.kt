@@ -5,18 +5,15 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.example.basemodel.BaseRepository
 import com.example.basemodel.IntBaseDataImpl
 import com.example.currectDatetime
-import com.example.currentZeroDate
 import com.example.datamodel.clients.Clients
 import com.example.enums.EnumBearerRoles
 import com.example.helpers.create
-import com.example.isNullOrZero
 import com.example.logging.DailyLogger.printTextLog
-import com.example.minus
 import com.example.plugins.JWT_AUDIENCE
 import com.example.plugins.JWT_HMAC
 import com.example.plugins.JWT_ISSUER
+import com.example.plugins.RoleAwareJWT
 import com.example.plus
-import io.ktor.server.auth.jwt.JWTPrincipal
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -32,8 +29,6 @@ import org.komapper.core.dsl.Meta
 import org.komapper.core.type.ClobString
 import java.util.Date
 import java.util.UUID
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.hours
 
 /**
  * Справочник информации авторизации
@@ -64,8 +59,8 @@ data class Authentications(
         val repo_authentications = BaseRepository(Authentications())
 
         suspend fun createToken(client: Clients): Authentications {
-            printTextLog("[Authentications::createToken] Создаем токен для пользователя id ${client.id}")
-            val role = EnumBearerRoles.getFromName(client.clientType)
+            printTextLog("[Authentications::createToken] Создаем токен для пользователя id ${client.id} type: ${client.role}")
+            val role = EnumBearerRoles.getFromName(client.role)
             val tokenDuration = LocalDateTime.currectDatetime().plus(role.tokenDuration)
             val auth = Authentications(
                 clientId = client.id,
@@ -80,12 +75,12 @@ data class Authentications(
         }
 
         private fun generateJWTToken(client: Clients, tokenDuration: LocalDateTime): String {
-            val role = EnumBearerRoles.getFromName(client.clientType)
+            val role = EnumBearerRoles.getFromName(client.role)
             val token = JWT.create()
                 .withAudience(JWT_AUDIENCE)
                 .withIssuer(JWT_ISSUER)
-                .withClaim("clientId", client.id)
-                .withClaim("clientRole", role.name)
+                .withClaim("userId", client.id)
+                .withClaim("role", role.name)
                 .withExpiresAt(Date(tokenDuration.toInstant(TimeZone.UTC).toEpochMilliseconds()))
                 .sign(Algorithm.HMAC256(JWT_HMAC))
             return token
@@ -99,18 +94,9 @@ data class Authentications(
             return repo_authentications.getRepositoryData().find { it.clientId == client.id }
         }
 
-        fun checkCorrectJWT(jwt: JWTPrincipal): AuthData {
+        fun checkCorrectJWT(jwt: RoleAwareJWT): AuthData {
             try {
-                if (jwt.payload.getClaim("clientId") == null || jwt.payload.getClaim("clientId").toString().toInt().isNullOrZero())
-                    return AuthData("Не указан параметр токена 'clientId'", null, null)
-                val clientId = jwt.payload.getClaim("clientId").toString().toInt()
-
-                if (jwt.payload.getClaim("clientRole") == null || jwt.payload.getClaim("clientRole").toString().isBlank())
-                    return AuthData("Не указан параметр токена 'clientRole'", clientId, null)
-                val clientRole = jwt.payload.getClaim("clientRole").toString()
-
-                val roleEnum = EnumBearerRoles.getFromName(clientRole)
-                return AuthData(null, clientId, roleEnum)
+                return AuthData(null, jwt.userId, jwt.role)
             }catch (e: Exception) {
                 e.printStackTrace()
                 printTextLog("[checkCorrectJWT] ERROR: ${e.localizedMessage}")

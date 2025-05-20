@@ -16,7 +16,6 @@ import com.example.datamodel.news.News.Companion.tbl_news
 import com.example.datamodel.news.configureNews
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.records.configureRecords
-import com.example.datamodel.serverhistory.ServerHistory.Companion.tbl_serverhistory
 import com.example.datamodel.serverrequests.ServerRequests
 import com.example.datamodel.serverrequests.ServerRequests.Companion.tbl_serverrequests
 import com.example.datamodel.services.Services.Companion.tbl_services
@@ -60,7 +59,6 @@ fun Application.configureDatabases() {
             db.runQuery { QueryDsl.create(tbl_feedbacks) }
             db.runQuery { QueryDsl.create(tbl_records) }
             db.runQuery { QueryDsl.create(tbl_stockfiles) }
-            db.runQuery { QueryDsl.create(tbl_serverhistory) }
             db.runQuery { QueryDsl.create(tbl_news) }
             db.runQuery { QueryDsl.create(tbl_clientsschelude) }
             db.runQuery { QueryDsl.create(tbl_catalogs) }

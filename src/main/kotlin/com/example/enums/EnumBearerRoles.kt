@@ -2,20 +2,31 @@ package com.example.enums
 
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.minutes
 
 enum class EnumBearerRoles(val tokenDuration: Duration) {
-    USER((2).minutes),
-    MODERATOR((1).days),
-    ADMIN((1).days);
+    DEFAULT((1).days),
+    USER((60).days),
+    MODERATOR((180).days),
+    ADMIN((365).days);
 
     companion object {
         fun getFromName(name: String?): EnumBearerRoles {
-            if (name == null) return USER
+            if (name == null) return DEFAULT
             entries.forEach {
                 if (it.name == name.uppercase()) return it
             }
-            return USER
+            return DEFAULT
         }
+        fun getFromNameOrNull(name: String?): EnumBearerRoles? {
+            if (name == null) return null
+            entries.forEach {
+                if (it.name == name.uppercase()) return it
+            }
+            return null
+        }
+    }
+
+    override fun toString(): String {
+        return "EnumBearerRoles(name=$name tokenDuration=$tokenDuration)"
     }
 }

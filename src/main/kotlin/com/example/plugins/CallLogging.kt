@@ -13,7 +13,7 @@ import java.util.UUID
 
 fun Application.configureCallLogging() {
     install(CallLogging) {
-        level = Level.INFO
+        level = Level.TRACE
         filter { call ->
             call.response.headers["ERA-key"] != null
         }

@@ -1,16 +1,12 @@
 package com.example.datamodel.serverrequests
 
 import com.example.currectDatetime
-import com.example.datamodel.serverhistory.ServerHistory
-import com.example.datamodel.serverhistory.serverHistory
-import com.example.helpers.create
 import com.example.helpers.createBatch
 import com.example.interfaces.IntPostgreTable
 import com.example.logging.DailyLogger.printTextLog
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
-import io.ktor.server.request.uri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -26,8 +22,6 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
-import org.komapper.core.dsl.metamodel.EntityMetamodel
-import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
 
 @Serializable

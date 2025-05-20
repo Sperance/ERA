@@ -12,12 +12,14 @@ import com.example.datamodel.clients.Clients
 import com.example.helpers.getSize
 import com.example.datamodel.services.Services
 import com.example.enums.EnumHttpCode
+import com.example.generateMapError
 import com.example.isNullOrEmpty
 import com.example.isNullOrZero
 import com.example.logging.DailyLogger.printTextLog
 import com.example.nullDatetime
 import com.example.toIntPossible
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.request.uri
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -106,10 +108,9 @@ data class Records(
     }
 
     suspend fun getFromId(call: ApplicationCall): ResultResponse {
-        val methodCode = "GET_FROM_id"
         val id = call.parameters["id"]
         if (id == null || !id.toIntPossible()) {
-            return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(methodCode, 101 to "Incorrect parameter 'id'($id). This parameter must be 'Int' type"))
+            return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'id'($id). This parameter must be 'Int' type"))
         }
 
         return ResultResponse.Success(EnumHttpCode.COMPLETED, getFilledRecords().find { it.record?.id == id.toIntOrNull() })

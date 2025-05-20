@@ -1,6 +1,5 @@
 package com.example.basemodel
 
-import com.example.datamodel.serverhistory.ServerHistory
 import com.example.enums.EnumDataFilter
 import com.example.helpers.clearTable
 import com.example.helpers.delete
@@ -112,7 +111,6 @@ open class BaseRepository<T : IntPostgreTable<T>>(private val obj: IntPostgreTab
                 repoData.clear()
             }
         }
-        ServerHistory.addRecord(1, "Очистка таблицы ${obj::class.java.simpleName}", "")
     }
 
     open suspend fun isHaveData(id: Int?): Boolean {

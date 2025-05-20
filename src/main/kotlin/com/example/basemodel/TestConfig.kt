@@ -4,25 +4,25 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.example.currectDatetime
 import com.example.datamodel.authentications.Authentications
+import com.example.datamodel.authentications.secureGet
+import com.example.datamodel.authentications.securePost
 import com.example.datamodel.clients.Clients
+import com.example.enums.EnumBearerRoles
 import com.example.enums.EnumSQLTypes
 import com.example.minus
 import com.example.helpers.GMailSender
 import com.example.helpers.executeAddColumn
 import com.example.helpers.executeDelColumn
-import com.example.helpers.update
 import com.example.plugins.JWT_AUDIENCE
-import com.example.plugins.JWT_AUTH_NAME
 import com.example.plugins.JWT_HMAC
 import com.example.plugins.JWT_ISSUER
+import com.example.plugins.RoleAwareJWT
 import com.example.plus
 import com.example.toIntPossible
 import io.ktor.http.Cookie
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.auth.UserIdPrincipal
 import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
@@ -123,18 +123,18 @@ fun Application.configureTests() {
             }
 
             route("/bearer") {
-                authenticate(JWT_AUTH_NAME) {
-                    get ("/getdata") {
-                        val part = call.principal<JWTPrincipal>()!!
+                secureGet("/getData") { userId ->
+                    call.respond(HttpStatusCode.OK, "Hello $userId")
+                }
+                secureGet("/getData_admin", EnumBearerRoles.ADMIN) { userId ->
+                    call.respond(HttpStatusCode.OK, "Hello $userId")
+                }
 
-                        val checkAuth = Authentications.checkCorrectJWT(part)
-                        if (checkAuth.errorText != null) {
-                            call.respond(HttpStatusCode.OK, "Authenticate error: ${checkAuth.errorText}")
-                            return@get
-                        }
-
-                        call.respond(HttpStatusCode.OK, "Hello")
-                    }
+                securePost("/postData") { userId ->
+                    call.respond(HttpStatusCode.OK, "Hello $userId")
+                }
+                securePost("/postData_admin", EnumBearerRoles.ADMIN) { userId ->
+                    call.respond(HttpStatusCode.OK, "Hello $userId")
                 }
             }
             route("/jwt") {
@@ -173,7 +173,7 @@ fun Application.configureTests() {
 
                 authenticate("auth-jwt-cookie") {
                     get("/protected") {
-                        val principal = call.principal<JWTPrincipal>()!!
+                        val principal = call.principal<RoleAwareJWT>()!!
                         val username = principal.payload.getClaim("username").asString()
                         call.respondText("Hello, $username! You have access to protected route")
                     }

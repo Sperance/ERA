@@ -7,6 +7,7 @@ import com.example.basemodel.CheckObj
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
+import com.example.datamodel.clientsschelude.ClientsSchelude
 import com.example.enums.EnumHttpCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
@@ -52,10 +53,14 @@ data class News(
 
     override fun getTable() = tbl_news
     override fun getRepository() = repo_news
+    override fun baseParams(): RequestParams<News> {
+        val params = RequestParams<News>()
+        params.checkings.add { CheckObj(it.name.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 201, "Необходимо указать Наименование новости (name)") }
+        return params
+    }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<News>, serializer: KSerializer<List<News>>): ResultResponse {
-        params.checkings.add { CheckObj(it.name.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Наименование новости (name)") }
-        params.checkings.add { CheckObj(it.mainText.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Текст новости (mainText)") }
+        params.checkings.add { CheckObj(it.mainText.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Текст новости (mainText)") }
         return super.post(call, params, serializer)
     }
 }

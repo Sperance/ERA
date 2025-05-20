@@ -5,6 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.exceptions.JWTVerificationException
 import com.auth0.jwt.exceptions.TokenExpiredException
 import com.auth0.jwt.interfaces.DecodedJWT
+import com.auth0.jwt.interfaces.Payload
 import com.example.datamodel.authentications.Authentications
 import io.ktor.http.auth.HttpAuthHeader
 import io.ktor.server.application.Application
@@ -16,16 +17,20 @@ import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.jwt.jwt
 import com.example.basemodel.ResultResponse
 import com.example.currectDatetime
+import com.example.datamodel.clients.Clients
+import com.example.enums.EnumBearerRoles
 import com.example.enums.EnumHttpCode
 import com.example.helpers.delete
 import com.example.helpers.update
 import com.example.logging.DailyLogger.printTextLog
 import com.example.respond
 import com.example.schedulers.hoursTaskScheduler
+import com.example.toIntPossible
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.call
+import io.ktor.server.auth.jwt.JWTPayloadHolder
 import io.ktor.server.request.path
 import io.ktor.server.request.uri
 import io.ktor.server.response.respond
@@ -38,6 +43,12 @@ const val JWT_HMAC = "secrets_era"
 const val JWT_ISSUER = "ktor.era.io"
 const val JWT_AUDIENCE = "ktor.audience.era"
 const val JWT_AUTH_NAME = "auth-jwt-cookie"
+
+class RoleAwareJWT(
+    payload: Payload,
+    val userId: Int,
+    val role: EnumBearerRoles
+): JWTPayloadHolder(payload)
 
 @OptIn(InternalAPI::class)
 fun Application.configureAuthentication() {
@@ -63,12 +74,25 @@ fun Application.configureAuthentication() {
                     .build()
             )
             validate { credential ->
+
+                val userid = credential.payload.getClaim("userId").toString()
+                if (userid.isBlank() || !userid.toIntPossible()) {
+                    printTextLog("[Authentication::validate] 'userid' is null")
+                    return@validate null
+                }
+
+                val findedClient = Clients.repo_clients.getDataFromId(userid.toIntOrNull())
+                if (findedClient == null) {
+                    printTextLog("[Authentication::validate] dont find Clients with id '$userid'")
+                    return@validate null
+                }
+
                 if (credential.payload.audience.contains(JWT_AUDIENCE)) {
                     if (credential.payload.expiresAt.before(Date())) {
                         printTextLog("[Authentication::validate] token expired at ${credential.payload.expiresAt}")
                         return@validate null
                     }
-                    JWTPrincipal(credential.payload)
+                    RoleAwareJWT(credential.payload, findedClient.id, findedClient.getRoleAsEnum())
                 } else {
                     null
                 }
@@ -110,17 +134,15 @@ suspend fun verifyJwtToken(token: String?): DecodedJWT? {
             val result = it.expiresAt.after(Date())
             if (result) {
                 var findedTokenInDB = Authentications.repo_authentications.getRepositoryData().find { repoToken -> repoToken.token == token  }
-                if (findedTokenInDB == null) {
-                    printTextLog("[Authentication::verifyJwtToken] Not find token $token in database")
-                    return null
+                if (findedTokenInDB != null) {
+                    if (findedTokenInDB.dateExpired!! <= LocalDateTime.currectDatetime()) {
+                        printTextLog("[Authentication::verifyJwtToken] Token in database is expired $findedTokenInDB")
+                        return null
+                    }
+                    findedTokenInDB.dateUsed = LocalDateTime.currectDatetime()
+                    findedTokenInDB = findedTokenInDB.update("Authentication::verifyJwtToken")
+                    Authentications.repo_authentications.updateData(findedTokenInDB)
                 }
-                if (findedTokenInDB.dateExpired!! <= LocalDateTime.currectDatetime()) {
-                    printTextLog("[Authentication::verifyJwtToken] Token in database is expired $findedTokenInDB")
-                    return null
-                }
-                findedTokenInDB.dateUsed = LocalDateTime.currectDatetime()
-                findedTokenInDB = findedTokenInDB.update("Authentication::verifyJwtToken")
-                Authentications.repo_authentications.updateData(findedTokenInDB)
             }
             result
         }

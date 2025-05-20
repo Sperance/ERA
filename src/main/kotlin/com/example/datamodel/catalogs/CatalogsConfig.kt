@@ -3,6 +3,10 @@ package com.example.datamodel.catalogs
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
+import com.example.datamodel.authentications.secureDelete
+import com.example.datamodel.authentications.secureGet
+import com.example.datamodel.authentications.securePost
+import com.example.enums.EnumBearerRoles
 import com.example.enums.EnumHttpCode
 import com.example.respond
 import io.ktor.server.application.Application
@@ -17,11 +21,11 @@ fun Application.configureCatalogs() {
     routing {
         route("/catalogs") {
 
-            get("/structure") {
+            secureGet("/structure", EnumBearerRoles.ADMIN) {
                 call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, Catalogs().getCommentArray()))
             }
 
-            get("/clearTable") {
+            secureGet("/clearTable", EnumBearerRoles.ADMIN) {
                 Catalogs.repo_catalogs.clearTable()
                 call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, "Таблица успешно очищена"))
             }
@@ -34,23 +38,23 @@ fun Application.configureCatalogs() {
                 call.respond(Catalogs().getFilter(call, RequestParams()))
             }
 
-            post("/update") {
+            securePost("/update", EnumBearerRoles.USER) {
                 call.respond(Catalogs().update(call, RequestParams(), Catalogs.serializer()))
             }
 
-            post("/addColumn") {
+            securePost("/addColumn", EnumBearerRoles.MODERATOR) {
                 call.respond(Catalogs().addColumn(call))
             }
 
-            post("/delColumn") {
+            securePost("/delColumn", EnumBearerRoles.MODERATOR) {
                 call.respond(Catalogs().delColumn(call))
             }
 
-            post {
+            securePost("", EnumBearerRoles.USER) {
                 call.respond(Catalogs().post(call, RequestParams(), ListSerializer(Catalogs.serializer())))
             }
 
-            delete {
+            secureDelete("", EnumBearerRoles.MODERATOR) {
                 call.respond(Catalogs().delete(call, RequestParams()))
             }
         }

@@ -4,6 +4,7 @@ import com.example.applicationTomlSettings
 import com.example.enums.EnumDataFilter
 import com.example.enums.EnumHttpCode
 import com.example.enums.EnumSQLTypes
+import com.example.generateMapError
 import com.example.helpers.SYS_FIELDS_ARRAY
 import com.example.getCommentFieldAnnotation
 import com.example.helpers.create
@@ -26,8 +27,10 @@ import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receiveMultipart
+import io.ktor.server.request.uri
 import io.ktor.utils.io.toByteArray
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.komapper.core.dsl.metamodel.EntityMetamodel
 import org.komapper.core.dsl.metamodel.PropertyMetamodel
@@ -51,16 +54,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
         return RequestParams()
     }
 
-    fun generateMapError(methodCode: String, errorPair: Pair<Int, String>): MutableMap<String, String> {
-        val map = mutableMapOf<String, String>()
-        map["errorKey"] = getTable().tableName().uppercase() + "_" + methodCode + "_" + errorPair.first.toString()
-        map["errorCode"] = errorPair.first.toString()
-        map["errorDescription"] = errorPair.second
-        map["errorMethod"] = methodCode
-        map["errorTable"] = getTable().tableName()
-        return map
-    }
-
     open fun getCommentArray(): String {
         var textFields = ""
         this::class.java.declaredFields.forEach {
@@ -71,13 +64,12 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
     }
 
     open suspend fun addColumn(call: ApplicationCall): ResultResponse {
-        val methodCode = "ADD_COLUMN"
         return try {
             val columnName = call.parameters["columnName"]
             if (columnName.isNullOrEmpty()) {
                 return ResultResponse.Error(
                     EnumHttpCode.INCORRECT_PARAMETER,
-                    generateMapError(methodCode, 101 to "Dont find parameter 'columnName'. This parameter must be String type")
+                    generateMapError(call, 101 to "Dont find parameter 'columnName'. This parameter must be String type")
                 )
             }
 
@@ -85,92 +77,54 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
             if (columnType.isNullOrEmpty()) {
                 return ResultResponse.Error(
                     EnumHttpCode.INCORRECT_PARAMETER,
-                    generateMapError(
-                        methodCode,
-                        102 to "Dont find parameter 'columnType'. This parameter must be String type"
-                    )
+                    generateMapError(call, 102 to "Dont find parameter 'columnType'. This parameter must be String type")
                 )
             }
 
-            val columnTypeEnum =
-                EnumSQLTypes.entries.find { it.textValue.lowercase() == columnType.lowercase() }
+            val columnTypeEnum = EnumSQLTypes.entries.find { it.textValue.lowercase() == columnType.lowercase() }
             if (columnTypeEnum == null) {
                 return ResultResponse.Error(
                     EnumHttpCode.INCORRECT_PARAMETER,
-                    generateMapError(methodCode, 103 to "Dont find SQL type: $columnType")
+                    generateMapError(call, 103 to "Dont find SQL type: $columnType")
                 )
             }
 
             val defaultValue = call.parameters["defaultValue"] as Any?
             val notNull = call.parameters["notNull"]?.lowercase()?.toBooleanStrictOrNull() ?: false
 
-            val result = executeAddColumn(
-                columnName,
-                columnTypeEnum,
-                defaultValue = defaultValue,
-                notNull = notNull
-            )
-            if (result == null) ResultResponse.Success(
-                EnumHttpCode.COMPLETED,
-                "Column $columnName successfully added"
-            )
-            else ResultResponse.Error(
-                EnumHttpCode.BAD_REQUEST,
-                generateMapError(methodCode, 400 to result)
-            )
+            val result = executeAddColumn(columnName, columnTypeEnum, defaultValue = defaultValue, notNull = notNull)
+            if (result == null) ResultResponse.Success(EnumHttpCode.COMPLETED, "Column $columnName successfully added")
+            else ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 400 to result))
         } catch (e: Exception) {
             e.printStackTrace()
-            ResultResponse.Error(
-                EnumHttpCode.BAD_REQUEST,
-                generateMapError(methodCode, 440 to e.localizedMessage)
-            )
+            ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
         }
     }
 
     open suspend fun delColumn(call: ApplicationCall): ResultResponse {
-        val methodCode = "DEL_COLUMN"
         return try {
             val columnName = call.parameters["columnName"]
             if (columnName.isNullOrEmpty()) {
-                return ResultResponse.Error(
-                    EnumHttpCode.INCORRECT_PARAMETER,
-                    generateMapError(
-                        methodCode,
-                        101 to "Dont find parameter 'columnName'. This parameter must be String type"
-                    )
-                )
+                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Dont find parameter 'columnName'. This parameter must be String type"))
             }
 
             val result = executeDelColumn(columnName)
-            if (result == null) ResultResponse.Success(
-                EnumHttpCode.COMPLETED,
-                "Column $columnName successfully deleted"
-            )
-            else ResultResponse.Error(
-                EnumHttpCode.BAD_REQUEST,
-                generateMapError(methodCode, 400 to result)
-            )
+            if (result == null) ResultResponse.Success(EnumHttpCode.COMPLETED, "Column $columnName successfully deleted")
+            else ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 400 to result))
         } catch (e: Exception) {
             e.printStackTrace()
-            ResultResponse.Error(
-                EnumHttpCode.BAD_REQUEST,
-                generateMapError(methodCode, 440 to e.localizedMessage)
-            )
+            ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
         }
     }
 
     open suspend fun get(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
-        val methodCode = "GET"
         return db.withTransaction { tx ->
             try {
                 params.checkings.forEach { check ->
                     val res = check.invoke(this as T)
                     if (res.result) {
                         tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(
-                            res.errorHttp,
-                            generateMapError(methodCode, res.errorCode to res.errorText)
-                        )
+                        return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
                     }
                 }
 
@@ -188,85 +142,48 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
-                return@withTransaction ResultResponse.Error(
-                    EnumHttpCode.BAD_REQUEST,
-                    generateMapError(methodCode, 440 to e.localizedMessage)
-                )
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
             }
         }
     }
 
     open suspend fun getFilter(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
-        val methodCode = "GET_FILTER"
         return db.withTransaction { tx ->
             try {
                 val field = call.parameters["field"]
                 if (field.isNullOrEmpty()) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(
-                        EnumHttpCode.INCORRECT_PARAMETER,
-                        generateMapError(
-                            methodCode,
-                            101 to "Incorrect parameter 'field'. This parameter must be 'String' type"
-                        )
-                    )
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'field'. This parameter must be 'String' type"))
                 }
 
                 val state = call.parameters["state"]
                 if (state.isNullOrEmpty()) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(
-                        EnumHttpCode.INCORRECT_PARAMETER,
-                        generateMapError(
-                            methodCode,
-                            102 to "Incorrect parameter 'state'. This parameter must be 'String' type"
-                        )
-                    )
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Incorrect parameter 'state'. This parameter must be 'String' type"))
                 }
 
                 val value = call.parameters["value"]
                 if (value.isNullOrEmpty()) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(
-                        EnumHttpCode.INCORRECT_PARAMETER,
-                        generateMapError(
-                            methodCode,
-                            103 to "Incorrect parameter 'value'. This parameter must be 'String' type"
-                        )
-                    )
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 103 to "Incorrect parameter 'value'. This parameter must be 'String' type"))
                 }
 
                 if (!this.haveField(field)) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(
-                        EnumHttpCode.INCORRECT_PARAMETER,
-                        generateMapError(
-                            methodCode,
-                            104 to "Class ${this::class.simpleName} dont have field '$field'"
-                        )
-                    )
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 104 to "Class ${this::class.simpleName} dont have field '$field'"))
                 }
 
                 val stateEnum = EnumDataFilter.entries.find { it.name == state.uppercase() }
                 if (stateEnum == null) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(
-                        EnumHttpCode.INCORRECT_PARAMETER,
-                        generateMapError(
-                            methodCode,
-                            105 to "Incorrect parameter 'state'(${state}). This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"
-                        )
-                    )
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 105 to "Incorrect parameter 'state'(${state}). This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"))
                 }
 
                 params.checkings.forEach { check ->
                     val res = check.invoke(this as T)
                     if (res.result) {
                         tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(
-                            res.errorHttp,
-                            generateMapError(methodCode, res.errorCode to res.errorText)
-                        )
+                        return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
                     }
                 }
 
@@ -278,45 +195,29 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 }
 
                 val resultList = getRepository().getDataFilter(field, stateEnum, value)
-                return@withTransaction ResultResponse.Success(
-                    EnumHttpCode.COMPLETED,
-                    resultList as Collection<*>
-                )
+                return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, resultList as Collection<*>)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
-                return@withTransaction ResultResponse.Error(
-                    EnumHttpCode.BAD_REQUEST,
-                    generateMapError(methodCode, 440 to e.localizedMessage)
-                )
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
             }
         }
     }
 
     open suspend fun delete(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
-        val methodCode = "DETELE"
         return db.withTransaction { tx ->
             try {
                 val id = call.parameters["id"]
                 if (id == null || !id.toIntPossible()) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(
-                        EnumHttpCode.INCORRECT_PARAMETER,
-                        generateMapError(
-                            methodCode,
-                            101 to "Incorrect parameter 'id'($id). This parameter must be 'Int' type"
-                        )
-                    )
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'id'($id). This parameter must be 'Int' type"))
                 }
 
                 params.checkings.forEach { check ->
                     val res = check.invoke(this as T)
                     if (res.result) {
                         tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(
-                            res.errorHttp,
-                            generateMapError(methodCode, res.errorCode to res.errorText)
-                        )
+                        return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
                     }
                 }
 
@@ -334,13 +235,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 val findedObj = getDataOne({ auProp eq id.toInt() })
                 if (findedObj == null) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(
-                        EnumHttpCode.NOT_FOUND,
-                        generateMapError(
-                            methodCode,
-                            103 to "Not found $currectObjClassName with id $id"
-                        )
-                    )
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 103 to "Not found $currectObjClassName with id $id"))
                 }
 
                 params.onBeforeCompleted?.invoke(findedObj as T)
@@ -350,28 +245,17 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
 
                 getRepository().deleteData(id.toInt())
 
-                ResultResponse.Success(
-                    EnumHttpCode.COMPLETED,
-                    "$currectObjClassName with id $id successfully deleted"
-                )
+                ResultResponse.Success(EnumHttpCode.COMPLETED, "$currectObjClassName with id $id successfully deleted")
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
                 getRepository().resetData()
-                return@withTransaction ResultResponse.Error(
-                    EnumHttpCode.BAD_REQUEST,
-                    generateMapError(methodCode, 440 to e.localizedMessage)
-                )
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
             }
         }
     }
 
-    open suspend fun update(
-        call: ApplicationCall,
-        params: RequestParams<T>,
-        serializer: KSerializer<T>
-    ): ResultResponse {
-        val methodCode = "UPDATE"
+    open suspend fun update(call: ApplicationCall, params: RequestParams<T>, serializer: KSerializer<T>): ResultResponse {
         return db.withTransaction { tx ->
             try {
                 val multipartData = call.receiveMultipart()
@@ -398,42 +282,24 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 }
                 if (params.isNeedFile && fileBytes == null) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(
-                        EnumHttpCode.INCORRECT_PARAMETER,
-                        generateMapError(
-                            methodCode,
-                            101 to "Для объекта $currectObjClassName ожидался файл, который не был получен"
-                        )
-                    )
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Для объекта $currectObjClassName ожидался файл, который не был получен"))
                 }
                 if (newObject == null) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(
-                        EnumHttpCode.INCORRECT_PARAMETER,
-                        generateMapError(
-                            methodCode,
-                            102 to "Не удалось создать объект $currectObjClassName по входящему JSON"
-                        )
-                    )
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Не удалось создать объект $currectObjClassName по входящему JSON"))
                 }
                 params.checkings.forEach { check ->
                     val res = check.invoke(newObject!!)
                     if (res.result) {
                         tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(
-                            res.errorHttp,
-                            generateMapError(methodCode, res.errorCode to res.errorText)
-                        )
+                        return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
                     }
                 }
                 baseParams().checkings.forEach { check ->
                     val res = check.invoke(newObject!!)
                     if (res.result) {
                         tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(
-                            res.errorHttp,
-                            generateMapError(methodCode, res.errorCode to res.errorText)
-                        )
+                        return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
                     }
                 }
                 params.defaults.forEach { def ->
@@ -446,24 +312,12 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 val findedObj = getRepository().getDataFromId(newObject?.id)
                 if (findedObj == null) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(
-                        EnumHttpCode.NOT_FOUND,
-                        generateMapError(
-                            methodCode,
-                            103 to "Not found $currectObjClassName with id ${newObject?.id}"
-                        )
-                    )
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 103 to "Not found $currectObjClassName with id ${newObject?.id}"))
                 }
                 if (fileBytes != null) {
                     if (!newObject!!.isHaveImageFields()) {
                         tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(
-                            EnumHttpCode.BAD_REQUEST,
-                            generateMapError(
-                                methodCode,
-                                104 to "Для сущности $currectObjClassName не реализованы поля хранения файлов"
-                            )
-                        )
+                        return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 104 to "Для сущности $currectObjClassName не реализованы поля хранения файлов"))
                     }
                     saveImageToFields(newObject, fileBytes, fileName?.substringAfterLast("."))
                 }
@@ -481,20 +335,12 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
-                return@withTransaction ResultResponse.Error(
-                    EnumHttpCode.BAD_REQUEST,
-                    generateMapError(methodCode, 440 to e.localizedMessage)
-                )
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
             }
         }
     }
 
-    open suspend fun updateMany(
-        call: ApplicationCall,
-        params: RequestParams<T>,
-        serializer: KSerializer<List<T>>
-    ): ResultResponse {
-        val methodCode = "UPDATE_MANY"
+    open suspend fun updateMany(call: ApplicationCall, params: RequestParams<T>, serializer: KSerializer<List<T>>): ResultResponse {
         return db.withTransaction { tx ->
             try {
                 val multipartData = call.receiveMultipart()
@@ -516,13 +362,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
 
                 if (newObject.isEmpty()) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(
-                        EnumHttpCode.INCORRECT_PARAMETER,
-                        generateMapError(
-                            methodCode,
-                            101 to "Не удалось создать массив объектов $currectObjClassName по входящему JSON"
-                        )
-                    )
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Не удалось создать массив объектов $currectObjClassName по входящему JSON"))
                 }
 
                 params.checkings.forEach { check ->
@@ -530,10 +370,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                         val res = check.invoke(item)
                         if (res.result) {
                             tx.setRollbackOnly()
-                            return@withTransaction ResultResponse.Error(
-                                res.errorHttp,
-                                generateMapError(methodCode, res.errorCode to res.errorText)
-                            )
+                            return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
                         }
                     }
                 }
@@ -543,10 +380,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                         val res = check.invoke(item)
                         if (res.result) {
                             tx.setRollbackOnly()
-                            return@withTransaction ResultResponse.Error(
-                                res.errorHttp,
-                                generateMapError(methodCode, res.errorCode to res.errorText)
-                            )
+                            return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
                         }
                     }
                 }
@@ -569,13 +403,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     val findedObj = getDataOne({ auProp eq item.id as Int? })
                     if (findedObj == null) {
                         tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(
-                            EnumHttpCode.NOT_FOUND,
-                            generateMapError(
-                                methodCode,
-                                102 to "Not found $currectObjClassName with id ${item.id}"
-                            )
-                        )
+                        return@withTransaction ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 102 to "Not found $currectObjClassName with id ${item.id}"))
                     }
 
                     params.checkOnUpdate?.invoke(findedObj as T, item)
@@ -593,10 +421,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
-                return@withTransaction ResultResponse.Error(
-                    EnumHttpCode.BAD_REQUEST,
-                    generateMapError(methodCode, 440 to e.localizedMessage)
-                )
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
             }
         }
     }
@@ -610,12 +435,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
         return currentFile
     }
 
-    open suspend fun post(
-        call: ApplicationCall,
-        params: RequestParams<T>,
-        serializer: KSerializer<List<T>>
-    ): ResultResponse {
-        val methodCode = "POST"
+    open suspend fun post(call: ApplicationCall, params: RequestParams<T>, serializer: KSerializer<List<T>>): ResultResponse {
         return db.withTransaction { tx ->
             try {
                 val multipartData = call.receiveMultipart()
@@ -648,13 +468,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
 
                 if (params.isNeedFile && fileBytes == null) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(
-                        EnumHttpCode.INCORRECT_PARAMETER,
-                        generateMapError(
-                            methodCode,
-                            101 to "Для объекта $currectObjClassName ожидался файл, который не был получен"
-                        )
-                    )
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Для объекта $currectObjClassName ожидался файл, который не был получен"))
                 }
 
                 params.checkings.forEach { check ->
@@ -662,10 +476,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                         val res = check.invoke(item)
                         if (res.result) {
                             tx.setRollbackOnly()
-                            return@withTransaction ResultResponse.Error(
-                                res.errorHttp,
-                                generateMapError(methodCode, res.errorCode to res.errorText)
-                            )
+                            return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
                         }
                     }
                 }
@@ -675,10 +486,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                         val res = check.invoke(item)
                         if (res.result) {
                             tx.setRollbackOnly()
-                            return@withTransaction ResultResponse.Error(
-                                res.errorHttp,
-                                generateMapError(methodCode, res.errorCode to res.errorText)
-                            )
+                            return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
                         }
                     }
                 }
@@ -695,13 +503,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
 
                 if (newObject.size > 1 && fileBytes != null) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(
-                        EnumHttpCode.INCORRECT_PARAMETER,
-                        generateMapError(
-                            methodCode,
-                            102 to "Невозможно сохранить файл изображения к массиву элементов (${newObject.size})"
-                        )
-                    )
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Невозможно сохранить файл изображения к массиву элементов (${newObject.size})"))
                 }
 
                 newObject.forEach { item ->
@@ -715,13 +517,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 if (fileBytes != null) {
                     if (!finishObject!!.isHaveImageFields()) {
                         tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(
-                            EnumHttpCode.BAD_REQUEST,
-                            generateMapError(
-                                methodCode,
-                                103 to "Для сущности $currectObjClassName не реализованы поля хранения файлов"
-                            )
-                        )
+                        return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 103 to "Для сущности $currectObjClassName не реализованы поля хранения файлов"))
                     }
                     saveImageToFields(finishObject, fileBytes, fileName?.substringAfterLast("."))
                     params.onBeforeCompleted?.invoke(finishObject!!)
@@ -731,18 +527,12 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     getRepository().updateData(finishObject)
                 }
 
-                return@withTransaction ResultResponse.Success(
-                    EnumHttpCode.COMPLETED,
-                    finishObject as Any
-                )
+                return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, finishObject as Any)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()
                 getRepository().resetData()
-                return@withTransaction ResultResponse.Error(
-                    EnumHttpCode.BAD_REQUEST,
-                    generateMapError(methodCode, 440 to e.localizedMessage)
-                )
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
             }
         }
     }

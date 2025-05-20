@@ -25,8 +25,8 @@ private suspend fun defaultClients() {
                 phone = AESEncryption.encrypt("999")
                 salt = generateSalt()
                 email = AESEncryption.encrypt("adm@adm.ru")
-                clientType = "ADMIN"
-                dateWorkIn = LocalDateTime.currectDatetime()
+                role = "ADMIN"
+                employee = true
                 setNewPassword("Password123.")
             },
             Clients().apply {
@@ -36,11 +36,12 @@ private suspend fun defaultClients() {
                 phone = AESEncryption.encrypt("+79779999999")
                 salt = generateSalt()
                 email = AESEncryption.encrypt("mde@mde.ru")
-                clientType = "ADMIN"
-                dateWorkIn = LocalDateTime.currectDatetime()
+                role = "ADMIN"
+                employee = true
                 setNewPassword("Ckjy32543254.")
             })
         )
+        Clients.repo_clients.resetData()
     }
 }
 
@@ -121,7 +122,18 @@ private suspend fun defaultCatalogs() {
                 type = "Типы должностей"
                 category = "Должность"
                 value = "Сотрудник"
+            },
+            Catalogs().apply {
+                type = "Типы должностей"
+                category = "Должность"
+                value = "Старший сотрудник"
+            },
+            Catalogs().apply {
+                type = "Типы должностей"
+                category = "Должность"
+                value = "Администратор"
             })
         )
+        Catalogs.repo_catalogs.resetData()
     }
 }
