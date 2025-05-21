@@ -55,6 +55,9 @@ data class Stockfiles(
 
     override fun getTable() = tbl_stockfiles
     override fun getRepository() = repo_stockfiles
+    override fun isValidLine(): Boolean {
+        return service != null && imageLink != null && imageFormat != null
+    }
     override fun baseParams(): RequestParams<Stockfiles> {
         val params = RequestParams<Stockfiles>()
         params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), EnumHttpCode.NOT_FOUND, 201, "Не найдена Категория файла с id ${it.service}") }

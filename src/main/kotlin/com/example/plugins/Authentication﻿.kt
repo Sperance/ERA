@@ -18,6 +18,7 @@ import io.ktor.server.auth.jwt.jwt
 import com.example.basemodel.ResultResponse
 import com.example.currectDatetime
 import com.example.datamodel.clients.Clients
+import com.example.datamodel.employees.Employees
 import com.example.enums.EnumBearerRoles
 import com.example.enums.EnumHttpCode
 import com.example.helpers.delete
@@ -25,6 +26,7 @@ import com.example.helpers.update
 import com.example.logging.DailyLogger.printTextLog
 import com.example.respond
 import com.example.schedulers.hoursTaskScheduler
+import com.example.security.hashString
 import com.example.toIntPossible
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -47,7 +49,7 @@ const val JWT_AUTH_NAME = "auth-jwt-cookie"
 class RoleAwareJWT(
     payload: Payload,
     val userId: Int,
-    val role: EnumBearerRoles
+    val employee: Boolean
 ): JWTPayloadHolder(payload)
 
 @OptIn(InternalAPI::class)
@@ -74,17 +76,37 @@ fun Application.configureAuthentication() {
                     .build()
             )
             validate { credential ->
-
                 val userid = credential.payload.getClaim("userId").toString()
                 if (userid.isBlank() || !userid.toIntPossible()) {
                     printTextLog("[Authentication::validate] 'userid' is null")
                     return@validate null
                 }
 
-                val findedClient = Clients.repo_clients.getDataFromId(userid.toIntOrNull())
-                if (findedClient == null) {
-                    printTextLog("[Authentication::validate] dont find Clients with id '$userid'")
+                val isEmployee = credential.payload.getClaim("employee").toString().lowercase().toBooleanStrictOrNull()
+                if (isEmployee == null) {
+                    printTextLog("[Authentication::validate] 'employee' is null")
                     return@validate null
+                }
+
+                printTextLog("[VALIDATE] userId: $userid employee: $isEmployee")
+
+                val findedId: Int
+                if (isEmployee) {
+                    val findedEmployee = Employees.repo_employees.getDataFromId(userid.toIntOrNull())
+                    if (findedEmployee == null) {
+                        printTextLog("[Authentication::validate] dont find Employee with id '$userid'")
+                        return@validate null
+                    }
+                    printTextLog("[VALIDATE] findedEmployee: $findedEmployee role: ${findedEmployee.role} enums: ${EnumBearerRoles.entries.joinToString { enm -> "${enm.name}: " + hashString(enm.name.uppercase(), findedEmployee.salt!!) }}")
+                    findedId = findedEmployee.id
+                } else {
+                    val findedClient = Clients.repo_clients.getDataFromId(userid.toIntOrNull())
+                    if (findedClient == null) {
+                        printTextLog("[Authentication::validate] dont find Clients with id '$userid'")
+                        return@validate null
+                    }
+                    printTextLog("[VALIDATE] findedClient: $findedClient role: ${findedClient.role} enums: ${EnumBearerRoles.entries.joinToString { enm -> "${enm.name}: " + hashString(enm.name.uppercase(), findedClient.salt!!) }}")
+                    findedId = findedClient.id
                 }
 
                 if (credential.payload.audience.contains(JWT_AUDIENCE)) {
@@ -92,7 +114,7 @@ fun Application.configureAuthentication() {
                         printTextLog("[Authentication::validate] token expired at ${credential.payload.expiresAt}")
                         return@validate null
                     }
-                    RoleAwareJWT(credential.payload, findedClient.id, findedClient.getRoleAsEnum())
+                    RoleAwareJWT(credential.payload, findedId, isEmployee)
                 } else {
                     null
                 }

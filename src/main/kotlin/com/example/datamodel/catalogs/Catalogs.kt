@@ -8,7 +8,9 @@ import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
 import com.example.datamodel.clients.Clients
+import com.example.datamodel.employees.Employees
 import com.example.datamodel.services.Services
+import com.example.datamodel.stockfiles.Stockfiles
 import com.example.enums.EnumHttpCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
@@ -58,6 +60,9 @@ data class Catalogs(
 
     override fun getTable() = tbl_catalogs
     override fun getRepository() = repo_catalogs
+    override fun isValidLine(): Boolean {
+        return type != null && category != null && value != null
+    }
     override fun baseParams(): RequestParams<Catalogs> {
         val params = RequestParams<Catalogs>()
         params.checkings.add { CheckObj(repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null, EnumHttpCode.DUPLICATE, 201, "В БД уже присутствует категория '${it.category}' со значнеием '${it.value}'") }
@@ -74,8 +79,8 @@ data class Catalogs(
 
     override suspend fun delete(call: ApplicationCall, params: RequestParams<Catalogs>): ResultResponse {
         params.onBeforeCompleted = { obj ->
-            Clients.repo_clients.clearLinkEqual(Clients::position, obj.id)
-            Clients.repo_clients.clearLinkEqualArray(Clients::arrayTypeWork, obj.id)
+            Employees.repo_employees.clearLinkEqual(Employees::position, obj.id)
+            Employees.repo_employees.clearLinkEqualArray(Employees::arrayTypeWork, obj.id)
             Services.repo_services.clearLinkEqual(Services::category, obj.id)
         }
 

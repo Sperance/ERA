@@ -4,6 +4,7 @@ import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.catalogs.Catalogs.Companion.tbl_catalogs
 import com.example.datamodel.clients.Clients
 import com.example.datamodel.clients.Clients.Companion.tbl_clients
+import com.example.datamodel.employees.Employees
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.services.Services
@@ -29,7 +30,7 @@ import kotlin.time.Duration.Companion.minutes
 @Serializable
 data class Recordsdata(
     var clientFrom: Clients?,
-    var clientTo: Clients?,
+    var employeeTo: Employees?,
     var service: Services?,
     var record: Records?
 )

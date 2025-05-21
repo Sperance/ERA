@@ -125,6 +125,7 @@ open class BaseRepository<T : IntPostgreTable<T>>(private val obj: IntPostgreTab
 
     open suspend fun getDataFromId(id: Int?): T? {
         if (id == null) return null
+        printTextLog("[BaseRepository::getDataFromId] id: $id Record: ${obj::class.simpleName}")
         return withContext(Dispatchers.IO) {
             if (repoData.isEmpty()) resetData()
             mutex.withLock {

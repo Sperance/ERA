@@ -10,7 +10,7 @@ fun verifyPassword(storedHash: String?, storedSalt: String?, providedPassword: S
     return storedHash == providedHash
 }
 
-fun hashPassword(password: String, salt: String): String {
+fun hashString(password: String, salt: String): String {
     return hashWithSalt(password, salt)
 }
 

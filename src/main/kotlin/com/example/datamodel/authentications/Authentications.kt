@@ -6,13 +6,13 @@ import com.example.basemodel.BaseRepository
 import com.example.basemodel.IntBaseDataImpl
 import com.example.currectDatetime
 import com.example.datamodel.clients.Clients
+import com.example.datamodel.employees.Employees
 import com.example.enums.EnumBearerRoles
 import com.example.helpers.create
 import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.JWT_AUDIENCE
 import com.example.plugins.JWT_HMAC
 import com.example.plugins.JWT_ISSUER
-import com.example.plugins.RoleAwareJWT
 import com.example.plus
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -47,6 +47,7 @@ data class Authentications(
     var dateExpired: LocalDateTime? = null,
     var dateUsed: LocalDateTime? = null,
     var role: String? = null,
+    var employee: Boolean? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
@@ -59,7 +60,7 @@ data class Authentications(
         val repo_authentications = BaseRepository(Authentications())
 
         suspend fun createToken(client: Clients): Authentications {
-            printTextLog("[Authentications::createToken] Создаем токен для пользователя id ${client.id} type: ${client.role}")
+            printTextLog("[Authentications::createToken::Clients] Создаем токен для пользователя id ${client.id} type: ${client.role}")
             val role = EnumBearerRoles.getFromName(client.role)
             val tokenDuration = LocalDateTime.currectDatetime().plus(role.tokenDuration)
             val auth = Authentications(
@@ -67,61 +68,74 @@ data class Authentications(
                 token = generateJWTToken(client, tokenDuration),
                 dateExpired = tokenDuration,
                 dateUsed = LocalDateTime.currectDatetime(),
-                role = role.name
+                role = role.name,
+                employee = false
             )
             val newauth = auth.create("Authentications::createToken")
             repo_authentications.addData(newauth)
             return newauth
         }
 
-        private fun generateJWTToken(client: Clients, tokenDuration: LocalDateTime): String {
-            val role = EnumBearerRoles.getFromName(client.role)
+        suspend fun createToken(employee: Employees): Authentications {
+            printTextLog("[Authentications::createToken::Employees] Создаем токен для пользователя id ${employee.id} type: ${employee.role}")
+            val role = employee.getRoleAsEnum()
+            val tokenDuration = LocalDateTime.currectDatetime().plus(role.tokenDuration)
+            val auth = Authentications(
+                clientId = employee.id,
+                token = generateJWTToken(employee, tokenDuration),
+                dateExpired = tokenDuration,
+                dateUsed = LocalDateTime.currectDatetime(),
+                role = employee.role,
+                employee = true
+            )
+            val newauth = auth.create("Authentications::createToken")
+            repo_authentications.addData(newauth)
+            return newauth
+        }
+
+        private fun generateJWTToken(employee: Employees, tokenDuration: LocalDateTime): String {
             val token = JWT.create()
                 .withAudience(JWT_AUDIENCE)
                 .withIssuer(JWT_ISSUER)
-                .withClaim("userId", client.id)
-                .withClaim("role", role.name)
+                .withClaim("userId", employee.id)
+                .withClaim("employee", true)
                 .withExpiresAt(Date(tokenDuration.toInstant(TimeZone.UTC).toEpochMilliseconds()))
                 .sign(Algorithm.HMAC256(JWT_HMAC))
             return token
         }
 
-        private fun generateBearerToken(): String {
-            return "era_" + UUID.randomUUID().toString().substringAfter("-").replace("-", "")
+        private fun generateJWTToken(client: Clients, tokenDuration: LocalDateTime): String {
+            val token = JWT.create()
+                .withAudience(JWT_AUDIENCE)
+                .withIssuer(JWT_ISSUER)
+                .withClaim("userId", client.id)
+                .withClaim("employee", false)
+                .withExpiresAt(Date(tokenDuration.toInstant(TimeZone.UTC).toEpochMilliseconds()))
+                .sign(Algorithm.HMAC256(JWT_HMAC))
+            return token
         }
 
         suspend fun getTokenFromClient(client: Clients): Authentications? {
-            return repo_authentications.getRepositoryData().find { it.clientId == client.id }
+            return repo_authentications.getRepositoryData().find { it.clientId == client.id && it.employee == false }
         }
 
-        fun checkCorrectJWT(jwt: RoleAwareJWT): AuthData {
-            try {
-                return AuthData(null, jwt.userId, jwt.role)
-            }catch (e: Exception) {
-                e.printStackTrace()
-                printTextLog("[checkCorrectJWT] ERROR: ${e.localizedMessage}")
-                return AuthData(e.localizedMessage, null, null)
-            }
+        suspend fun getTokenFromEmployee(employee: Employees): Authentications? {
+            return repo_authentications.getRepositoryData().find { it.clientId == employee.id && it.employee == true }
         }
     }
 
     override fun getTable() = tbl_authentications
     override fun getRepository() = repo_authentications
+    override fun isValidLine(): Boolean {
+        return clientId != null && token != null && dateExpired != null && dateUsed != null && role != null && employee != null
+    }
 
     fun isExpires(): Boolean {
         if (dateExpired == null) return true
         return dateExpired!! <= LocalDateTime.currectDatetime()
     }
 
-    fun getEnumRole(): EnumBearerRoles? {
-        if (role == null) return null
-        return EnumBearerRoles.valueOf(role!!)
-    }
-
     override fun toString(): String {
-        return "Authentications(id=$id, clientId=$clientId, token=$token, dateExpired=$dateExpired, dateUsed=$dateUsed, version=$version)"
+        return "Authentications(id=$id, clientId=$clientId, token=$token, dateExpired=$dateExpired, dateUsed=$dateUsed, employee=$employee version=$version)"
     }
 }
-
-@Serializable
-data class AuthData(val errorText: String?, val clientId: Int?, val clientRole: EnumBearerRoles?)

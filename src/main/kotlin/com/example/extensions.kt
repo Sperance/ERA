@@ -11,6 +11,7 @@ import io.ktor.server.request.httpMethod
 import io.ktor.server.request.uri
 import io.ktor.server.response.respond
 import io.ktor.server.util.toLocalDateTime
+import io.ktor.server.util.toZonedDateTime
 import io.ktor.utils.io.InternalAPI
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -67,7 +68,7 @@ fun LocalDateTime.Companion.currentZeroDate() : LocalDateTime {
 }
 
 @OptIn(InternalAPI::class)
-fun LocalDateTime.Companion.currectDatetime() = Date().toLocalDateTime().toKotlinLocalDateTime().minus((3).hours)
+fun LocalDateTime.Companion.currectDatetime(): LocalDateTime = Date().toZonedDateTime().toLocalDateTime().toKotlinLocalDateTime()
 
 suspend fun ApplicationCall.respond(response: ResultResponse) {
     try {

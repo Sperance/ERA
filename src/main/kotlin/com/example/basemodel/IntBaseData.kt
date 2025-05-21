@@ -50,6 +50,8 @@ sealed class ResultResponse {
 @Suppress("UNCHECKED_CAST")
 abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableRepository<T> {
 
+    abstract fun isValidLine(): Boolean
+
     open fun baseParams(): RequestParams<T> {
         return RequestParams()
     }
@@ -196,6 +198,44 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
 
                 val resultList = getRepository().getDataFilter(field, stateEnum, value)
                 return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, resultList as Collection<*>)
+            } catch (e: Exception) {
+                tx.setRollbackOnly()
+                e.printStackTrace()
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+            }
+        }
+    }
+
+    open suspend fun getFromId(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
+        return db.withTransaction { tx ->
+            try {
+                val id = call.parameters["id"]
+                if (id.isNullOrEmpty() || !id.toIntPossible()) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'id'. This parameter must be 'Int' type"))
+                }
+
+                params.checkings.forEach { check ->
+                    val res = check.invoke(this as T)
+                    if (res.result) {
+                        tx.setRollbackOnly()
+                        return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
+                    }
+                }
+
+                params.defaults.forEach { def ->
+                    val res = def.invoke(this as T)
+                    val property = res.first as KMutableProperty0<Any?>
+                    if (!property.get().isAllNullOrEmpty()) return@forEach
+                    property.set(res.second)
+                }
+
+                val data = getRepository().getDataFromId(id.toIntOrNull())
+                if (data == null) {
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 102 to "Не найдена запись ${this::class.simpleName} с id $id"))
+                }
+
+                return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, data)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 e.printStackTrace()

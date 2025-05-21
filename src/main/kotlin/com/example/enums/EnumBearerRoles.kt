@@ -1,5 +1,7 @@
 package com.example.enums
 
+import com.example.logging.DailyLogger.printTextLog
+import com.example.security.AESEncryption
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
@@ -13,14 +15,14 @@ enum class EnumBearerRoles(val tokenDuration: Duration) {
         fun getFromName(name: String?): EnumBearerRoles {
             if (name == null) return DEFAULT
             entries.forEach {
-                if (it.name == name.uppercase()) return it
+                if (it.name == (name).uppercase()) return it
             }
             return DEFAULT
         }
         fun getFromNameOrNull(name: String?): EnumBearerRoles? {
             if (name == null) return null
             entries.forEach {
-                if (it.name == name.uppercase()) return it
+                if (it.name == (name).uppercase()) return it
             }
             return null
         }

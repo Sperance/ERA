@@ -39,6 +39,8 @@ data class News(
     var imageLink: String? = null,
     @Transient
     var imageFormat: String? = null,
+    @CommentField("Дата для новости")
+    var dateNews: LocalDateTime? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
@@ -53,6 +55,9 @@ data class News(
 
     override fun getTable() = tbl_news
     override fun getRepository() = repo_news
+    override fun isValidLine(): Boolean {
+        return name != null
+    }
     override fun baseParams(): RequestParams<News> {
         val params = RequestParams<News>()
         params.checkings.add { CheckObj(it.name.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 201, "Необходимо указать Наименование новости (name)") }
@@ -61,6 +66,9 @@ data class News(
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<News>, serializer: KSerializer<List<News>>): ResultResponse {
         params.checkings.add { CheckObj(it.mainText.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Текст новости (mainText)") }
+
+        params.defaults.add { it::dateNews to LocalDateTime.currectDatetime() }
+
         return super.post(call, params, serializer)
     }
 }

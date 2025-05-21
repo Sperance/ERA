@@ -11,6 +11,8 @@ import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.tbl_clien
 import com.example.datamodel.feedbacks.FeedBacks.Companion.tbl_feedbacks
 import com.example.datamodel.clientsschelude.configureClientsSchelude
 import com.example.datamodel.defaults.defaultsConfig
+import com.example.datamodel.employees.Employees.Companion.tbl_employees
+import com.example.datamodel.employees.configureEmployees
 import com.example.datamodel.feedbacks.configureFeedbacks
 import com.example.datamodel.news.News.Companion.tbl_news
 import com.example.datamodel.news.configureNews
@@ -25,7 +27,6 @@ import com.example.datamodel.stockfiles.configureStockfiles
 import com.example.enums.EnumHttpCode
 import com.example.logging.DailyLogger.printTextLog
 import com.example.schedulers.configureSchedulers
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.*
 import io.ktor.server.http.content.staticFiles
 import io.ktor.server.routing.route
@@ -55,6 +56,7 @@ fun Application.configureDatabases() {
     launch(Dispatchers.IO) {
         db.withTransaction {
             db.runQuery { QueryDsl.create(tbl_clients) }
+            db.runQuery { QueryDsl.create(tbl_employees) }
             db.runQuery { QueryDsl.create(tbl_services) }
             db.runQuery { QueryDsl.create(tbl_feedbacks) }
             db.runQuery { QueryDsl.create(tbl_records) }
@@ -69,6 +71,7 @@ fun Application.configureDatabases() {
             staticFiles("/files", File("files"))
         }
         configureClients()
+        configureEmployees()
         configureServices()
         configureFeedbacks()
         configureRecords()

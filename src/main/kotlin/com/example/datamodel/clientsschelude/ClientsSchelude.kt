@@ -8,6 +8,7 @@ import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
 import com.example.datamodel.clients.Clients.Companion.repo_clients
+import com.example.datamodel.employees.Employees.Companion.repo_employees
 import com.example.enums.EnumHttpCode
 import com.example.isNullOrEmpty
 import com.example.isNullOrZero
@@ -23,7 +24,6 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
-import org.komapper.core.dsl.metamodel.EntityMetamodel
 
 /**
  * График работы сотрудников
@@ -37,7 +37,7 @@ data class ClientsSchelude(
     @KomapperColumn(name = "clientsschelude_id")
     override val id: Int = 0,
     @CommentField("Клиент")
-    var idClient: Int? = null,
+    var idEmployee: Int? = null,
     @CommentField("Работа начало")
     var scheludeDateStart: LocalDateTime? = null,
     @CommentField("Работа конец")
@@ -57,9 +57,12 @@ data class ClientsSchelude(
 
     override fun getTable() = tbl_clientsschelude
     override fun getRepository() = repo_clientsschelude
+    override fun isValidLine(): Boolean {
+        return idEmployee != null && scheludeDateStart != null && scheludeDateEnd != null
+    }
     override fun baseParams(): RequestParams<ClientsSchelude> {
         val params = RequestParams<ClientsSchelude>()
-        params.checkings.add { CheckObj(it.idClient != null && !repo_clients.isHaveData(it.idClient), EnumHttpCode.NOT_FOUND, 201, "Не найден Client с id ${it.idClient}") }
+        params.checkings.add { CheckObj(it.idEmployee != null && !repo_employees.isHaveData(it.idEmployee), EnumHttpCode.NOT_FOUND, 201, "Не найден сотрудник с id ${it.idEmployee}") }
         params.checkings.add { CheckObj(it.scheludeDateStart.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 202, "Необходимо указать Дату/время начала работы") }
         params.checkings.add { CheckObj(it.scheludeDateEnd.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 203, "Необходимо указать Дату/время конца работы") }
         params.checkings.add { CheckObj(it.scheludeDateStart!! >= it.scheludeDateEnd!!, EnumHttpCode.INCORRECT_PARAMETER, 204, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
@@ -67,8 +70,8 @@ data class ClientsSchelude(
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<List<ClientsSchelude>>): ResultResponse {
-        params.checkings.add { CheckObj(it.idClient.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать id Клиента для графика работы") }
-        params.checkings.add { CheckObj(!repo_clients.isHaveData(it.idClient), EnumHttpCode.NOT_FOUND, 302, "Не найден Client с id ${it.idClient}") }
+        params.checkings.add { CheckObj(it.idEmployee.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать id сотрудника для графика работы") }
+        params.checkings.add { CheckObj(!repo_employees.isHaveData(it.idEmployee), EnumHttpCode.NOT_FOUND, 302, "Не найден сотрудник с id ${it.idEmployee}") }
 
         return super.post(call, params, serializer)
     }

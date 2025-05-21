@@ -70,6 +70,9 @@ data class Services(
 
     override fun getTable() = tbl_services
     override fun getRepository() = repo_services
+    override fun isValidLine(): Boolean {
+        return name != null && category != null
+    }
     override fun baseParams(): RequestParams<Services> {
         val params = RequestParams<Services>()
         params.checkings.add { CheckObj(it.category != null && !Catalogs.repo_catalogs.isHaveData(it.category), EnumHttpCode.NOT_FOUND, 201, "Не найдена Категория с id ${it.category}") }

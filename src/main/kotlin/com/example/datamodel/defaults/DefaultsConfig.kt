@@ -1,47 +1,45 @@
 package com.example.datamodel.defaults
 
-import com.example.currectDatetime
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.clients.Clients
+import com.example.datamodel.employees.Employees
+import com.example.enums.EnumBearerRoles
 import com.example.helpers.createBatch
 import com.example.helpers.isEmpty
 import com.example.security.AESEncryption
 import com.example.security.generateSalt
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.LocalDateTime
 
 fun defaultsConfig() = runBlocking {
     defaultCatalogs()
-    defaultClients()
+    defaultEmployees()
 }
 
-private suspend fun defaultClients() {
-    if (Clients().isEmpty()) {
-        Clients().createBatch("defaultClients", listOf(
-            Clients().apply {
+private suspend fun defaultEmployees() {
+    if (Employees().isEmpty()) {
+        Employees().createBatch("defaultEmployees", listOf(
+            Employees().apply {
                 firstName = AESEncryption.encrypt("admin")
                 lastName = AESEncryption.encrypt("admin")
                 login = "admin"
                 phone = AESEncryption.encrypt("999")
                 salt = generateSalt()
                 email = AESEncryption.encrypt("adm@adm.ru")
-                role = "ADMIN"
-                employee = true
                 setNewPassword("Password123.")
+                setNewRole(EnumBearerRoles.ADMIN.name)
             },
-            Clients().apply {
+            Employees().apply {
                 firstName = AESEncryption.encrypt("Dmitriy")
                 lastName = AESEncryption.encrypt("MMM")
                 login = "tandine"
                 phone = AESEncryption.encrypt("+79779999999")
                 salt = generateSalt()
                 email = AESEncryption.encrypt("mde@mde.ru")
-                role = "ADMIN"
-                employee = true
                 setNewPassword("Ckjy32543254.")
+                setNewRole(EnumBearerRoles.ADMIN.name)
             })
         )
-        Clients.repo_clients.resetData()
+        Employees.repo_employees.resetData()
     }
 }
 

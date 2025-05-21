@@ -25,10 +25,6 @@ fun Application.configureClients() {
                 call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, "Таблица успешно очищена"))
             }
 
-            get ("/timeslot/{clientId}/{servceLength}") {
-                call.respond(Clients().getTimeSlots(call))
-            }
-
             get("/all") {
                 call.respond(Clients().get(call, RequestParams()))
             }
@@ -37,12 +33,11 @@ fun Application.configureClients() {
                 call.respond(Clients().getFilter(call, RequestParams()))
             }
 
-            get("/slots/{id}/{data}") {
-                call.respond(Clients().getSlots(call))
+            get("/id") {
+                call.respond(Clients().getFromId(call, RequestParams()))
             }
 
             post("/auth") {
-//                call.response.cookies.
                 call.respond(Clients().auth(call))
             }
 

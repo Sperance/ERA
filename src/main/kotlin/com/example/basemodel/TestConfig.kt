@@ -8,6 +8,7 @@ import com.example.datamodel.authentications.secureGet
 import com.example.datamodel.authentications.securePost
 import com.example.datamodel.clients.Clients
 import com.example.enums.EnumBearerRoles
+import com.example.enums.EnumHttpCode
 import com.example.enums.EnumSQLTypes
 import com.example.minus
 import com.example.helpers.GMailSender
@@ -18,6 +19,7 @@ import com.example.plugins.JWT_HMAC
 import com.example.plugins.JWT_ISSUER
 import com.example.plugins.RoleAwareJWT
 import com.example.plus
+import com.example.respond
 import com.example.toIntPossible
 import io.ktor.http.Cookie
 import io.ktor.http.HttpStatusCode
@@ -49,10 +51,9 @@ fun Application.configureTests() {
                 val res = Clients().executeDelColumn("newColumn")
                 call.respond(HttpStatusCode.OK, res?:"")
             }
-            get ("/testLinks") {
-                Clients.repo_clients.resetData()
-                Clients.repo_clients.clearLinkEqual(Clients::position, 16)
-                call.respond(HttpStatusCode.OK)
+            get("/authentications/clearTable") {
+                Authentications.repo_authentications.clearTable()
+                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, "Таблица успешно очищена"))
             }
             post ("/emailMessage") {
                 val email = call.parameters["email"]
@@ -169,14 +170,6 @@ fun Application.configureTests() {
                     )
 
                     call.respondText("Logged in `$username` as $token")
-                }
-
-                authenticate("auth-jwt-cookie") {
-                    get("/protected") {
-                        val principal = call.principal<RoleAwareJWT>()!!
-                        val username = principal.payload.getClaim("username").asString()
-                        call.respondText("Hello, $username! You have access to protected route")
-                    }
                 }
             }
         }
