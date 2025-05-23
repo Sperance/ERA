@@ -60,20 +60,30 @@ data class ClientsSchelude(
     override fun isValidLine(): Boolean {
         return idEmployee != null && scheludeDateStart != null && scheludeDateEnd != null
     }
-    override fun baseParams(): RequestParams<ClientsSchelude> {
-        val params = RequestParams<ClientsSchelude>()
-        params.checkings.add { CheckObj(it.idEmployee != null && !repo_employees.isHaveData(it.idEmployee), EnumHttpCode.NOT_FOUND, 201, "Не найден сотрудник с id ${it.idEmployee}") }
-        params.checkings.add { CheckObj(it.scheludeDateStart.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 202, "Необходимо указать Дату/время начала работы") }
-        params.checkings.add { CheckObj(it.scheludeDateEnd.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 203, "Необходимо указать Дату/время конца работы") }
-        params.checkings.add { CheckObj(it.scheludeDateStart!! >= it.scheludeDateEnd!!, EnumHttpCode.INCORRECT_PARAMETER, 204, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
-        return params
-    }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<List<ClientsSchelude>>): ResultResponse {
         params.checkings.add { CheckObj(it.idEmployee.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать id сотрудника для графика работы") }
         params.checkings.add { CheckObj(!repo_employees.isHaveData(it.idEmployee), EnumHttpCode.NOT_FOUND, 302, "Не найден сотрудник с id ${it.idEmployee}") }
+        params.checkings.add { CheckObj(it.idEmployee != null && !repo_employees.isHaveData(it.idEmployee), EnumHttpCode.NOT_FOUND, 303, "Не найден сотрудник с id ${it.idEmployee}") }
+        params.checkings.add { CheckObj(it.scheludeDateStart.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 304, "Необходимо указать Дату/время начала работы") }
+        params.checkings.add { CheckObj(it.scheludeDateEnd.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 305, "Необходимо указать Дату/время конца работы") }
+        params.checkings.add { CheckObj(it.scheludeDateStart!! >= it.scheludeDateEnd!!, EnumHttpCode.INCORRECT_PARAMETER, 306, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
 
         return super.post(call, params, serializer)
+    }
+
+    override suspend fun update(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<ClientsSchelude>): ResultResponse {
+        params.checkings.add { CheckObj(it.idEmployee != null && !repo_employees.isHaveData(it.idEmployee), EnumHttpCode.NOT_FOUND, 301, "Не найден сотрудник с id ${it.idEmployee}") }
+        params.checkings.add { CheckObj(it.scheludeDateStart != null && it.scheludeDateEnd != null && it.scheludeDateStart!! >= it.scheludeDateEnd!!, EnumHttpCode.INCORRECT_PARAMETER, 302, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
+
+        return super.update(call, params, serializer)
+    }
+
+    override suspend fun updateMany(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<List<ClientsSchelude>>): ResultResponse {
+        params.checkings.add { CheckObj(it.idEmployee != null && !repo_employees.isHaveData(it.idEmployee), EnumHttpCode.NOT_FOUND, 301, "Не найден сотрудник с id ${it.idEmployee}") }
+        params.checkings.add { CheckObj(it.scheludeDateStart != null && it.scheludeDateEnd != null && it.scheludeDateStart!! >= it.scheludeDateEnd!!, EnumHttpCode.INCORRECT_PARAMETER, 302, "Дата/время начала работы не может быть равна или больше Даты/времени конца работы") }
+
+        return super.updateMany(call, params, serializer)
     }
 }
 

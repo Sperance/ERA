@@ -13,7 +13,6 @@ import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.UserIdPrincipal
 import io.ktor.server.auth.bearer
-import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.jwt.jwt
 import com.example.basemodel.ResultResponse
 import com.example.currectDatetime
@@ -23,22 +22,17 @@ import com.example.enums.EnumBearerRoles
 import com.example.enums.EnumHttpCode
 import com.example.generateMapError
 import com.example.helpers.AUTH_ERROR_KEY
-import com.example.helpers.delete
 import com.example.helpers.update
 import com.example.logging.DailyLogger.printTextLog
 import com.example.respond
 import com.example.schedulers.hoursTaskScheduler
-import com.example.security.hashString
 import com.example.toIntPossible
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.call
 import io.ktor.server.auth.jwt.JWTPayloadHolder
-import io.ktor.server.request.path
-import io.ktor.server.request.uri
 import io.ktor.server.response.respond
-import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.InternalAPI
 import kotlinx.datetime.LocalDateTime
 import java.util.Date
@@ -47,6 +41,7 @@ const val JWT_HMAC = "secrets_era"
 const val JWT_ISSUER = "ktor.era.io"
 const val JWT_AUDIENCE = "ktor.audience.era"
 const val JWT_AUTH_NAME = "auth-jwt-cookie"
+const val JWT_REALM_NAME = "ERA_KT_SRV"
 
 class RoleAwareJWT(
     payload: Payload,
@@ -58,20 +53,8 @@ class RoleAwareJWT(
 @OptIn(InternalAPI::class)
 fun Application.configureAuthentication() {
     install(Authentication) {
-        bearer("auth-bearer") {
-            realm = "Access to the server side API"
-            authenticate { tokenCredential ->
-                val findedToken = Authentications.repo_authentications.getRepositoryData().find { it.token == tokenCredential.token }
-                if (findedToken != null) {
-                    UserIdPrincipal(findedToken.token!!)
-                } else {
-                    null
-                }
-            }
-        }
-
         jwt(JWT_AUTH_NAME) {
-            realm = "ktor.io"
+            realm = JWT_REALM_NAME
             verifier(
                 JWT.require(Algorithm.HMAC256(JWT_HMAC))
                     .withAudience(JWT_AUDIENCE)

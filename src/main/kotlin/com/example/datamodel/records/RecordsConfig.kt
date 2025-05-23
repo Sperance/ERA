@@ -34,7 +34,7 @@ fun Application.configureRecords() {
             }
 
             get("/id") {
-                call.respond(Records().getFromId(call))
+                call.respond(Records().getFromId(call, RequestParams()))
             }
 
             post("/update") {

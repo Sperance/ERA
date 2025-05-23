@@ -63,18 +63,20 @@ data class Catalogs(
     override fun isValidLine(): Boolean {
         return type != null && category != null && value != null
     }
-    override fun baseParams(): RequestParams<Catalogs> {
-        val params = RequestParams<Catalogs>()
-        params.checkings.add { CheckObj(repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null, EnumHttpCode.DUPLICATE, 201, "В БД уже присутствует категория '${it.category}' со значнеием '${it.value}'") }
-        return params
-    }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Catalogs>, serializer: KSerializer<List<Catalogs>>): ResultResponse {
         params.checkings.add { CheckObj(it.type.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Тип категории(type) для элемента") }
         params.checkings.add { CheckObj(it.category.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Категорию(category) для элемента") }
         params.checkings.add { CheckObj(it.value.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать Значение(value) элемента") }
+        params.checkings.add { CheckObj(repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null, EnumHttpCode.DUPLICATE, 304, "В БД уже присутствует категория '${it.category}' со значнеием '${it.value}'") }
 
         return super.post(call, params, serializer)
+    }
+
+    override suspend fun update(call: ApplicationCall, params: RequestParams<Catalogs>, serializer: KSerializer<Catalogs>): ResultResponse {
+        params.checkings.add { CheckObj(repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null, EnumHttpCode.DUPLICATE, 301, "В БД уже присутствует категория '${it.category}' со значнеием '${it.value}'") }
+
+        return super.update(call, params, serializer)
     }
 
     override suspend fun delete(call: ApplicationCall, params: RequestParams<Catalogs>): ResultResponse {

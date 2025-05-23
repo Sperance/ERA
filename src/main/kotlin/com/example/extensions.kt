@@ -14,6 +14,7 @@ import io.ktor.server.response.ApplicationResponse
 import io.ktor.server.response.respond
 import io.ktor.server.util.toZonedDateTime
 import io.ktor.util.date.GMTDate
+import io.ktor.util.date.toJvmDate
 import io.ktor.utils.io.InternalAPI
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -155,19 +156,8 @@ fun generateMapError(call: ApplicationCall, errorPair: Pair<Int, String>): Mutab
     return map
 }
 
-fun ApplicationResponse.setToken(token: String, age: Int) {
-    cookies.append(Cookie(
-        name = "era_auth_token",
-        value = token,
-        path = "/",
-        httpOnly = true,
-        secure = true,
-        maxAge = age,
-        extensions = mapOf("SameSite" to "None"))
-    )
-}
-
 fun ApplicationResponse.setToken(token: String, dateExpired: GMTDate) {
+    printTextLog("[ApplicationResponse::setToken] set cookie. Token: $token expired: ${dateExpired.toJvmDate()}")
     cookies.append(Cookie(
         name = "era_auth_token",
         value = token,

@@ -18,6 +18,7 @@ import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
+import io.ktor.util.date.GMTDate
 
 fun Route.secureGet(path: String, role: EnumBearerRoles? = null, body: suspend RoutingContext.(userId: Int) -> Unit) {
     authenticate(JWT_AUTH_NAME) {
@@ -72,7 +73,7 @@ suspend fun RoleAwareJWT?.checkAuthenticate(call: ApplicationCall, role: EnumBea
         return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Principal RoleAwareJWT is null"))
     }
     if (Authentications.repo_authentications.getRepositoryData().find { it.employee == this.employee && it.clientId == this.userId } == null) {
-        call.response.setToken("", 0)
+        call.response.setToken("", GMTDate())
         return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 102 to "Dont find token in database"))
     }
     if (this.employee) {

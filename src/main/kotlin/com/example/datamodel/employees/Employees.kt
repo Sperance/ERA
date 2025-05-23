@@ -116,27 +116,6 @@ data class Employees(
     override fun isValidLine(): Boolean {
         return firstName != null && login != null && password != null && role != null && salt != null
     }
-    override fun baseParams(): RequestParams<Employees> {
-        val params = RequestParams<Employees>()
-        params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), EnumHttpCode.NOT_FOUND, 201, "Не найдена Должность с id ${it.position}") }
-        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), EnumHttpCode.NOT_FOUND, 202, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
-        params.checkings.add { CheckObj(it.salt != null, EnumHttpCode.BAD_REQUEST, 203, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
-        params.checkings.add { CheckObj(it.login != null && repo_employees.isHaveDataField(Employees::login, it.login), EnumHttpCode.DUPLICATE, 204, "Сотрудник с указанным Логином уже существует") }
-        params.checkings.add { CheckObj(it.role != null && EnumBearerRoles.getFromNameOrNull(it.role) == null, EnumHttpCode.INCORRECT_PARAMETER, 205, "Роль Сотрудника 'role - ${it.role}' не соответствует одному из доступных: ${EnumBearerRoles.entries.joinToString { role -> role.name }}") }
-
-        params.onBeforeCompleted = { obj ->
-            val size = Employees().getSize()
-            if (obj.lastName != null) obj.lastName = AESEncryption.encrypt(obj.lastName)
-            if (obj.firstName != null) obj.firstName = AESEncryption.encrypt(obj.firstName)
-            if (obj.patronymic != null) obj.patronymic = AESEncryption.encrypt(obj.patronymic)
-            if (obj.email != null) obj.email = AESEncryption.encrypt(obj.email)
-            if (obj.phone != null) obj.phone = AESEncryption.encrypt(obj.phone)
-            if (obj.password != null) obj.setNewPassword(obj.password!!)
-            if (obj.role != null) obj.role = AESEncryption.encrypt(obj.role + "_" + size)
-        }
-
-        return params
-    }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Employees>, serializer: KSerializer<List<Employees>>): ResultResponse {
         params.checkings.add { CheckObj(it.firstName.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Имя") }
@@ -149,6 +128,22 @@ data class Employees(
         params.checkings.add { CheckObj(repo_employees.isHaveDataField(Employees::phone, it.phone), EnumHttpCode.DUPLICATE, 308, "Сотрудник с указанным Номером телефона уже существует") }
         params.checkings.add { CheckObj(repo_employees.isHaveDataField(Employees::email, it.email), EnumHttpCode.DUPLICATE, 309, "Сотрудник с указанным Почтовым адресом уже существует") }
         params.checkings.add { CheckObj(repo_employees.isHaveDataField(Employees::login, it.login), EnumHttpCode.DUPLICATE, 310, "Сотрудник с указанным Логином уже существует") }
+        params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), EnumHttpCode.NOT_FOUND, 311, "Не найдена Должность с id ${it.position}") }
+        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), EnumHttpCode.NOT_FOUND, 312, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
+        params.checkings.add { CheckObj(it.salt != null, EnumHttpCode.BAD_REQUEST, 313, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
+        params.checkings.add { CheckObj(repo_employees.isHaveDataField(Employees::login, it.login), EnumHttpCode.DUPLICATE, 314, "Сотрудник с указанным Логином уже существует") }
+        params.checkings.add { CheckObj(EnumBearerRoles.getFromNameOrNull(it.role) == null, EnumHttpCode.INCORRECT_PARAMETER, 315, "Роль Сотрудника 'role - ${it.role}' не соответствует одному из доступных: ${EnumBearerRoles.entries.joinToString { role -> role.name }}") }
+
+        params.onBeforeCompleted = { obj ->
+            val size = Employees().getSize()
+            if (obj.lastName != null) obj.lastName = AESEncryption.encrypt(obj.lastName)
+            if (obj.firstName != null) obj.firstName = AESEncryption.encrypt(obj.firstName)
+            if (obj.patronymic != null) obj.patronymic = AESEncryption.encrypt(obj.patronymic)
+            if (obj.email != null) obj.email = AESEncryption.encrypt(obj.email)
+            if (obj.phone != null) obj.phone = AESEncryption.encrypt(obj.phone)
+            if (obj.password != null) obj.setNewPassword(obj.password!!)
+            if (obj.role != null) obj.role = AESEncryption.encrypt(obj.role + "_" + size)
+        }
 
         params.defaults.add { it::salt to generateSalt() }
 
@@ -156,6 +151,23 @@ data class Employees(
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Employees>, serializer: KSerializer<Employees>): ResultResponse {
+        params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), EnumHttpCode.NOT_FOUND, 301, "Не найдена Должность с id ${it.position}") }
+        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), EnumHttpCode.NOT_FOUND, 302, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
+        params.checkings.add { CheckObj(it.salt != null, EnumHttpCode.BAD_REQUEST, 303, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
+        params.checkings.add { CheckObj(it.login != null && repo_employees.isHaveDataField(Employees::login, it.login), EnumHttpCode.DUPLICATE, 304, "Сотрудник с указанным Логином уже существует") }
+        params.checkings.add { CheckObj(it.role != null && EnumBearerRoles.getFromNameOrNull(it.role) == null, EnumHttpCode.INCORRECT_PARAMETER, 305, "Роль Сотрудника 'role - ${it.role}' не соответствует одному из доступных: ${EnumBearerRoles.entries.joinToString { role -> role.name }}") }
+
+        params.onBeforeCompleted = { obj ->
+            val size = Employees().getSize()
+            if (obj.lastName != null) obj.lastName = AESEncryption.encrypt(obj.lastName)
+            if (obj.firstName != null) obj.firstName = AESEncryption.encrypt(obj.firstName)
+            if (obj.patronymic != null) obj.patronymic = AESEncryption.encrypt(obj.patronymic)
+            if (obj.email != null) obj.email = AESEncryption.encrypt(obj.email)
+            if (obj.phone != null) obj.phone = AESEncryption.encrypt(obj.phone)
+            if (obj.password != null) obj.setNewPassword(obj.password!!)
+            if (obj.role != null) obj.role = AESEncryption.encrypt(obj.role + "_" + size)
+        }
+
         params.checkOnUpdate = { finded, new ->
             if (new.haveField("salt") && finded.haveField("salt")) {
                 new.putField("salt", finded.getField("salt"))

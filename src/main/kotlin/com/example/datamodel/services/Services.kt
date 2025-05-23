@@ -73,22 +73,25 @@ data class Services(
     override fun isValidLine(): Boolean {
         return name != null && category != null
     }
-    override fun baseParams(): RequestParams<Services> {
-        val params = RequestParams<Services>()
-        params.checkings.add { CheckObj(it.category != null && !Catalogs.repo_catalogs.isHaveData(it.category), EnumHttpCode.NOT_FOUND, 201, "Не найдена Категория с id ${it.category}") }
-        return params
-    }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Services>, serializer: KSerializer<List<Services>>): ResultResponse {
         params.checkings.add { CheckObj(it.name.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Наименование услуги") }
         params.checkings.add { CheckObj(it.priceLow.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Минимальную стоимость услуги") }
         params.checkings.add { CheckObj(it.duration.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать Продолжительность услуги (не может быть 0)") }
-        params.checkings.add { CheckObj((it.priceLow != null && it.priceMax != null) && (it.priceMax!! < it.priceLow!!), EnumHttpCode.INCORRECT_PARAMETER, 304, "Максимальная стоимость услуги(${it.priceMax}) не может быть меньше минимальной(${it.priceLow})") }
-        params.checkings.add { CheckObj(!Catalogs.repo_catalogs.isHaveData(it.category), EnumHttpCode.NOT_FOUND, 305, "Не найдена Категория с id ${it.category}") }
+        params.checkings.add { CheckObj(it.category.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 304, "Необходимо указать Продолжительность услуги (не может быть 0)") }
+        params.checkings.add { CheckObj((it.priceMax != null) && (it.priceMax!! < it.priceLow!!), EnumHttpCode.INCORRECT_PARAMETER, 305, "Максимальная стоимость услуги(${it.priceMax}) не может быть меньше минимальной(${it.priceLow})") }
+        params.checkings.add { CheckObj(!Catalogs.repo_catalogs.isHaveData(it.category), EnumHttpCode.NOT_FOUND, 306, "Не найдена Категория с id ${it.category}") }
 
         params.defaults.add { it::gender to -1 }
 
         return super.post(call, params, serializer)
+    }
+
+    override suspend fun update(call: ApplicationCall, params: RequestParams<Services>, serializer: KSerializer<Services>): ResultResponse {
+        params.checkings.add { CheckObj((it.priceLow != null && it.priceMax != null) && (it.priceMax!! < it.priceLow!!), EnumHttpCode.INCORRECT_PARAMETER, 301, "Максимальная стоимость услуги(${it.priceMax}) не может быть меньше минимальной(${it.priceLow})") }
+        params.checkings.add { CheckObj(it.category != null && !Catalogs.repo_catalogs.isHaveData(it.category), EnumHttpCode.NOT_FOUND, 302, "Не найдена Категория с id ${it.category}") }
+
+        return super.update(call, params, serializer)
     }
 
     override suspend fun delete(call: ApplicationCall, params: RequestParams<Services>): ResultResponse {

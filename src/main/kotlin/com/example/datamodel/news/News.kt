@@ -58,14 +58,10 @@ data class News(
     override fun isValidLine(): Boolean {
         return name != null
     }
-    override fun baseParams(): RequestParams<News> {
-        val params = RequestParams<News>()
-        params.checkings.add { CheckObj(it.name.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 201, "Необходимо указать Наименование новости (name)") }
-        return params
-    }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<News>, serializer: KSerializer<List<News>>): ResultResponse {
         params.checkings.add { CheckObj(it.mainText.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Текст новости (mainText)") }
+        params.checkings.add { CheckObj(it.name.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Наименование новости (name)") }
 
         params.defaults.add { it::dateNews to LocalDateTime.currectDatetime() }
 

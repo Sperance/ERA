@@ -16,7 +16,6 @@ import com.example.helpers.getField
 import com.example.helpers.haveField
 import com.example.helpers.putField
 import com.example.helpers.update
-import com.example.interfaces.IntPostgreTable
 import com.example.interfaces.IntPostgreTableRepository
 import com.example.isAllNullOrEmpty
 import com.example.logging.DailyLogger.printTextLog
@@ -27,10 +26,8 @@ import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receiveMultipart
-import io.ktor.server.request.uri
 import io.ktor.utils.io.toByteArray
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.komapper.core.dsl.metamodel.EntityMetamodel
 import org.komapper.core.dsl.metamodel.PropertyMetamodel
@@ -51,10 +48,6 @@ sealed class ResultResponse {
 abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableRepository<T> {
 
     abstract fun isValidLine(): Boolean
-
-    open fun baseParams(): RequestParams<T> {
-        return RequestParams()
-    }
 
     open fun getCommentArray(): String {
         var textFields = ""
@@ -329,13 +322,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                         return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
                     }
                 }
-                baseParams().checkings.forEach { check ->
-                    val res = check.invoke(newObject!!)
-                    if (res.result) {
-                        tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
-                    }
-                }
                 params.defaults.forEach { def ->
                     val res = def.invoke(newObject!!)
                     val property = res.first as KMutableProperty0<Any?>
@@ -359,7 +345,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 params.checkOnUpdate?.invoke(findedObj as T, newObject!!)
 
                 params.onBeforeCompleted?.invoke(newObject!!)
-                baseParams().onBeforeCompleted?.invoke(newObject!!)
                 findedObj.updateFromNullable(newObject!!)
 
                 val updated = findedObj.update("IntBaseData::update")
@@ -408,16 +393,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     }
                 }
 
-                baseParams().checkings.forEach { check ->
-                    newObject.forEach { item ->
-                        val res = check.invoke(item)
-                        if (res.result) {
-                            tx.setRollbackOnly()
-                            return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
-                        }
-                    }
-                }
-
                 params.defaults.forEach { def ->
                     newObject.forEach { item ->
                         val res = def.invoke(item)
@@ -442,7 +417,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     params.checkOnUpdate?.invoke(findedObj as T, item)
 
                     params.onBeforeCompleted?.invoke(item)
-                    baseParams().onBeforeCompleted?.invoke(item)
                     findedObj.updateFromNullable(item as Any)
 
                     val updated = findedObj.update("IntBaseData::updateMany")
@@ -513,16 +487,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     }
                 }
 
-                baseParams().checkings.forEach { check ->
-                    newObject.forEach { item ->
-                        val res = check.invoke(item)
-                        if (res.result) {
-                            tx.setRollbackOnly()
-                            return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
-                        }
-                    }
-                }
-
                 params.defaults.forEach { def ->
                     newObject.forEach { item ->
                         val res = def.invoke(item)
@@ -540,7 +504,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
 
                 newObject.forEach { item ->
                     params.onBeforeCompleted?.invoke(item)
-                    baseParams().onBeforeCompleted?.invoke(item)
 
                     finishObject = item.create("IntBaseDataImpl::post")
                     getRepository().addData(finishObject)
@@ -553,7 +516,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     }
                     saveImageToFields(finishObject, fileBytes, fileName?.substringAfterLast("."))
                     params.onBeforeCompleted?.invoke(finishObject!!)
-                    baseParams().onBeforeCompleted?.invoke(finishObject as T)
 
                     finishObject = finishObject!!.update("IntBaseData::post")
                     getRepository().updateData(finishObject)

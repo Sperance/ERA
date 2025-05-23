@@ -58,16 +58,18 @@ data class Stockfiles(
     override fun isValidLine(): Boolean {
         return service != null && imageLink != null && imageFormat != null
     }
-    override fun baseParams(): RequestParams<Stockfiles> {
-        val params = RequestParams<Stockfiles>()
-        params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), EnumHttpCode.NOT_FOUND, 201, "Не найдена Категория файла с id ${it.service}") }
-        return params
-    }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Stockfiles>, serializer: KSerializer<List<Stockfiles>>): ResultResponse {
         params.isNeedFile = true
         params.checkings.add { CheckObj(it.category.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Категорию файла") }
+        params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), EnumHttpCode.NOT_FOUND, 302, "Не найдена Категория файла с id ${it.service}") }
 
         return super.post(call, params, serializer)
+    }
+
+    override suspend fun update(call: ApplicationCall, params: RequestParams<Stockfiles>, serializer: KSerializer<Stockfiles>): ResultResponse {
+        params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), EnumHttpCode.NOT_FOUND, 301, "Не найдена Категория файла с id ${it.service}") }
+
+        return super.update(call, params, serializer)
     }
 }

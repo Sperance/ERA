@@ -84,13 +84,6 @@ data class Records(
     override fun isValidLine(): Boolean {
         return id_client_from != null && id_employee_to != null && id_service != null && status != null
     }
-    override fun baseParams(): RequestParams<Records> {
-        val params = RequestParams<Records>()
-        params.checkings.add { CheckObj(it.id_client_from != null && !Clients.repo_clients.isHaveData(it.id_client_from!!), EnumHttpCode.NOT_FOUND, 201, "Не существует Клиента с id ${it.id_client_from}") }
-        params.checkings.add { CheckObj(it.id_employee_to != null && !Employees.repo_employees.isHaveData(it.id_employee_to!!), EnumHttpCode.NOT_FOUND, 202, "Не существует Клиента с id ${it.id_employee_to}") }
-        params.checkings.add { CheckObj(it.id_service != null && !Services.repo_services.isHaveData(it.id_service!!), EnumHttpCode.NOT_FOUND, 203, "Не существует Услуги с id ${it.id_service}") }
-        return params
-    }
 
     suspend fun getFilledRecords() : ArrayList<Recordsdata> {
         val listResults = ArrayList<Recordsdata>()
@@ -110,7 +103,7 @@ data class Records(
         return listResults
     }
 
-    suspend fun getFromId(call: ApplicationCall): ResultResponse {
+    override suspend fun getFromId(call: ApplicationCall, params: RequestParams<Records>): ResultResponse {
         val id = call.parameters["id"]
         if (id == null || !id.toIntPossible()) {
             return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'id'($id). This parameter must be 'Int' type"))
@@ -124,6 +117,10 @@ data class Records(
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Records>, serializer: KSerializer<Records>): ResultResponse {
+        params.checkings.add { CheckObj(it.id_client_from != null && !Clients.repo_clients.isHaveData(it.id_client_from!!), EnumHttpCode.NOT_FOUND, 301, "Не существует Клиента с id ${it.id_client_from}") }
+        params.checkings.add { CheckObj(it.id_employee_to != null && !Employees.repo_employees.isHaveData(it.id_employee_to!!), EnumHttpCode.NOT_FOUND, 302, "Не существует Клиента с id ${it.id_employee_to}") }
+        params.checkings.add { CheckObj(it.id_service != null && !Services.repo_services.isHaveData(it.id_service!!), EnumHttpCode.NOT_FOUND, 303, "Не существует Услуги с id ${it.id_service}") }
+
         params.checkOnUpdate = { old: Records, new: Records ->
             if (new.status != null && old.status != new.status) {
                 new.statusViewed = false

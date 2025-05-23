@@ -96,11 +96,18 @@ data class Clients(
     override fun isValidLine(): Boolean {
         return firstName != null && login != null && password != null && role != null && salt != null
     }
-    override fun baseParams(): RequestParams<Clients> {
-        val params = RequestParams<Clients>()
-        params.checkings.add { CheckObj(it.salt != null, EnumHttpCode.BAD_REQUEST, 201, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
-        params.checkings.add { CheckObj(it.role != null, EnumHttpCode.INCORRECT_PARAMETER, 202, "Попытка модификации системных данных") }
-        params.checkings.add { CheckObj(it.login != null && repo_clients.isHaveDataField(Clients::login, it.login), EnumHttpCode.DUPLICATE, 203, "Клиент с указанным Логином уже существует") }
+
+    override suspend fun post(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<List<Clients>>): ResultResponse {
+        params.checkings.add { CheckObj(it.firstName.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Имя") }
+        params.checkings.add { CheckObj(it.lastName.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Фамилию") }
+        params.checkings.add { CheckObj(it.phone.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать Телефон") }
+        params.checkings.add { CheckObj(it.email.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 304, "Необходимо указать Email") }
+        params.checkings.add { CheckObj(it.gender.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 305, "Необходимо указать Пол") }
+        params.checkings.add { CheckObj(repo_clients.isHaveDataField(Clients::phone, it.phone), EnumHttpCode.DUPLICATE, 306, "Клиент с указанным Номером телефона уже существует") }
+        params.checkings.add { CheckObj(repo_clients.isHaveDataField(Clients::email, it.email), EnumHttpCode.DUPLICATE, 307, "Клиент с указанным Почтовым адресом уже существует") }
+        params.checkings.add { CheckObj(it.salt != null, EnumHttpCode.BAD_REQUEST, 308, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
+        params.checkings.add { CheckObj(it.role != null, EnumHttpCode.INCORRECT_PARAMETER, 309, "Попытка модификации системных данных") }
+        params.checkings.add { CheckObj(it.login != null && repo_clients.isHaveDataField(Clients::login, it.login), EnumHttpCode.DUPLICATE, 310, "Клиент с указанным Логином уже существует") }
 
         params.onBeforeCompleted = { obj ->
             val size = Clients().getSize()
@@ -112,18 +119,6 @@ data class Clients(
             if (obj.password != null) obj.setNewPassword(obj.password!!)
             if (obj.role != null) obj.role = AESEncryption.encrypt(obj.role + "_" + size)
         }
-
-        return params
-    }
-
-    override suspend fun post(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<List<Clients>>): ResultResponse {
-        params.checkings.add { CheckObj(it.firstName.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Имя") }
-        params.checkings.add { CheckObj(it.lastName.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Фамилию") }
-        params.checkings.add { CheckObj(it.phone.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать Телефон") }
-        params.checkings.add { CheckObj(it.email.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 304, "Необходимо указать Email") }
-        params.checkings.add { CheckObj(it.gender.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 305, "Необходимо указать Пол") }
-        params.checkings.add { CheckObj(repo_clients.isHaveDataField(Clients::phone, it.phone), EnumHttpCode.DUPLICATE, 306, "Клиент с указанным Номером телефона уже существует") }
-        params.checkings.add { CheckObj(repo_clients.isHaveDataField(Clients::email, it.email), EnumHttpCode.DUPLICATE, 307, "Клиент с указанным Почтовым адресом уже существует") }
 
         val size = Clients().getSize()
         params.defaults.add { it::login to "base_client_$size" }
@@ -245,12 +240,26 @@ data class Clients(
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<Clients>): ResultResponse {
+        params.checkings.add { CheckObj(it.salt != null, EnumHttpCode.BAD_REQUEST, 301, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
+        params.checkings.add { CheckObj(it.role != null, EnumHttpCode.INCORRECT_PARAMETER, 302, "Попытка модификации системных данных") }
+        params.checkings.add { CheckObj(it.login != null && repo_clients.isHaveDataField(Clients::login, it.login), EnumHttpCode.DUPLICATE, 303, "Клиент с указанным Логином уже существует") }
+
+        params.onBeforeCompleted = { obj ->
+            val size = Clients().getSize()
+            if (obj.lastName != null) obj.lastName = AESEncryption.encrypt(obj.lastName)
+            if (obj.firstName != null) obj.firstName = AESEncryption.encrypt(obj.firstName)
+            if (obj.patronymic != null) obj.patronymic = AESEncryption.encrypt(obj.patronymic)
+            if (obj.email != null) obj.email = AESEncryption.encrypt(obj.email)
+            if (obj.phone != null) obj.phone = AESEncryption.encrypt(obj.phone)
+            if (obj.password != null) obj.setNewPassword(obj.password!!)
+            if (obj.role != null) obj.role = AESEncryption.encrypt(obj.role + "_" + size)
+        }
+
         params.checkOnUpdate = { finded, new ->
             if (new.haveField("salt") && finded.haveField("salt")) {
                 new.putField("salt", finded.getField("salt"))
             }
             if (new.password != null) new.setNewPassword(new.password!!)
-//            if (new.role != null) new.role = AESEncryption.encrypt(new.role + "_" + finded.id)
         }
         return super.update(call, params, serializer)
     }
