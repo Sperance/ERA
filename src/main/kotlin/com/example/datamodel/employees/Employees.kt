@@ -1,5 +1,6 @@
 package com.example.datamodel.employees
 
+import com.example.setToken
 import com.example.basemodel.BaseRepository
 import com.example.basemodel.CheckObj
 import com.example.basemodel.IntBaseDataImpl
@@ -34,10 +35,8 @@ import com.example.security.hashString
 import com.example.security.verifyPassword
 import com.example.toDateTimePossible
 import com.example.toIntPossible
-import io.ktor.http.Cookie
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
-import io.ktor.server.sessions.SameSite
 import io.ktor.util.date.GMTDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -126,13 +125,14 @@ data class Employees(
         params.checkings.add { CheckObj(it.role != null && EnumBearerRoles.getFromNameOrNull(it.role) == null, EnumHttpCode.INCORRECT_PARAMETER, 205, "Роль Сотрудника 'role - ${it.role}' не соответствует одному из доступных: ${EnumBearerRoles.entries.joinToString { role -> role.name }}") }
 
         params.onBeforeCompleted = { obj ->
+            val size = Employees().getSize()
             if (obj.lastName != null) obj.lastName = AESEncryption.encrypt(obj.lastName)
             if (obj.firstName != null) obj.firstName = AESEncryption.encrypt(obj.firstName)
             if (obj.patronymic != null) obj.patronymic = AESEncryption.encrypt(obj.patronymic)
             if (obj.email != null) obj.email = AESEncryption.encrypt(obj.email)
             if (obj.phone != null) obj.phone = AESEncryption.encrypt(obj.phone)
             if (obj.password != null) obj.setNewPassword(obj.password!!)
-            if (obj.role != null) obj.setNewRole(obj.role!!)
+            if (obj.role != null) obj.role = AESEncryption.encrypt(obj.role + "_" + size)
         }
 
         return params
@@ -161,10 +161,10 @@ data class Employees(
                 new.putField("salt", finded.getField("salt"))
             }
             if (new.password != null) new.setNewPassword(new.password!!)
-            if (new.role != null) new.setNewRole(new.role!!)
-
-            if (new.role != null && finded.role != new.role) {
-                printTextLog("[Employees::update] changed role old: ${finded.getRoleAsEnum()} new: ${new.getRoleAsEnum()}")
+            if (new.role != null && EnumBearerRoles.getFromNameOrNull(finded.role) != EnumBearerRoles.getFromNameOrNull(new.role)) {
+                val token = Authentications.getTokenFromEmployee(finded)
+                token?.delete()
+                Authentications.repo_authentications.deleteData(token)
             }
         }
         return super.update(call, params, serializer)
@@ -175,7 +175,10 @@ data class Employees(
             Records.repo_records.clearLinkEqual(Records::id_employee_to, obj.id)
             ClientsSchelude.repo_clientsschelude.clearLinkEqual(ClientsSchelude::idEmployee, obj.id)
             FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_employee_to, obj.id)
-            Authentications.repo_authentications.clearLinkEqual(Authentications::clientId, obj.id, true)
+
+            val token = Authentications.getTokenFromEmployee(obj)
+            token?.delete()
+            Authentications.repo_authentications.deleteData(token)
         }
 
         return super.delete(call, params)
@@ -209,18 +212,7 @@ data class Employees(
                 }
             }
 
-            call.response.cookies.append(
-                Cookie(
-                    name = "era_auth_token",
-                    value = token.token?:"",
-                    path = "/",
-                    domain = "api.salon-era.ru",
-                    httpOnly = true,
-                    secure = true,
-                    expires = GMTDate(token.dateExpired!!.toInstant(TimeZone.UTC).toEpochMilliseconds()),
-                    extensions = mapOf("SameSite" to SameSite.None)
-                )
-            )
+            call.response.setToken(token.token?:"", GMTDate(token.dateExpired!!.toInstant(TimeZone.UTC).toEpochMilliseconds()))
 
             return ResultResponse.Success(EnumHttpCode.COMPLETED, employee)
         } catch (e: Exception) {
@@ -308,15 +300,11 @@ data class Employees(
     }
 
     fun getRoleAsEnum() : EnumBearerRoles {
-        return EnumBearerRoles.entries.find { enm -> hashString(enm.name.uppercase(), salt!!) == role }?:EnumBearerRoles.DEFAULT
+        return EnumBearerRoles.getFromName(role)
     }
 
     fun setNewPassword(newPass: String) {
         password = hashString(newPass, salt!!)
-    }
-
-    fun setNewRole(newRole: String) {
-        role = hashString(newRole, salt!!)
     }
 
     override fun toString(): String {

@@ -1,5 +1,6 @@
 package com.example.datamodel.clients
 
+import com.example.setToken
 import com.example.helpers.CommentField
 import com.example.currectDatetime
 import com.example.basemodel.BaseRepository
@@ -26,10 +27,8 @@ import com.example.security.AESEncryption
 import com.example.security.generateSalt
 import com.example.security.hashString
 import com.example.security.verifyPassword
-import io.ktor.http.Cookie
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
-import io.ktor.server.sessions.SameSite
 import io.ktor.util.date.GMTDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -104,13 +103,14 @@ data class Clients(
         params.checkings.add { CheckObj(it.login != null && repo_clients.isHaveDataField(Clients::login, it.login), EnumHttpCode.DUPLICATE, 203, "Клиент с указанным Логином уже существует") }
 
         params.onBeforeCompleted = { obj ->
+            val size = Clients().getSize()
             if (obj.lastName != null) obj.lastName = AESEncryption.encrypt(obj.lastName)
             if (obj.firstName != null) obj.firstName = AESEncryption.encrypt(obj.firstName)
             if (obj.patronymic != null) obj.patronymic = AESEncryption.encrypt(obj.patronymic)
             if (obj.email != null) obj.email = AESEncryption.encrypt(obj.email)
             if (obj.phone != null) obj.phone = AESEncryption.encrypt(obj.phone)
             if (obj.password != null) obj.setNewPassword(obj.password!!)
-            if (obj.role != null) obj.setNewRole(obj.role!!)
+            if (obj.role != null) obj.role = AESEncryption.encrypt(obj.role + "_" + size)
         }
 
         return params
@@ -167,18 +167,7 @@ data class Clients(
                 }
             }
 
-            call.response.cookies.append(
-                Cookie(
-                    name = "era_auth_token",
-                    value = token.token?:"",
-                    path = "/",
-                    domain = "api.salon-era.ru",
-                    httpOnly = true,
-                    secure = true,
-                    expires = GMTDate(token.dateExpired!!.toInstant(TimeZone.UTC).toEpochMilliseconds()),
-                    extensions = mapOf("SameSite" to SameSite.None)
-                )
-            )
+            call.response.setToken(token.token?:"", GMTDate(token.dateExpired!!.toInstant(TimeZone.UTC).toEpochMilliseconds()))
 
             return ResultResponse.Success(EnumHttpCode.COMPLETED, client)
         } catch (e: Exception) {
@@ -246,7 +235,10 @@ data class Clients(
         params.onBeforeCompleted = { obj ->
             Records.repo_records.clearLinkEqual(Records::id_client_from, obj.id)
             FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_client_from, obj.id)
-            Authentications.repo_authentications.clearLinkEqual(Authentications::clientId, obj.id, true)
+
+            val token = Authentications.getTokenFromClient(obj)
+            token?.delete()
+            Authentications.repo_authentications.deleteData(token)
         }
 
         return super.delete(call, params)
@@ -258,17 +250,13 @@ data class Clients(
                 new.putField("salt", finded.getField("salt"))
             }
             if (new.password != null) new.setNewPassword(new.password!!)
-            if (new.role != null) new.setNewRole(new.role!!)
+//            if (new.role != null) new.role = AESEncryption.encrypt(new.role + "_" + finded.id)
         }
         return super.update(call, params, serializer)
     }
 
     fun setNewPassword(newPass: String) {
         password = hashString(newPass, salt!!)
-    }
-
-    fun setNewRole(newRole: String) {
-        role = hashString(newRole, salt!!)
     }
 
     private fun generateShortClientPassword(allRecords: Long): String {

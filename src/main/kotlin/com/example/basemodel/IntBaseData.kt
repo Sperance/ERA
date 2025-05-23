@@ -98,8 +98,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
             if (result == null) ResultResponse.Success(EnumHttpCode.COMPLETED, "Column $columnName successfully added")
             else ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 400 to result))
         } catch (e: Exception) {
-            e.printStackTrace()
-            ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+            ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
         }
     }
 
@@ -114,8 +113,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
             if (result == null) ResultResponse.Success(EnumHttpCode.COMPLETED, "Column $columnName successfully deleted")
             else ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 400 to result))
         } catch (e: Exception) {
-            e.printStackTrace()
-            ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+            ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
         }
     }
 
@@ -143,8 +141,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, data)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
-                e.printStackTrace()
-                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
             }
         }
     }
@@ -200,8 +197,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, resultList as Collection<*>)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
-                e.printStackTrace()
-                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
             }
         }
     }
@@ -238,8 +234,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, data)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
-                e.printStackTrace()
-                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
             }
         }
     }
@@ -288,9 +283,8 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 ResultResponse.Success(EnumHttpCode.COMPLETED, "$currectObjClassName with id $id successfully deleted")
             } catch (e: Exception) {
                 tx.setRollbackOnly()
-                e.printStackTrace()
                 getRepository().resetData()
-                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
             }
         }
     }
@@ -374,8 +368,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, updated)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
-                e.printStackTrace()
-                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
             }
         }
     }
@@ -460,8 +453,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, resultArray)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
-                e.printStackTrace()
-                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
             }
         }
     }
@@ -570,9 +562,8 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, finishObject as Any)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
-                e.printStackTrace()
                 getRepository().resetData()
-                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
             }
         }
     }

@@ -2,13 +2,11 @@
 
 package com.example.datamodel.authentications
 
+import com.example.setToken
 import com.example.basemodel.ResultResponse
-import com.example.datamodel.clients.Clients
-import com.example.datamodel.employees.Employees
 import com.example.enums.EnumBearerRoles
 import com.example.enums.EnumHttpCode
 import com.example.generateMapError
-import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.JWT_AUTH_NAME
 import com.example.plugins.RoleAwareJWT
 import com.example.respond
@@ -73,29 +71,29 @@ suspend fun RoleAwareJWT?.checkAuthenticate(call: ApplicationCall, role: EnumBea
     if (this == null) {
         return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Principal RoleAwareJWT is null"))
     }
+    if (Authentications.repo_authentications.getRepositoryData().find { it.employee == this.employee && it.clientId == this.userId } == null) {
+        call.response.setToken("", 0)
+        return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 102 to "Dont find token in database"))
+    }
     if (this.employee) {
-        val findedEmployee = Employees.repo_employees.getDataFromId(this.userId)
-        if (findedEmployee == null) {
-            return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 102 to "Dont find Employee with id '${this.userId}'"))
+        if (this.role == null) {
+            return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 103 to "Dont find Role in token"))
         }
-        val roleFinded = findedEmployee.getRoleAsEnum()
-        if (roleFinded != null && roleFinded == EnumBearerRoles.DEFAULT) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 103 to "Current role don`t support system"))
+        if (this.role == EnumBearerRoles.DEFAULT) {
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 104 to "Current role don`t support system"))
         }
-        if (role != null && role.ordinal > roleFinded.ordinal) {
-            return ResultResponse.Error(EnumHttpCode.AUTHORISATION, generateMapError(call, 104 to "This method is blocked for the current role"))
+        if (role != null && role.ordinal > this.role.ordinal) {
+            return ResultResponse.Error(EnumHttpCode.AUTHORISATION, generateMapError(call, 105 to "This method is blocked for the current role"))
         }
     } else {
-        val findedClient = Clients.repo_clients.getDataFromId(this.userId)
-        if (findedClient == null) {
-            return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 105 to "Dont find Clients with id '${this.userId}'"))
+        if (this.role == null) {
+            return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 106 to "Dont find Role in token"))
         }
-        val roleFinded = findedClient.getRoleAsEnum()
-        if (roleFinded != null && roleFinded == EnumBearerRoles.DEFAULT) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 106 to "Current role don`t support system"))
+        if (this.role == EnumBearerRoles.DEFAULT) {
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 107 to "Current role don`t support system"))
         }
-        if (role != null && role.ordinal > roleFinded.ordinal) {
-            return ResultResponse.Error(EnumHttpCode.AUTHORISATION, generateMapError(call, 107 to "This method is blocked for the current role"))
+        if (role != null && role.ordinal > this.role.ordinal) {
+            return ResultResponse.Error(EnumHttpCode.AUTHORISATION, generateMapError(call, 108 to "This method is blocked for the current role"))
         }
     }
     return null

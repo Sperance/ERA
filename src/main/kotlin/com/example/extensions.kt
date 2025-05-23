@@ -6,12 +6,14 @@ import com.example.helpers.getField
 import com.example.helpers.putField
 import com.example.helpers.CommentField
 import com.example.logging.DailyLogger.printTextLog
+import io.ktor.http.Cookie
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.uri
+import io.ktor.server.response.ApplicationResponse
 import io.ktor.server.response.respond
-import io.ktor.server.util.toLocalDateTime
 import io.ktor.server.util.toZonedDateTime
+import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.InternalAPI
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -151,4 +153,28 @@ fun generateMapError(call: ApplicationCall, errorPair: Pair<Int, String>): Mutab
     map["errorUri"] = call.request.uri
     map["requestKey"] = call.response.headers["ERA-key"].toString()
     return map
+}
+
+fun ApplicationResponse.setToken(token: String, age: Int) {
+    cookies.append(Cookie(
+        name = "era_auth_token",
+        value = token,
+        path = "/",
+        httpOnly = true,
+        secure = true,
+        maxAge = age,
+        extensions = mapOf("SameSite" to "None"))
+    )
+}
+
+fun ApplicationResponse.setToken(token: String, dateExpired: GMTDate) {
+    cookies.append(Cookie(
+        name = "era_auth_token",
+        value = token,
+        path = "/",
+        httpOnly = true,
+        secure = true,
+        expires = dateExpired,
+        extensions = mapOf("SameSite" to "None"))
+    )
 }

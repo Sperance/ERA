@@ -2,6 +2,7 @@ package com.example.plugins
 
 import com.example.currectDatetime
 import com.example.datamodel.serverrequests.ServerRequests
+import com.example.helpers.AUTH_ERROR_KEY
 import com.example.logging.DailyLogger.printTextLog
 import io.ktor.server.application.*
 import org.slf4j.event.*
@@ -18,7 +19,14 @@ fun Application.configureCallLogging() {
             call.response.headers["ERA-key"] != null
         }
         format { call ->
-            val str = "Request: ${call.request.local.remoteAddress}::${call.request.httpMethod.value} ${call.request.path()} params: [${call.request.queryParameters.entries().joinToString()}] -> Response: ${call.response.status()}"
+
+            val errorMsg = if (call.attributes.contains(AUTH_ERROR_KEY)) {
+                call.attributes[AUTH_ERROR_KEY]
+            } else {
+                ""
+            }
+
+            val str = "Request: ${call.request.local.remoteAddress}::${call.request.httpMethod.value} ${call.request.path()} params: [${call.request.queryParameters.entries().joinToString()}] -> Response: ${call.response.status()} $errorMsg"
             printTextLog("[CallLogging] $str", false)
 
             if (call.response.headers["Answer-TimeStamp"] != null) ServerRequests.addServerRecord(call)

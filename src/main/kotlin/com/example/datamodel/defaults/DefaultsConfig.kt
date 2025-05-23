@@ -25,8 +25,8 @@ private suspend fun defaultEmployees() {
                 phone = AESEncryption.encrypt("999")
                 salt = generateSalt()
                 email = AESEncryption.encrypt("adm@adm.ru")
+                role = AESEncryption.encrypt(EnumBearerRoles.ADMIN.name + "_1")
                 setNewPassword("Password123.")
-                setNewRole(EnumBearerRoles.ADMIN.name)
             },
             Employees().apply {
                 firstName = AESEncryption.encrypt("Dmitriy")
@@ -35,8 +35,8 @@ private suspend fun defaultEmployees() {
                 phone = AESEncryption.encrypt("+79779999999")
                 salt = generateSalt()
                 email = AESEncryption.encrypt("mde@mde.ru")
-                setNewPassword("Ckjy32543254.")
-                setNewRole(EnumBearerRoles.ADMIN.name)
+                role = AESEncryption.encrypt(EnumBearerRoles.ADMIN.name + "_2")
+                setNewPassword("Eme12345678.")
             })
         )
         Employees.repo_employees.resetData()

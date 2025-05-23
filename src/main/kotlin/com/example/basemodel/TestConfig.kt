@@ -138,40 +138,6 @@ fun Application.configureTests() {
                     call.respond(HttpStatusCode.OK, "Hello $userId")
                 }
             }
-            route("/jwt") {
-                post("/login") {
-                    val username = call.receiveText()
-
-                    if (username.isBlank()) {
-                        call.respondText("Username must be set")
-                        return@post
-                    }
-
-                    val tokenDuration = (60).minutes
-
-                    // Здесь должна быть логика проверки пароля
-                    val token = JWT.create()
-                        .withAudience(JWT_AUDIENCE)
-                        .withIssuer(JWT_ISSUER)
-                        .withClaim("username", username)
-                        .withExpiresAt(Date(System.currentTimeMillis() + tokenDuration.inWholeMilliseconds))
-                        .sign(Algorithm.HMAC256(JWT_HMAC))
-
-                    call.response.cookies.append(
-                        Cookie(
-                            name = "era_auth_token",
-                            value = token,
-                            path = "/",
-                            httpOnly = true,
-                            secure = true,
-                            maxAge = tokenDuration.inWholeSeconds.toInt(),
-                            extensions = mapOf("SameSite" to "None")
-                        )
-                    )
-
-                    call.respondText("Logged in `$username` as $token")
-                }
-            }
         }
     }
 }

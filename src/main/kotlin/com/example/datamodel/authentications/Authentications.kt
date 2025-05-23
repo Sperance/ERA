@@ -14,6 +14,7 @@ import com.example.plugins.JWT_AUDIENCE
 import com.example.plugins.JWT_HMAC
 import com.example.plugins.JWT_ISSUER
 import com.example.plus
+import com.example.security.AESEncryption
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -60,7 +61,7 @@ data class Authentications(
         val repo_authentications = BaseRepository(Authentications())
 
         suspend fun createToken(client: Clients): Authentications {
-            printTextLog("[Authentications::createToken::Clients] Создаем токен для пользователя id ${client.id} type: ${client.role}")
+            printTextLog("[Authentications::createToken::Clients] Создаем токен для пользователя id ${client.id} type: ${client.role} encr: ${AESEncryption.decrypt(client.role)}")
             val role = EnumBearerRoles.getFromName(client.role)
             val tokenDuration = LocalDateTime.currectDatetime().plus(role.tokenDuration)
             val auth = Authentications(
@@ -77,7 +78,7 @@ data class Authentications(
         }
 
         suspend fun createToken(employee: Employees): Authentications {
-            printTextLog("[Authentications::createToken::Employees] Создаем токен для пользователя id ${employee.id} type: ${employee.role}")
+            printTextLog("[Authentications::createToken::Employees] Создаем токен для пользователя id ${employee.id} type: ${employee.role} encr: ${AESEncryption.decrypt(employee.role)}")
             val role = employee.getRoleAsEnum()
             val tokenDuration = LocalDateTime.currectDatetime().plus(role.tokenDuration)
             val auth = Authentications(

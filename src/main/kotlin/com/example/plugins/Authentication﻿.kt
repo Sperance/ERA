@@ -21,6 +21,8 @@ import com.example.datamodel.clients.Clients
 import com.example.datamodel.employees.Employees
 import com.example.enums.EnumBearerRoles
 import com.example.enums.EnumHttpCode
+import com.example.generateMapError
+import com.example.helpers.AUTH_ERROR_KEY
 import com.example.helpers.delete
 import com.example.helpers.update
 import com.example.logging.DailyLogger.printTextLog
@@ -49,6 +51,7 @@ const val JWT_AUTH_NAME = "auth-jwt-cookie"
 class RoleAwareJWT(
     payload: Payload,
     val userId: Int,
+    val role: EnumBearerRoles,
     val employee: Boolean
 ): JWTPayloadHolder(payload)
 
@@ -79,48 +82,57 @@ fun Application.configureAuthentication() {
                 val userid = credential.payload.getClaim("userId").toString()
                 if (userid.isBlank() || !userid.toIntPossible()) {
                     printTextLog("[Authentication::validate] 'userid' is null")
+                    attributes.put(AUTH_ERROR_KEY, "Token field 'userid' is null")
                     return@validate null
                 }
 
                 val isEmployee = credential.payload.getClaim("employee").toString().lowercase().toBooleanStrictOrNull()
                 if (isEmployee == null) {
                     printTextLog("[Authentication::validate] 'employee' is null")
+                    attributes.put(AUTH_ERROR_KEY, "Token field 'employee' is null")
                     return@validate null
                 }
 
-                printTextLog("[VALIDATE] userId: $userid employee: $isEmployee")
-
                 val findedId: Int
+                val role: EnumBearerRoles
                 if (isEmployee) {
                     val findedEmployee = Employees.repo_employees.getDataFromId(userid.toIntOrNull())
                     if (findedEmployee == null) {
                         printTextLog("[Authentication::validate] dont find Employee with id '$userid'")
+                        attributes.put(AUTH_ERROR_KEY, "Dont find Employee with id '$userid'")
                         return@validate null
                     }
-                    printTextLog("[VALIDATE] findedEmployee: $findedEmployee role: ${findedEmployee.role} enums: ${EnumBearerRoles.entries.joinToString { enm -> "${enm.name}: " + hashString(enm.name.uppercase(), findedEmployee.salt!!) }}")
                     findedId = findedEmployee.id
+                    role = findedEmployee.getRoleAsEnum()
                 } else {
                     val findedClient = Clients.repo_clients.getDataFromId(userid.toIntOrNull())
                     if (findedClient == null) {
                         printTextLog("[Authentication::validate] dont find Clients with id '$userid'")
+                        attributes.put(AUTH_ERROR_KEY, "Dont find Clients with id '$userid'")
                         return@validate null
                     }
-                    printTextLog("[VALIDATE] findedClient: $findedClient role: ${findedClient.role} enums: ${EnumBearerRoles.entries.joinToString { enm -> "${enm.name}: " + hashString(enm.name.uppercase(), findedClient.salt!!) }}")
                     findedId = findedClient.id
+                    role = findedClient.getRoleAsEnum()
                 }
 
                 if (credential.payload.audience.contains(JWT_AUDIENCE)) {
                     if (credential.payload.expiresAt.before(Date())) {
-                        printTextLog("[Authentication::validate] token expired at ${credential.payload.expiresAt}")
+                        printTextLog("[Authentication::validate] token is expired at ${credential.payload.expiresAt}")
+                        attributes.put(AUTH_ERROR_KEY, "Token is expired at ${credential.payload.expiresAt}")
                         return@validate null
                     }
-                    RoleAwareJWT(credential.payload, findedId, isEmployee)
+                    RoleAwareJWT(credential.payload, findedId, role, isEmployee)
                 } else {
                     null
                 }
             }
             challenge { _, _ ->
-                call.respond(ResultResponse.Error(EnumHttpCode.AUTHORISATION, mutableMapOf("error" to "Token is not valid or has expired")))
+                val errorMsg = if (call.attributes.contains(AUTH_ERROR_KEY)) {
+                    call.attributes[AUTH_ERROR_KEY]
+                } else {
+                    "Token is not valid or has expired"
+                }
+                call.respond(ResultResponse.Error(EnumHttpCode.AUTHORISATION, generateMapError(call, 401 to errorMsg)))
             }
             authHeader { call ->
                 val token = call.request.cookies["era_auth_token"]
