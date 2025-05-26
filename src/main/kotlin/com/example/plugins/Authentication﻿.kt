@@ -16,12 +16,14 @@ import io.ktor.server.auth.bearer
 import io.ktor.server.auth.jwt.jwt
 import com.example.basemodel.ResultResponse
 import com.example.currectDatetime
+import com.example.datamodel.authentications.Authentications.Companion.tbl_authentications
 import com.example.datamodel.clients.Clients
 import com.example.datamodel.employees.Employees
 import com.example.enums.EnumBearerRoles
 import com.example.enums.EnumHttpCode
 import com.example.generateMapError
 import com.example.helpers.AUTH_ERROR_KEY
+import com.example.helpers.getDataOne
 import com.example.helpers.update
 import com.example.logging.DailyLogger.printTextLog
 import com.example.respond
@@ -128,7 +130,6 @@ fun Application.configureAuthentication() {
         val cookieToken = call.request.cookies["era_auth_token"]
         val verify = verifyJwtToken(cookieToken)
         if (cookieToken != null && verify == null) {
-            hoursTaskScheduler.execute_clearUnusedTokens()
             call.respond(HttpStatusCode.Unauthorized)
             return@intercept
         }
@@ -139,7 +140,7 @@ fun Application.configureAuthentication() {
     }
 }
 
-suspend fun verifyJwtToken(token: String?): DecodedJWT? {
+fun verifyJwtToken(token: String?): DecodedJWT? {
     return try {
         if (token == null) return null
         val verifier = JWT.require(Algorithm.HMAC256(JWT_HMAC))
@@ -149,18 +150,6 @@ suspend fun verifyJwtToken(token: String?): DecodedJWT? {
 
         verifier.verify(token).takeIf {
             val result = it.expiresAt.after(Date())
-            if (result) {
-                var findedTokenInDB = Authentications.repo_authentications.getRepositoryData().find { repoToken -> repoToken.token == token  }
-                if (findedTokenInDB != null) {
-                    if (findedTokenInDB.dateExpired!! <= LocalDateTime.currectDatetime()) {
-                        printTextLog("[Authentication::verifyJwtToken] Token in database is expired $findedTokenInDB")
-                        return null
-                    }
-                    findedTokenInDB.dateUsed = LocalDateTime.currectDatetime()
-                    findedTokenInDB = findedTokenInDB.update("Authentication::verifyJwtToken")
-                    Authentications.repo_authentications.updateData(findedTokenInDB)
-                }
-            }
             result
         }
     } catch (e: TokenExpiredException) {

@@ -112,7 +112,7 @@ data class Records(
         return ResultResponse.Success(EnumHttpCode.COMPLETED, getFilledRecords().find { it.record?.id == id.toIntOrNull() })
     }
 
-    override suspend fun get(call: ApplicationCall, params: RequestParams<Records>): ResultResponse {
+    override suspend fun get(call: ApplicationCall): ResultResponse {
         return ResultResponse.Success(EnumHttpCode.COMPLETED, getFilledRecords())
     }
 

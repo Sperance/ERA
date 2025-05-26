@@ -27,11 +27,15 @@ fun Application.configureServices() {
             }
 
             get("/all") {
-                call.respond(Services().get(call, RequestParams()))
+                call.respond(Services().get(call))
+            }
+
+            get("/all/invalid") {
+                call.respond(Services().getInvalid(call))
             }
 
             get("/all/filter") {
-                call.respond(Services().getFilter(call, RequestParams()))
+                call.respond(Services().getFilter(call))
             }
 
             post("/update") {

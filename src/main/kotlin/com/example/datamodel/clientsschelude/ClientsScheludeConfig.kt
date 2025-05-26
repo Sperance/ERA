@@ -27,11 +27,15 @@ fun Application.configureClientsSchelude() {
             }
 
             get("/all") {
-                call.respond(ClientsSchelude().get(call, RequestParams()))
+                call.respond(ClientsSchelude().get(call))
+            }
+
+            get("/all/invalid") {
+                call.respond(ClientsSchelude().getInvalid(call))
             }
 
             get("/all/filter") {
-                call.respond(ClientsSchelude().getFilter(call, RequestParams()))
+                call.respond(ClientsSchelude().getFilter(call))
             }
 
             post("/update") {

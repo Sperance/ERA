@@ -110,28 +110,10 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
         }
     }
 
-    open suspend fun get(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
+    open suspend fun get(call: ApplicationCall): ResultResponse {
         return db.withTransaction { tx ->
             try {
-                params.checkings.forEach { check ->
-                    val res = check.invoke(this as T)
-                    if (res.result) {
-                        tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
-                    }
-                }
-
-                params.defaults.forEach { def ->
-                    val res = def.invoke(this as T)
-                    val property = res.first as KMutableProperty0<Any?>
-                    if (!property.get().isAllNullOrEmpty()) return@forEach
-                    val value = res.second
-                    property.set(value)
-                }
-
-                val data = getRepository().getRepositoryData()
-
-                return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, data)
+                return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, getRepository().getRepositoryData())
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
@@ -139,7 +121,18 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
         }
     }
 
-    open suspend fun getFilter(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
+    open suspend fun getInvalid(call: ApplicationCall): ResultResponse {
+        return db.withTransaction { tx ->
+            try {
+                return@withTransaction ResultResponse.Success(EnumHttpCode.COMPLETED, getRepository().getRepositoryData().filter { !it.isValidLine() })
+            } catch (e: Exception) {
+                tx.setRollbackOnly()
+                return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
+            }
+        }
+    }
+
+    open suspend fun getFilter(call: ApplicationCall): ResultResponse {
         return db.withTransaction { tx ->
             try {
                 val field = call.parameters["field"]
@@ -169,21 +162,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 if (stateEnum == null) {
                     tx.setRollbackOnly()
                     return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 105 to "Incorrect parameter 'state'(${state}). This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"))
-                }
-
-                params.checkings.forEach { check ->
-                    val res = check.invoke(this as T)
-                    if (res.result) {
-                        tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(res.errorHttp, generateMapError(call, res.errorCode to res.errorText))
-                    }
-                }
-
-                params.defaults.forEach { def ->
-                    val res = def.invoke(this as T)
-                    val property = res.first as KMutableProperty0<Any?>
-                    if (!property.get().isAllNullOrEmpty()) return@forEach
-                    property.set(res.second)
                 }
 
                 val resultList = getRepository().getDataFilter(field, stateEnum, value)
@@ -291,14 +269,17 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 val currectObjClassName = this::class.simpleName!!
                 var fileName: String? = null
                 var fileBytes: ByteArray? = null
+                var countFiles = 0
 
                 multipartData.forEachPart { part ->
                     when (part) {
                         is PartData.FormItem -> {
                             newObject = Json.decodeFromString(serializer, part.value)
+                            printTextLog("[${this::class.simpleName}::update] $newObject")
                         }
 
                         is PartData.FileItem -> {
+                            countFiles++
                             fileName = part.originalFileName
                             fileBytes = part.provider().toByteArray()
                         }
@@ -307,13 +288,17 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                         is PartData.BinaryItem -> {}
                     }
                 }
+                if (countFiles > 1) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 101 to "Обнаружено несколько файлов($countFiles). Сервер не поддерживает обработку более 1 файла за раз"))
+                }
                 if (params.isNeedFile && fileBytes == null) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Для объекта $currectObjClassName ожидался файл, который не был получен"))
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Для объекта $currectObjClassName ожидался файл, который не был получен"))
                 }
                 if (newObject == null) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Не удалось создать объект $currectObjClassName по входящему JSON"))
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 103 to "Не удалось создать объект $currectObjClassName по входящему JSON"))
                 }
                 params.checkings.forEach { check ->
                     val res = check.invoke(newObject!!)
@@ -332,12 +317,12 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 val findedObj = getRepository().getDataFromId(newObject?.id)
                 if (findedObj == null) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 103 to "Not found $currectObjClassName with id ${newObject?.id}"))
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 104 to "Not found $currectObjClassName with id ${newObject?.id}"))
                 }
                 if (fileBytes != null) {
                     if (!newObject!!.isHaveImageFields()) {
                         tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 104 to "Для сущности $currectObjClassName не реализованы поля хранения файлов"))
+                        return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 105 to "Для сущности $currectObjClassName не реализованы поля хранения файлов"))
                     }
                     saveImageToFields(newObject, fileBytes, fileName?.substringAfterLast("."))
                 }
@@ -363,16 +348,24 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
             try {
                 val multipartData = call.receiveMultipart()
                 var jsonString = ""
+                var fileCount = 0
                 multipartData.forEachPart { part ->
                     when (part) {
                         is PartData.FormItem -> {
                             jsonString = part.value
                         }
 
-                        is PartData.FileItem -> {}
+                        is PartData.FileItem -> {
+                            fileCount++
+                        }
                         is PartData.BinaryChannelItem -> {}
                         is PartData.BinaryItem -> {}
                     }
+                }
+
+                if (fileCount > 0) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 101 to "Метод не предполагает работы с файлами. Передано файлов: $fileCount"))
                 }
 
                 val currectObjClassName = this::class.simpleName!!
@@ -380,7 +373,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
 
                 if (newObject.isEmpty()) {
                     tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Не удалось создать массив объектов $currectObjClassName по входящему JSON"))
+                    return@withTransaction ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Не удалось создать массив объектов $currectObjClassName по входящему JSON"))
                 }
 
                 params.checkings.forEach { check ->
@@ -411,7 +404,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     val findedObj = getDataOne({ auProp eq item.id as Int? })
                     if (findedObj == null) {
                         tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 102 to "Not found $currectObjClassName with id ${item.id}"))
+                        return@withTransaction ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 103 to "Not found $currectObjClassName with id ${item.id}"))
                     }
 
                     params.checkOnUpdate?.invoke(findedObj as T, item)

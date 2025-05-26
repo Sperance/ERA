@@ -4,9 +4,14 @@ package com.example.datamodel.authentications
 
 import com.example.setToken
 import com.example.basemodel.ResultResponse
+import com.example.currectDatetime
+import com.example.datamodel.authentications.Authentications.Companion.tbl_authentications
 import com.example.enums.EnumBearerRoles
 import com.example.enums.EnumHttpCode
 import com.example.generateMapError
+import com.example.helpers.getDataOne
+import com.example.helpers.update
+import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.JWT_AUTH_NAME
 import com.example.plugins.RoleAwareJWT
 import com.example.respond
@@ -19,6 +24,7 @@ import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.util.date.GMTDate
+import kotlinx.datetime.LocalDateTime
 
 fun Route.secureGet(path: String, role: EnumBearerRoles? = null, body: suspend RoutingContext.(userId: Int) -> Unit) {
     authenticate(JWT_AUTH_NAME) {
@@ -72,30 +78,41 @@ suspend fun RoleAwareJWT?.checkAuthenticate(call: ApplicationCall, role: EnumBea
     if (this == null) {
         return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Principal RoleAwareJWT is null"))
     }
-    if (Authentications.repo_authentications.getRepositoryData().find { it.employee == this.employee && it.clientId == this.userId } == null) {
+
+    val findedToken = Authentications().getDataOne({ tbl_authentications.employee eq this@checkAuthenticate.employee ; tbl_authentications.clientId eq this@checkAuthenticate.userId })
+    if (findedToken == null) {
         call.response.setToken("", GMTDate())
-        return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 102 to "Dont find token in database"))
+        return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 102 to "The token cannot be found in the database. Please log in again."))
     }
+
+    if (findedToken.dateExpired!! <= LocalDateTime.currectDatetime()) {
+        call.response.setToken("", GMTDate())
+        return ResultResponse.Error(EnumHttpCode.AUTHORISATION, generateMapError(call, 103 to "Token in database is expired. Please log in again."))
+    }
+
     if (this.employee) {
         if (this.role == null) {
-            return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 103 to "Dont find Role in token"))
+            return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 110 to "Dont find Role in token"))
         }
         if (this.role == EnumBearerRoles.DEFAULT) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 104 to "Current role don`t support system"))
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 111 to "Current role don`t support system"))
         }
         if (role != null && role.ordinal > this.role.ordinal) {
-            return ResultResponse.Error(EnumHttpCode.AUTHORISATION, generateMapError(call, 105 to "This method is blocked for the current role"))
+            return ResultResponse.Error(EnumHttpCode.AUTHORISATION, generateMapError(call, 112 to "This method is blocked for the current role"))
         }
     } else {
         if (this.role == null) {
-            return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 106 to "Dont find Role in token"))
+            return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 120 to "Dont find Role in token"))
         }
         if (this.role == EnumBearerRoles.DEFAULT) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 107 to "Current role don`t support system"))
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 121 to "Current role don`t support system"))
         }
         if (role != null && role.ordinal > this.role.ordinal) {
-            return ResultResponse.Error(EnumHttpCode.AUTHORISATION, generateMapError(call, 108 to "This method is blocked for the current role"))
+            return ResultResponse.Error(EnumHttpCode.AUTHORISATION, generateMapError(call, 122 to "This method is blocked for the current role"))
         }
     }
+
+    findedToken.dateUsed = LocalDateTime.currectDatetime()
+    findedToken.update("RoleAwareJWT::checkAuthenticate")
     return null
 }

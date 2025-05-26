@@ -26,11 +26,15 @@ fun Application.configureNews() {
             }
 
             get("/all") {
-                call.respond(News().get(call, RequestParams()))
+                call.respond(News().get(call))
+            }
+
+            get("/all/invalid") {
+                call.respond(News().getInvalid(call))
             }
 
             get("/all/filter") {
-                call.respond(News().getFilter(call, RequestParams()))
+                call.respond(News().getFilter(call))
             }
 
             post("/update") {

@@ -151,14 +151,12 @@ data class Clients(
             var token = Authentications.getTokenFromClient(client)
             printTextLog("[Clients::auth] token: $token")
             if (token == null) {
-                token = Authentications.createToken(client)
+                token = Authentications.createToken(client.id, false, client.getRoleAsEnum(), call)
             } else {
                 if (token.isExpires()) {
                     printTextLog("[Clients] Токен просрочен. Удаляем и создаём новый")
-                    val deleteId = token.id
                     token.delete()
-                    Authentications.repo_authentications.deleteData(deleteId)
-                    token = Authentications.createToken(client)
+                    token = Authentications.createToken(client.id, false, client.getRoleAsEnum(), call)
                 }
             }
 
@@ -233,7 +231,7 @@ data class Clients(
 
             val token = Authentications.getTokenFromClient(obj)
             token?.delete()
-            Authentications.repo_authentications.deleteData(token)
+            true
         }
 
         return super.delete(call, params)

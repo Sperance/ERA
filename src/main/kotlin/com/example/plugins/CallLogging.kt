@@ -23,7 +23,7 @@ fun Application.configureCallLogging() {
             val errorMsg = if (call.attributes.contains(AUTH_ERROR_KEY)) {
                 call.attributes[AUTH_ERROR_KEY]
             } else {
-                ""
+                call.response.headers["Answer-Error"]
             }
 
             val str = "Request: ${call.request.local.remoteAddress}::${call.request.httpMethod.value} ${call.request.path()} params: [${call.request.queryParameters.entries().joinToString()}] -> Response: ${call.response.status()} $errorMsg"

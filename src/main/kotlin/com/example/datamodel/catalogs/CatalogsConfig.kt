@@ -31,26 +31,22 @@ fun Application.configureCatalogs() {
             }
 
             get("/all") {
-                call.respond(Catalogs().get(call, RequestParams()))
+                call.respond(Catalogs().get(call))
+            }
+
+            get("/all/invalid") {
+                call.respond(Catalogs().getInvalid(call))
             }
 
             get("/all/filter") {
-                call.respond(Catalogs().getFilter(call, RequestParams()))
+                call.respond(Catalogs().getFilter(call))
             }
 
             securePost("/update", EnumBearerRoles.USER) {
                 call.respond(Catalogs().update(call, RequestParams(), Catalogs.serializer()))
             }
 
-            securePost("/addColumn", EnumBearerRoles.MODERATOR) {
-                call.respond(Catalogs().addColumn(call))
-            }
-
-            securePost("/delColumn", EnumBearerRoles.MODERATOR) {
-                call.respond(Catalogs().delColumn(call))
-            }
-
-            securePost("", EnumBearerRoles.USER) {
+            securePost("", EnumBearerRoles.MODERATOR) {
                 call.respond(Catalogs().post(call, RequestParams(), ListSerializer(Catalogs.serializer())))
             }
 

@@ -27,11 +27,15 @@ fun Application.configureFeedbacks() {
             }
 
             get("/all") {
-                call.respond(FeedBacks().get(call, RequestParams()))
+                call.respond(FeedBacks().get(call))
+            }
+
+            get("/all/invalid") {
+                call.respond(FeedBacks().getInvalid(call))
             }
 
             get("/all/filter") {
-                call.respond(FeedBacks().getFilter(call, RequestParams()))
+                call.respond(FeedBacks().getFilter(call))
             }
 
             post("/update") {

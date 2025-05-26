@@ -1,6 +1,5 @@
 package com.example.datamodel.clients
 
-import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
 import com.example.enums.EnumHttpCode
@@ -26,11 +25,15 @@ fun Application.configureClients() {
             }
 
             get("/all") {
-                call.respond(Clients().get(call, RequestParams()))
+                call.respond(Clients().get(call))
+            }
+
+            get("/all/invalid") {
+                call.respond(Clients().getInvalid(call))
             }
 
             get("/all/filter") {
-                call.respond(Clients().getFilter(call, RequestParams()))
+                call.respond(Clients().getFilter(call))
             }
 
             get("/id") {

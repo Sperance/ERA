@@ -176,7 +176,6 @@ data class Employees(
             if (new.role != null && EnumBearerRoles.getFromNameOrNull(finded.role) != EnumBearerRoles.getFromNameOrNull(new.role)) {
                 val token = Authentications.getTokenFromEmployee(finded)
                 token?.delete()
-                Authentications.repo_authentications.deleteData(token)
             }
         }
         return super.update(call, params, serializer)
@@ -190,10 +189,24 @@ data class Employees(
 
             val token = Authentications.getTokenFromEmployee(obj)
             token?.delete()
-            Authentications.repo_authentications.deleteData(token)
+            true
         }
 
         return super.delete(call, params)
+    }
+
+    suspend fun getByRole(call: ApplicationCall): ResultResponse {
+        try {
+            val _role = call.parameters["role"]
+
+            if (_role.isNullOrEmpty()) return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'role'. This parameter must be 'String' type"))
+            val role = EnumBearerRoles.getFromNameOrNull(_role.uppercase())
+            if (role == null) return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 102 to "Dont find role with name $_role"))
+
+            return ResultResponse.Success(EnumHttpCode.COMPLETED, repo_employees.getRepositoryData().filter { it.getRoleAsEnum() == role })
+        } catch (e: Exception) {
+            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+        }
     }
 
     suspend fun auth(call: ApplicationCall): ResultResponse {
@@ -213,14 +226,12 @@ data class Employees(
             var token = Authentications.getTokenFromEmployee(employee)
             printTextLog("[Employees::auth] token: $token")
             if (token == null) {
-                token = Authentications.createToken(employee)
+                token = Authentications.createToken(employee.id, true, employee.getRoleAsEnum(), call)
             } else {
                 if (token.isExpires()) {
                     printTextLog("[Employees] Токен просрочен. Удаляем и создаём новый")
-                    val deleteId = token.id
                     token.delete()
-                    Authentications.repo_authentications.deleteData(deleteId)
-                    token = Authentications.createToken(employee)
+                    token = Authentications.createToken(employee.id, true, employee.getRoleAsEnum(), call)
                 }
             }
 

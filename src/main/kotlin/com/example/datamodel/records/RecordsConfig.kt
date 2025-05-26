@@ -26,11 +26,15 @@ fun Application.configureRecords() {
             }
 
             get("/all") {
-                call.respond(Records().get(call, RequestParams()))
+                call.respond(Records().get(call))
+            }
+
+            get("/all/invalid") {
+                call.respond(Records().getInvalid(call))
             }
 
             get("/all/filter") {
-                call.respond(Records().getFilter(call, RequestParams()))
+                call.respond(Records().getFilter(call))
             }
 
             get("/id") {

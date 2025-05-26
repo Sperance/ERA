@@ -1,8 +1,5 @@
 package com.example.basemodel
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
-import com.example.currectDatetime
 import com.example.datamodel.authentications.Authentications
 import com.example.datamodel.authentications.secureGet
 import com.example.datamodel.authentications.securePost
@@ -12,23 +9,15 @@ import com.example.enums.EnumHttpCode
 import com.example.enums.EnumSQLTypes
 import com.example.minus
 import com.example.helpers.GMailSender
+import com.example.helpers.clearTable
 import com.example.helpers.executeAddColumn
 import com.example.helpers.executeDelColumn
-import com.example.plugins.JWT_AUDIENCE
-import com.example.plugins.JWT_HMAC
-import com.example.plugins.JWT_ISSUER
-import com.example.plugins.RoleAwareJWT
 import com.example.plus
 import com.example.respond
 import com.example.toIntPossible
-import io.ktor.http.Cookie
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.principal
-import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
-import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
@@ -37,7 +26,6 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
-import java.util.Date
 import kotlin.time.Duration.Companion.minutes
 
 fun Application.configureTests() {
@@ -52,7 +40,7 @@ fun Application.configureTests() {
                 call.respond(HttpStatusCode.OK, res?:"")
             }
             get("/authentications/clearTable") {
-                Authentications.repo_authentications.clearTable()
+                Authentications().clearTable()
                 call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, "Таблица успешно очищена"))
             }
             post ("/emailMessage") {

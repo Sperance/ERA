@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "com.example"
-version = "1.8.2"
+version = "1.8.3"
 
 application {
     mainClass.set("com.example.ApplicationKt")

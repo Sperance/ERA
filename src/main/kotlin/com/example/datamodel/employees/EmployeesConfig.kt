@@ -29,15 +29,23 @@ fun Application.configureEmployees() {
             }
 
             get("/all") {
-                call.respond(Employees().get(call, RequestParams()))
+                call.respond(Employees().get(call))
+            }
+
+            get("/all/invalid") {
+                call.respond(Employees().getInvalid(call))
             }
 
             get("/all/filter") {
-                call.respond(Employees().getFilter(call, RequestParams()))
+                call.respond(Employees().getFilter(call))
             }
 
             get("/id") {
                 call.respond(Employees().getFromId(call, RequestParams()))
+            }
+
+            get("/role") {
+                call.respond(Employees().getByRole(call))
             }
 
             get("/slots/{id}/{data}") {

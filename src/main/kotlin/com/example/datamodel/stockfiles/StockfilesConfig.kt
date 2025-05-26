@@ -27,11 +27,15 @@ fun Application.configureStockfiles() {
             }
 
             get("/all") {
-                call.respond(Stockfiles().get(call, RequestParams()))
+                call.respond(Stockfiles().get(call))
+            }
+
+            get("/all/invalid") {
+                call.respond(Stockfiles().getInvalid(call))
             }
 
             get("/all/filter") {
-                call.respond(Stockfiles().getFilter(call, RequestParams()))
+                call.respond(Stockfiles().getFilter(call))
             }
 
             post("/update") {
