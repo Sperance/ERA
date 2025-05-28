@@ -2,9 +2,12 @@ package com.example.datamodel.clients
 
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
-import com.example.enums.EnumHttpCode
+import com.example.datamodel.catalogs.Catalogs
+import com.example.datamodel.catalogs.CatalogsErrors
+import com.example.logObjectProperties
 import com.example.respond
 import io.ktor.server.application.Application
+import io.ktor.server.response.respond
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -16,12 +19,16 @@ fun Application.configureClients() {
     routing {
         route("/clients") {
             get("/structure") {
-                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, Clients().getCommentArray()))
+                call.respond(ResultResponse.Success(Clients().getCommentArray()))
             }
 
             get("/clearTable") {
                 Clients.repo_clients.clearTable()
-                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, "Таблица успешно очищена"))
+                call.respond(ResultResponse.Success("Таблица успешно очищена"))
+            }
+
+            get("/errors") {
+                call.respond(logObjectProperties(ClientsErrors, Clients()))
             }
 
             get("/all") {

@@ -50,6 +50,12 @@ data class ServerRequests(
         private val array_requests = ArrayList<ServerRequests>()
 
         fun addServerRecord(call: ApplicationCall) {
+
+            var answer_error = call.response.headers["Answer-Error"]
+            if (answer_error != null && answer_error.length > 499) {
+                answer_error = answer_error.substring(0, 490)
+            }
+
             val request = ServerRequests(
                 url = call.request.path(),
                 clientUrl = "${call.request.local.remoteAddress}::${call.request.httpMethod.value}",
@@ -57,7 +63,7 @@ data class ServerRequests(
                 code = call.response.status()?.value?:0,
                 dateInRequest = call.response.headers["Request-TimeStamp"]?.toLocalDateTime(),
                 dateOutRequest = call.response.headers["Answer-TimeStamp"]?.toLocalDateTime(),
-                errorMessage = call.response.headers["Answer-Error"]
+                errorMessage = answer_error
             )
             array_requests.add(request)
         }

@@ -3,15 +3,11 @@ package com.example.datamodel.services
 import com.example.helpers.CommentField
 import com.example.currectDatetime
 import com.example.basemodel.BaseRepository
-import com.example.basemodel.CheckObj
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
-import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.records.Records
 import com.example.datamodel.stockfiles.Stockfiles
-import com.example.enums.EnumHttpCode
-import com.example.isNullOrZero
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -24,7 +20,6 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
-import org.komapper.core.dsl.metamodel.EntityMetamodel
 
 /**
  * Список услуг.
@@ -75,12 +70,12 @@ data class Services(
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Services>, serializer: KSerializer<List<Services>>): ResultResponse {
-        params.checkings.add { CheckObj(it.name.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Наименование услуги") }
-        params.checkings.add { CheckObj(it.priceLow.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Минимальную стоимость услуги") }
-        params.checkings.add { CheckObj(it.duration.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать Продолжительность услуги (не может быть 0)") }
-        params.checkings.add { CheckObj(it.category.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 304, "Необходимо указать Продолжительность услуги (не может быть 0)") }
-        params.checkings.add { CheckObj((it.priceMax != null) && (it.priceMax!! < it.priceLow!!), EnumHttpCode.INCORRECT_PARAMETER, 305, "Максимальная стоимость услуги(${it.priceMax}) не может быть меньше минимальной(${it.priceLow})") }
-        params.checkings.add { CheckObj(!Catalogs.repo_catalogs.isHaveData(it.category), EnumHttpCode.NOT_FOUND, 306, "Не найдена Категория с id ${it.category}") }
+        params.checkings.add { ServicesErrors.ERROR_NAME.toCheckObj(it) }
+        params.checkings.add { ServicesErrors.ERROR_PRICELOW.toCheckObj(it) }
+        params.checkings.add { ServicesErrors.ERROR_DURATION.toCheckObj(it) }
+        params.checkings.add { ServicesErrors.ERROR_CATEGORY.toCheckObj(it) }
+        params.checkings.add { ServicesErrors.ERROR_PRICELOWMAX_NOTNULL.toCheckObj(it) }
+        params.checkings.add { ServicesErrors.ERROR_CATEGORY_DUPLICATE.toCheckObj(it) }
 
         params.defaults.add { it::gender to -1 }
 
@@ -88,8 +83,8 @@ data class Services(
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Services>, serializer: KSerializer<Services>): ResultResponse {
-        params.checkings.add { CheckObj((it.priceLow != null && it.priceMax != null) && (it.priceMax!! < it.priceLow!!), EnumHttpCode.INCORRECT_PARAMETER, 301, "Максимальная стоимость услуги(${it.priceMax}) не может быть меньше минимальной(${it.priceLow})") }
-        params.checkings.add { CheckObj(it.category != null && !Catalogs.repo_catalogs.isHaveData(it.category), EnumHttpCode.NOT_FOUND, 302, "Не найдена Категория с id ${it.category}") }
+        params.checkings.add { ServicesErrors.ERROR_PRICELOWMAX_NOTNULL.toCheckObj(it) }
+        params.checkings.add { ServicesErrors.ERROR_CATEGORY_DUPLICATE_NOTNULL.toCheckObj(it) }
 
         return super.update(call, params, serializer)
     }

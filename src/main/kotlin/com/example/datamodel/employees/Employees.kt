@@ -2,21 +2,18 @@ package com.example.datamodel.employees
 
 import com.example.setToken
 import com.example.basemodel.BaseRepository
-import com.example.basemodel.CheckObj
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
 import com.example.currectDatetime
 import com.example.currentZeroDate
 import com.example.datamodel.authentications.Authentications
-import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.clientsschelude.ClientsSchelude
 import com.example.datamodel.feedbacks.FeedBacks
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.services.Services.Companion.repo_services
 import com.example.enums.EnumBearerRoles
-import com.example.enums.EnumHttpCode
 import com.example.generateMapError
 import com.example.helpers.CommentField
 import com.example.helpers.delete
@@ -25,7 +22,6 @@ import com.example.helpers.getField
 import com.example.helpers.getSize
 import com.example.helpers.haveField
 import com.example.helpers.putField
-import com.example.isNullOrZero
 import com.example.logging.DailyLogger.printTextLog
 import com.example.minus
 import com.example.plus
@@ -118,21 +114,20 @@ data class Employees(
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Employees>, serializer: KSerializer<List<Employees>>): ResultResponse {
-        params.checkings.add { CheckObj(it.firstName.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Имя") }
-        params.checkings.add { CheckObj(it.lastName.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Фамилию") }
-        params.checkings.add { CheckObj(it.phone.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать Телефон") }
-        params.checkings.add { CheckObj(it.email.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 304, "Необходимо указать Email") }
-        params.checkings.add { CheckObj(it.gender.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 305, "Необходимо указать Пол") }
-        params.checkings.add { CheckObj(it.login.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 306, "Необходимо указать login") }
-        params.checkings.add { CheckObj(it.role.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 307, "Необходимо указать Роль") }
-        params.checkings.add { CheckObj(repo_employees.isHaveDataField(Employees::phone, it.phone), EnumHttpCode.DUPLICATE, 308, "Сотрудник с указанным Номером телефона уже существует") }
-        params.checkings.add { CheckObj(repo_employees.isHaveDataField(Employees::email, it.email), EnumHttpCode.DUPLICATE, 309, "Сотрудник с указанным Почтовым адресом уже существует") }
-        params.checkings.add { CheckObj(repo_employees.isHaveDataField(Employees::login, it.login), EnumHttpCode.DUPLICATE, 310, "Сотрудник с указанным Логином уже существует") }
-        params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), EnumHttpCode.NOT_FOUND, 311, "Не найдена Должность с id ${it.position}") }
-        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), EnumHttpCode.NOT_FOUND, 312, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
-        params.checkings.add { CheckObj(it.salt != null, EnumHttpCode.BAD_REQUEST, 313, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
-        params.checkings.add { CheckObj(repo_employees.isHaveDataField(Employees::login, it.login), EnumHttpCode.DUPLICATE, 314, "Сотрудник с указанным Логином уже существует") }
-        params.checkings.add { CheckObj(EnumBearerRoles.getFromNameOrNull(it.role) == null, EnumHttpCode.INCORRECT_PARAMETER, 315, "Роль Сотрудника 'role - ${it.role}' не соответствует одному из доступных: ${EnumBearerRoles.entries.joinToString { role -> role.name }}") }
+        params.checkings.add { EmployeesErrors.ERROR_FIRSTNAME.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_LASTNAME.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_PHONE.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_EMAIL.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_GENDER.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_LOGIN.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_ROLE.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_PHONE_DUPLICATE.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_EMAIL_DUPLICATE.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_LOGIN_DUPLICATE.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_POSITION_DUPLICATE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_ARRAYTYPEWORK_DUPLICATE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_SALT_NOTNULL.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_ROLE_ENUM.toCheckObj(it) }
 
         params.onBeforeCompleted = { obj ->
             val size = Employees().getSize()
@@ -151,11 +146,13 @@ data class Employees(
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Employees>, serializer: KSerializer<Employees>): ResultResponse {
-        params.checkings.add { CheckObj(it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position), EnumHttpCode.NOT_FOUND, 301, "Не найдена Должность с id ${it.position}") }
-        params.checkings.add { CheckObj(it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()), EnumHttpCode.NOT_FOUND, 302, "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}") }
-        params.checkings.add { CheckObj(it.salt != null, EnumHttpCode.BAD_REQUEST, 303, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
-        params.checkings.add { CheckObj(it.login != null && repo_employees.isHaveDataField(Employees::login, it.login), EnumHttpCode.DUPLICATE, 304, "Сотрудник с указанным Логином уже существует") }
-        params.checkings.add { CheckObj(it.role != null && EnumBearerRoles.getFromNameOrNull(it.role) == null, EnumHttpCode.INCORRECT_PARAMETER, 305, "Роль Сотрудника 'role - ${it.role}' не соответствует одному из доступных: ${EnumBearerRoles.entries.joinToString { role -> role.name }}") }
+        params.checkings.add { EmployeesErrors.ERROR_POSITION_DUPLICATE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_ARRAYTYPEWORK_DUPLICATE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_SALT_NOTNULL.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_LOGIN_NOTNULL.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_ROLE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_PHONE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_EMAIL_DUPLICATE_NOTNULL.toCheckObj(it) }
 
         params.onBeforeCompleted = { obj ->
             val size = Employees().getSize()
@@ -174,6 +171,7 @@ data class Employees(
             }
             if (new.password != null) new.setNewPassword(new.password!!)
             if (new.role != null && EnumBearerRoles.getFromNameOrNull(finded.role) != EnumBearerRoles.getFromNameOrNull(new.role)) {
+                printTextLog("[Employees::update] Обновление Роли у сотрудника id: ${finded.id} логин: ${finded.login}")
                 val token = Authentications.getTokenFromEmployee(finded)
                 token?.delete()
             }
@@ -199,13 +197,13 @@ data class Employees(
         try {
             val _role = call.parameters["role"]
 
-            if (_role.isNullOrEmpty()) return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'role'. This parameter must be 'String' type"))
+            if (_role.isNullOrEmpty()) return EmployeesErrors.ERROR_ROLE.toResultResponse(call, this)
             val role = EnumBearerRoles.getFromNameOrNull(_role.uppercase())
-            if (role == null) return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 102 to "Dont find role with name $_role"))
+            if (role == null) return EmployeesErrors.ERROR_ROLE_ENUM.toResultResponse(call, this)
 
-            return ResultResponse.Success(EnumHttpCode.COMPLETED, repo_employees.getRepositoryData().filter { it.getRoleAsEnum() == role })
+            return ResultResponse.Success(repo_employees.getRepositoryData().filter { it.getRoleAsEnum() == role })
         } catch (e: Exception) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+            return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage))
         }
     }
 
@@ -214,14 +212,14 @@ data class Employees(
             val user = call.receive<Employees>()
 
             if (user.login.isNullOrEmpty())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Необходимо указать Логин(login)"))
+                return EmployeesErrors.ERROR_LOGIN.toResultResponse(call, this)
 
             if (user.password.isNullOrEmpty())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Необходимо указать Пароль(password)"))
+                return EmployeesErrors.ERROR_PASSWORD.toResultResponse(call, this)
 
             val employee = repo_employees.getRepositoryData().find { it.login?.lowercase() == user.login?.lowercase() && verifyPassword(it.password, it.salt, user.password) }
             if (employee == null)
-                return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 103 to "Не найден сотрудник с указанным Логином и Паролем"))
+                return EmployeesErrors.ERROR_LOGINPASSWORD.toResultResponse(call, this)
 
             var token = Authentications.getTokenFromEmployee(employee)
             printTextLog("[Employees::auth] token: $token")
@@ -237,10 +235,10 @@ data class Employees(
 
             call.response.setToken(token.token?:"", GMTDate(token.dateExpired!!.toInstant(TimeZone.UTC).toEpochMilliseconds()))
 
-            return ResultResponse.Success(EnumHttpCode.COMPLETED, employee)
+            return ResultResponse.Success(employee)
         } catch (e: Exception) {
             e.printStackTrace()
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+            return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage))
         }
     }
 
@@ -287,12 +285,12 @@ data class Employees(
             val _clientId = call.parameters["clientId"]
             val _servceLength = call.parameters["servceLength"]
 
-            if (_clientId == null || !_clientId.toIntPossible()) return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'clientId'($_clientId). This parameter must be 'Int' type"))
-            if (_servceLength == null || !_servceLength.toIntPossible()) return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Incorrect parameter 'servceLength'($_servceLength). This parameter must be 'Int' type"))
+            if (_clientId == null || !_clientId.toIntPossible()) return EmployeesErrors.ERROR_CLIENTID_PARAMETER.toResultResponse(call, this)
+            if (_servceLength == null || !_servceLength.toIntPossible()) return EmployeesErrors.ERROR_SERVICELENGTH_PARAMETER.toResultResponse(call, this)
 
-            return ResultResponse.Success(EnumHttpCode.COMPLETED, _getTimeSlots(_clientId.toInt(), _servceLength.toInt()))
+            return ResultResponse.Success(_getTimeSlots(_clientId.toInt(), _servceLength.toInt()))
         } catch (e: Exception) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+            return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage))
         }
     }
 
@@ -302,11 +300,11 @@ data class Employees(
             val _data = call.parameters["data"]
 
             if (_id == null || !_id.toIntPossible())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'id'($_id). This parameter must be 'Int' type"))
+                return EmployeesErrors.ERROR_ID_PARAMETER.toResultResponse(call, this)
             if (_data.isNullOrEmpty())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Необходимо указать дату"))
+                return EmployeesErrors.ERROR_DATA_PARAMETER.toResultResponse(call, this)
             if (!_data.toDateTimePossible())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 103 to "Неверный формат даты"))
+                return EmployeesErrors.ERROR_DATA_INCORRECT_PARAMETER.toResultResponse(call, this)
 
             val id = _id.toInt()
             val data = LocalDateTime.parse(_data)
@@ -316,9 +314,9 @@ data class Employees(
 
             val currentDayRecords = Records().getData({ tbl_records.id_employee_to eq id ; tbl_records.dateRecord.between(dateStart..dateEnd) })
 
-            return ResultResponse.Success(EnumHttpCode.COMPLETED, currentDayRecords)
+            return ResultResponse.Success(currentDayRecords)
         } catch (e: Exception) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+            return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage))
         }
     }
 

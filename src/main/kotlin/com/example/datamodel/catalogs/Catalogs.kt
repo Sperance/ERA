@@ -3,15 +3,11 @@ package com.example.datamodel.catalogs
 import com.example.helpers.CommentField
 import com.example.currectDatetime
 import com.example.basemodel.BaseRepository
-import com.example.basemodel.CheckObj
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
-import com.example.datamodel.clients.Clients
 import com.example.datamodel.employees.Employees
 import com.example.datamodel.services.Services
-import com.example.datamodel.stockfiles.Stockfiles
-import com.example.enums.EnumHttpCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -24,7 +20,6 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
-import org.komapper.core.dsl.metamodel.EntityMetamodel
 
 /**
  * Справочник информации
@@ -65,16 +60,17 @@ data class Catalogs(
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Catalogs>, serializer: KSerializer<List<Catalogs>>): ResultResponse {
-        params.checkings.add { CheckObj(it.type.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Тип категории(type) для элемента") }
-        params.checkings.add { CheckObj(it.category.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Категорию(category) для элемента") }
-        params.checkings.add { CheckObj(it.value.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать Значение(value) элемента") }
-        params.checkings.add { CheckObj(repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null, EnumHttpCode.DUPLICATE, 304, "В БД уже присутствует категория '${it.category}' со значнеием '${it.value}'") }
+        params.checkings.add { CatalogsErrors.ERROR_TYPE.toCheckObj(it) }
+        params.checkings.add { CatalogsErrors.ERROR_CATEGORY.toCheckObj(it) }
+        params.checkings.add { CatalogsErrors.ERROR_VALUE.toCheckObj(it) }
+        params.checkings.add { CatalogsErrors.ERROR_DUPLICATE_ALL.toCheckObj(it) }
 
         return super.post(call, params, serializer)
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Catalogs>, serializer: KSerializer<Catalogs>): ResultResponse {
-        params.checkings.add { CheckObj(repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null, EnumHttpCode.DUPLICATE, 301, "В БД уже присутствует категория '${it.category}' со значнеием '${it.value}'") }
+        params.checkings.add { CatalogsErrors.ERROR_TYPE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { CatalogsErrors.ERROR_DUPLICATE_ALL.toCheckObj(it) }
 
         return super.update(call, params, serializer)
     }

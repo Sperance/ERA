@@ -24,7 +24,6 @@ import com.example.datamodel.services.Services.Companion.tbl_services
 import com.example.datamodel.services.configureServices
 import com.example.datamodel.stockfiles.Stockfiles.Companion.tbl_stockfiles
 import com.example.datamodel.stockfiles.configureStockfiles
-import com.example.enums.EnumHttpCode
 import com.example.logging.DailyLogger.printTextLog
 import com.example.schedulers.configureSchedulers
 import io.ktor.server.application.*
@@ -95,7 +94,7 @@ fun Application.configureWorkServer() {
     routing {
         route("/server") {
             get("/status") {
-                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, "Server is Work"))
+                call.respond(ResultResponse.Success("Server is Work"))
             }
         }
     }

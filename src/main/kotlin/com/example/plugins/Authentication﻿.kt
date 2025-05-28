@@ -6,28 +6,19 @@ import com.auth0.jwt.exceptions.JWTVerificationException
 import com.auth0.jwt.exceptions.TokenExpiredException
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.auth0.jwt.interfaces.Payload
-import com.example.datamodel.authentications.Authentications
 import io.ktor.http.auth.HttpAuthHeader
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
-import io.ktor.server.auth.UserIdPrincipal
-import io.ktor.server.auth.bearer
 import io.ktor.server.auth.jwt.jwt
 import com.example.basemodel.ResultResponse
-import com.example.currectDatetime
-import com.example.datamodel.authentications.Authentications.Companion.tbl_authentications
 import com.example.datamodel.clients.Clients
 import com.example.datamodel.employees.Employees
 import com.example.enums.EnumBearerRoles
-import com.example.enums.EnumHttpCode
 import com.example.generateMapError
 import com.example.helpers.AUTH_ERROR_KEY
-import com.example.helpers.getDataOne
-import com.example.helpers.update
 import com.example.logging.DailyLogger.printTextLog
 import com.example.respond
-import com.example.schedulers.hoursTaskScheduler
 import com.example.toIntPossible
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -36,7 +27,6 @@ import io.ktor.server.application.call
 import io.ktor.server.auth.jwt.JWTPayloadHolder
 import io.ktor.server.response.respond
 import io.ktor.utils.io.InternalAPI
-import kotlinx.datetime.LocalDateTime
 import java.util.Date
 
 const val JWT_HMAC = "secrets_era"
@@ -117,7 +107,7 @@ fun Application.configureAuthentication() {
                 } else {
                     "Token is not valid or has expired"
                 }
-                call.respond(ResultResponse.Error(EnumHttpCode.AUTHORISATION, generateMapError(call, 401 to errorMsg)))
+                call.respond(ResultResponse.Error(generateMapError(call, 401 to errorMsg)))
             }
             authHeader { call ->
                 val token = call.request.cookies["era_auth_token"]

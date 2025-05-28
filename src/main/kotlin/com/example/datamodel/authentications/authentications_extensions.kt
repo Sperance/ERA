@@ -7,11 +7,9 @@ import com.example.basemodel.ResultResponse
 import com.example.currectDatetime
 import com.example.datamodel.authentications.Authentications.Companion.tbl_authentications
 import com.example.enums.EnumBearerRoles
-import com.example.enums.EnumHttpCode
 import com.example.generateMapError
 import com.example.helpers.getDataOne
 import com.example.helpers.update
-import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.JWT_AUTH_NAME
 import com.example.plugins.RoleAwareJWT
 import com.example.respond
@@ -36,7 +34,7 @@ fun Route.secureGet(path: String, role: EnumBearerRoles? = null, body: suspend R
                 return@get
             }
             try { body.invoke(this, principal!!.userId) } catch (e: Exception) {
-                call.respond(response = ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage)))
+                call.respond(response = ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage)))
             }
         }
     }
@@ -52,7 +50,7 @@ fun Route.securePost(path: String, role: EnumBearerRoles? = null, body: suspend 
                 return@post
             }
             try { body.invoke(this, principal!!.userId) } catch (e: Exception) {
-                call.respond(response = ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage)))
+                call.respond(response = ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage)))
             }
         }
     }
@@ -68,7 +66,7 @@ fun Route.secureDelete(path: String, role: EnumBearerRoles? = null, body: suspen
                 return@delete
             }
             try { body.invoke(this, principal!!.userId) } catch (e: Exception) {
-                call.respond(response = ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage)))
+                call.respond(response = ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage)))
             }
         }
     }
@@ -76,39 +74,39 @@ fun Route.secureDelete(path: String, role: EnumBearerRoles? = null, body: suspen
 
 suspend fun RoleAwareJWT?.checkAuthenticate(call: ApplicationCall, role: EnumBearerRoles?): ResultResponse.Error? {
     if (this == null) {
-        return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Principal RoleAwareJWT is null"))
+        return ResultResponse.Error(generateMapError(call, 101 to "Principal RoleAwareJWT is null"))
     }
 
     val findedToken = Authentications().getDataOne({ tbl_authentications.employee eq this@checkAuthenticate.employee ; tbl_authentications.clientId eq this@checkAuthenticate.userId })
     if (findedToken == null) {
         call.response.setToken("", GMTDate())
-        return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 102 to "The token cannot be found in the database. Please log in again."))
+        return ResultResponse.Error(generateMapError(call, 102 to "The token cannot be found in the database. Please log in again."))
     }
 
     if (findedToken.dateExpired!! <= LocalDateTime.currectDatetime()) {
         call.response.setToken("", GMTDate())
-        return ResultResponse.Error(EnumHttpCode.AUTHORISATION, generateMapError(call, 103 to "Token in database is expired. Please log in again."))
+        return ResultResponse.Error(generateMapError(call, 103 to "Token in database is expired. Please log in again."))
     }
 
     if (this.employee) {
         if (this.role == null) {
-            return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 110 to "Dont find Role in token"))
+            return ResultResponse.Error(generateMapError(call, 110 to "Dont find Role in token"))
         }
         if (this.role == EnumBearerRoles.DEFAULT) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 111 to "Current role don`t support system"))
+            return ResultResponse.Error(generateMapError(call, 111 to "Current role don`t support system"))
         }
         if (role != null && role.ordinal > this.role.ordinal) {
-            return ResultResponse.Error(EnumHttpCode.AUTHORISATION, generateMapError(call, 112 to "This method is blocked for the current role"))
+            return ResultResponse.Error(generateMapError(call, 112 to "This method is blocked for the current role"))
         }
     } else {
         if (this.role == null) {
-            return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 120 to "Dont find Role in token"))
+            return ResultResponse.Error(generateMapError(call, 120 to "Dont find Role in token"))
         }
         if (this.role == EnumBearerRoles.DEFAULT) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 121 to "Current role don`t support system"))
+            return ResultResponse.Error(generateMapError(call, 121 to "Current role don`t support system"))
         }
         if (role != null && role.ordinal > this.role.ordinal) {
-            return ResultResponse.Error(EnumHttpCode.AUTHORISATION, generateMapError(call, 122 to "This method is blocked for the current role"))
+            return ResultResponse.Error(generateMapError(call, 122 to "This method is blocked for the current role"))
         }
     }
 

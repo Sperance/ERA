@@ -1,7 +1,6 @@
 package com.example.datamodel.defaults
 
 import com.example.datamodel.catalogs.Catalogs
-import com.example.datamodel.clients.Clients
 import com.example.datamodel.employees.Employees
 import com.example.enums.EnumBearerRoles
 import com.example.helpers.createBatch

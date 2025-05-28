@@ -3,12 +3,9 @@ package com.example.datamodel.stockfiles
 import com.example.helpers.CommentField
 import com.example.currectDatetime
 import com.example.basemodel.BaseRepository
-import com.example.basemodel.CheckObj
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
-import com.example.datamodel.services.Services
-import com.example.enums.EnumHttpCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -61,14 +58,14 @@ data class Stockfiles(
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Stockfiles>, serializer: KSerializer<List<Stockfiles>>): ResultResponse {
         params.isNeedFile = true
-        params.checkings.add { CheckObj(it.category.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Категорию файла") }
-        params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), EnumHttpCode.NOT_FOUND, 302, "Не найдена Категория файла с id ${it.service}") }
+        params.checkings.add { StockfilesErrors.ERROR_CATEGORY.toCheckObj(it) }
+        params.checkings.add { StockfilesErrors.ERROR_SERVICE_DUPLICATE_NOTNULL.toCheckObj(it) }
 
         return super.post(call, params, serializer)
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Stockfiles>, serializer: KSerializer<Stockfiles>): ResultResponse {
-        params.checkings.add { CheckObj(it.service != null && !Services.repo_services.isHaveData(it.service), EnumHttpCode.NOT_FOUND, 301, "Не найдена Категория файла с id ${it.service}") }
+        params.checkings.add { StockfilesErrors.ERROR_SERVICE_DUPLICATE_NOTNULL.toCheckObj(it) }
 
         return super.update(call, params, serializer)
     }

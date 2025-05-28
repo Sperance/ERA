@@ -3,12 +3,9 @@ package com.example.datamodel.news
 import com.example.helpers.CommentField
 import com.example.currectDatetime
 import com.example.basemodel.BaseRepository
-import com.example.basemodel.CheckObj
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
-import com.example.datamodel.clientsschelude.ClientsSchelude
-import com.example.enums.EnumHttpCode
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -21,7 +18,6 @@ import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
-import org.komapper.core.dsl.metamodel.EntityMetamodel
 
 @Serializable
 @KomapperEntity
@@ -60,8 +56,8 @@ data class News(
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<News>, serializer: KSerializer<List<News>>): ResultResponse {
-        params.checkings.add { CheckObj(it.mainText.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Текст новости (mainText)") }
-        params.checkings.add { CheckObj(it.name.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Наименование новости (name)") }
+        params.checkings.add { NewsErrors.ERROR_MAINTEXT.toCheckObj(it) }
+        params.checkings.add { NewsErrors.ERROR_NAME.toCheckObj(it) }
 
         params.defaults.add { it::dateNews to LocalDateTime.currectDatetime() }
 

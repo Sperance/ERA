@@ -3,14 +3,9 @@ package com.example.datamodel.feedbacks
 import com.example.helpers.CommentField
 import com.example.currectDatetime
 import com.example.basemodel.BaseRepository
-import com.example.basemodel.CheckObj
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
-import com.example.datamodel.clients.Clients
-import com.example.datamodel.employees.Employees
-import com.example.enums.EnumHttpCode
-import com.example.isNullOrZero
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -66,14 +61,14 @@ data class FeedBacks(
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<FeedBacks>, serializer: KSerializer<List<FeedBacks>>): ResultResponse {
-        params.checkings.add { CheckObj(it.text.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Текст отзыва") }
-        params.checkings.add { CheckObj(it.value.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Оценку отзыва") }
-        params.checkings.add { CheckObj(it.id_client_from.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать id Клиента который оставляет отзыв") }
-        params.checkings.add { CheckObj(it.id_employee_to.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 304, "Необходимо указать id Сотрудника, которому составляется отзыв") }
-        params.checkings.add { CheckObj(it.value!! < 0, EnumHttpCode.INCORRECT_PARAMETER, 305, "Оценка не может быть меньше 0") }
-        params.checkings.add { CheckObj(it.value!! > 10, EnumHttpCode.INCORRECT_PARAMETER, 306, "Оценка не может быть больше 10") }
-        params.checkings.add { CheckObj(!Clients.repo_clients.isHaveData(it.id_client_from!!), EnumHttpCode.NOT_FOUND, 307, "Не существует Клиента с id ${it.id_client_from}") }
-        params.checkings.add { CheckObj(!Employees.repo_employees.isHaveData(it.id_employee_to!!), EnumHttpCode.NOT_FOUND, 308, "Не существует Сотрудника с id ${it.id_employee_to}") }
+        params.checkings.add { FeedBacksErrors.ERROR_TEXT.toCheckObj(it) }
+        params.checkings.add { FeedBacksErrors.ERROR_VALUE.toCheckObj(it) }
+        params.checkings.add { FeedBacksErrors.ERROR_IDCLIENTFROM.toCheckObj(it) }
+        params.checkings.add { FeedBacksErrors.ERROR_IDEMPLOYEETO.toCheckObj(it) }
+        params.checkings.add { FeedBacksErrors.ERROR_VALUE_LOW0.toCheckObj(it) }
+        params.checkings.add { FeedBacksErrors.ERROR_VALUE_GREAT10.toCheckObj(it) }
+        params.checkings.add { FeedBacksErrors.ERROR_IDCLIENTFROM_DUPLICATE.toCheckObj(it) }
+        params.checkings.add { FeedBacksErrors.ERROR_IDEMPLOYEETO_DUPLICATE.toCheckObj(it) }
 
         params.defaults.add { it::value to 0.toByte() }
 
@@ -81,10 +76,10 @@ data class FeedBacks(
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<FeedBacks>, serializer: KSerializer<FeedBacks>): ResultResponse {
-        params.checkings.add { CheckObj(it.id_client_from != null && !Clients.repo_clients.isHaveData(it.id_client_from!!), EnumHttpCode.NOT_FOUND, 301, "Не существует Клиента с id ${it.id_client_from}") }
-        params.checkings.add { CheckObj(it.id_employee_to != null && !Employees.repo_employees.isHaveData(it.id_employee_to!!), EnumHttpCode.NOT_FOUND, 302, "Не существует Клиента с id ${it.id_employee_to}") }
-        params.checkings.add { CheckObj(it.value != null && it.value!! < 0, EnumHttpCode.INCORRECT_PARAMETER, 303, "Оценка не может быть меньше 0") }
-        params.checkings.add { CheckObj(it.value != null && it.value!! > 10, EnumHttpCode.INCORRECT_PARAMETER, 304, "Оценка не может быть больше 10") }
+        params.checkings.add { FeedBacksErrors.ERROR_IDCLIENTFROM_DUPLICATE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { FeedBacksErrors.ERROR_IDEMPLOYEETO_DUPLICATE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { FeedBacksErrors.ERROR_VALUE_LOW0_NOTNULL.toCheckObj(it) }
+        params.checkings.add { FeedBacksErrors.ERROR_VALUE_GREAT10_NOTNULL.toCheckObj(it) }
 
         return super.update(call, params, serializer)
     }

@@ -4,7 +4,6 @@ import com.example.helpers.CommentField
 import com.example.helpers.Recordsdata
 import com.example.currectDatetime
 import com.example.basemodel.BaseRepository
-import com.example.basemodel.CheckObj
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
@@ -12,12 +11,8 @@ import com.example.datamodel.clients.Clients
 import com.example.datamodel.employees.Employees
 import com.example.helpers.getSize
 import com.example.datamodel.services.Services
-import com.example.enums.EnumHttpCode
 import com.example.generateMapError
-import com.example.isNullOrEmpty
-import com.example.isNullOrZero
 import com.example.logging.DailyLogger.printTextLog
-import com.example.nullDatetime
 import com.example.toIntPossible
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
@@ -106,25 +101,26 @@ data class Records(
     override suspend fun getFromId(call: ApplicationCall, params: RequestParams<Records>): ResultResponse {
         val id = call.parameters["id"]
         if (id == null || !id.toIntPossible()) {
-            return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'id'($id). This parameter must be 'Int' type"))
+            return ResultResponse.Error(generateMapError(call, 101 to "Incorrect parameter 'id'($id). This parameter must be 'Int' type"))
         }
 
-        return ResultResponse.Success(EnumHttpCode.COMPLETED, getFilledRecords().find { it.record?.id == id.toIntOrNull() })
+        return ResultResponse.Success(getFilledRecords().find { it.record?.id == id.toIntOrNull() })
     }
 
     override suspend fun get(call: ApplicationCall): ResultResponse {
-        return ResultResponse.Success(EnumHttpCode.COMPLETED, getFilledRecords())
+        return ResultResponse.Success(getFilledRecords())
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Records>, serializer: KSerializer<Records>): ResultResponse {
-        params.checkings.add { CheckObj(it.id_client_from != null && !Clients.repo_clients.isHaveData(it.id_client_from!!), EnumHttpCode.NOT_FOUND, 301, "Не существует Клиента с id ${it.id_client_from}") }
-        params.checkings.add { CheckObj(it.id_employee_to != null && !Employees.repo_employees.isHaveData(it.id_employee_to!!), EnumHttpCode.NOT_FOUND, 302, "Не существует Клиента с id ${it.id_employee_to}") }
-        params.checkings.add { CheckObj(it.id_service != null && !Services.repo_services.isHaveData(it.id_service!!), EnumHttpCode.NOT_FOUND, 303, "Не существует Услуги с id ${it.id_service}") }
+        params.checkings.add { RecordsErrors.ERROR_PRICE_LOW0_NOTNULL.toCheckObj(it) }
+        params.checkings.add { RecordsErrors.ERROR_IDCLIENTFROM_DUPLICATE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { RecordsErrors.ERROR_IDEMPLOYEETO_DUPLICATE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { RecordsErrors.ERROR_IDSERVICE_DUPLICATE_NOTNULL.toCheckObj(it) }
 
         params.checkOnUpdate = { old: Records, new: Records ->
             if (new.status != null && old.status != new.status) {
                 new.statusViewed = false
-                printTextLog("[Records - Update statusViewed]: $new")
+                printTextLog("[Records::update] Update statusViewed: $new")
             }
         }
 
@@ -132,16 +128,16 @@ data class Records(
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Records>, serializer: KSerializer<List<Records>>): ResultResponse {
-        params.checkings.add { CheckObj(it.id_client_from.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать id Клиента который записывается на услугу") }
-        params.checkings.add { CheckObj(it.id_employee_to.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать id Сотрудника который будет выполнять услугу") }
-        params.checkings.add { CheckObj(it.id_service.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать id Услуги") }
-        params.checkings.add { CheckObj(it.dateRecord.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 304, "Необходимо указать Дату записи") }
-        params.checkings.add { CheckObj(it.dateRecord!! <= LocalDateTime.currectDatetime(), EnumHttpCode.INCORRECT_PARAMETER, 305, "Дата записи не может быть меньше текущей") }
-        params.checkings.add { CheckObj(!Clients.repo_clients.isHaveData(it.id_client_from!!), EnumHttpCode.NOT_FOUND, 307, "Не существует Клиента с id ${it.id_client_from}") }
-        params.checkings.add { CheckObj(!Employees.repo_employees.isHaveData(it.id_employee_to!!), EnumHttpCode.NOT_FOUND, 308, "Не существует Сотрудника с id ${it.id_employee_to}") }
-        params.checkings.add { CheckObj(!Services.repo_services.isHaveData(it.id_service!!), EnumHttpCode.NOT_FOUND, 309, "Не существует Услуги с id ${it.id_service}") }
+        params.checkings.add { RecordsErrors.ERROR_IDCLIENTFROM.toCheckObj(it) }
+        params.checkings.add { RecordsErrors.ERROR_IDEMPLOYEETO.toCheckObj(it) }
+        params.checkings.add { RecordsErrors.ERROR_IDSERVICE.toCheckObj(it) }
+        params.checkings.add { RecordsErrors.ERROR_DATERECORD.toCheckObj(it) }
+        params.checkings.add { RecordsErrors.ERROR_DATERECORD_LOWCURRENT.toCheckObj(it) }
+        params.checkings.add { RecordsErrors.ERROR_PRICE_LOW0_NOTNULL.toCheckObj(it) }
+        params.checkings.add { RecordsErrors.ERROR_IDCLIENTFROM_DUPLICATE.toCheckObj(it) }
+        params.checkings.add { RecordsErrors.ERROR_IDEMPLOYEETO_DUPLICATE.toCheckObj(it) }
+        params.checkings.add { RecordsErrors.ERROR_IDSERVICE_DUPLICATE.toCheckObj(it) }
 
-        params.defaults.add { it::dateRecord to LocalDateTime.nullDatetime() }
         params.defaults.add { it::status to 0 }
         params.defaults.add { it::statusViewed to false }
         params.defaults.add { it::number to generateShortOrderNumber(Records().getSize()) }

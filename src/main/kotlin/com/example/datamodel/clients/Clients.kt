@@ -13,10 +13,8 @@ import com.example.datamodel.feedbacks.FeedBacks
 import com.example.helpers.getSize
 import com.example.datamodel.records.Records
 import com.example.enums.EnumBearerRoles
-import com.example.enums.EnumHttpCode
 import com.example.generateMapError
 import com.example.helpers.update
-import com.example.isNullOrZero
 import com.example.helpers.GMailSender
 import com.example.helpers.delete
 import com.example.helpers.getField
@@ -98,16 +96,15 @@ data class Clients(
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<List<Clients>>): ResultResponse {
-        params.checkings.add { CheckObj(it.firstName.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 301, "Необходимо указать Имя") }
-        params.checkings.add { CheckObj(it.lastName.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 302, "Необходимо указать Фамилию") }
-        params.checkings.add { CheckObj(it.phone.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 303, "Необходимо указать Телефон") }
-        params.checkings.add { CheckObj(it.email.isNullOrEmpty(), EnumHttpCode.INCORRECT_PARAMETER, 304, "Необходимо указать Email") }
-        params.checkings.add { CheckObj(it.gender.isNullOrZero(), EnumHttpCode.INCORRECT_PARAMETER, 305, "Необходимо указать Пол") }
-        params.checkings.add { CheckObj(repo_clients.isHaveDataField(Clients::phone, it.phone), EnumHttpCode.DUPLICATE, 306, "Клиент с указанным Номером телефона уже существует") }
-        params.checkings.add { CheckObj(repo_clients.isHaveDataField(Clients::email, it.email), EnumHttpCode.DUPLICATE, 307, "Клиент с указанным Почтовым адресом уже существует") }
-        params.checkings.add { CheckObj(it.salt != null, EnumHttpCode.BAD_REQUEST, 308, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
-        params.checkings.add { CheckObj(it.role != null, EnumHttpCode.INCORRECT_PARAMETER, 309, "Попытка модификации системных данных") }
-        params.checkings.add { CheckObj(it.login != null && repo_clients.isHaveDataField(Clients::login, it.login), EnumHttpCode.DUPLICATE, 310, "Клиент с указанным Логином уже существует") }
+        params.checkings.add { ClientsErrors.ERROR_NAME.toCheckObj(it) }
+        params.checkings.add { ClientsErrors.ERROR_SURNAME.toCheckObj(it) }
+        params.checkings.add { ClientsErrors.ERROR_PHONE.toCheckObj(it) }
+        params.checkings.add { ClientsErrors.ERROR_EMAIL.toCheckObj(it) }
+        params.checkings.add { ClientsErrors.ERROR_GENDER.toCheckObj(it) }
+        params.checkings.add { ClientsErrors.ERROR_PHONE_DUPLICATE.toCheckObj(it) }
+        params.checkings.add { ClientsErrors.ERROR_EMAIL_DUPLICATE.toCheckObj(it) }
+        params.checkings.add { ClientsErrors.ERROR_SALT_NOTNULL.toCheckObj(it) }
+        params.checkings.add { ClientsErrors.ERROR_LOGIN_DUPLICATE_NOTNULL.toCheckObj(it) }
 
         params.onBeforeCompleted = { obj ->
             val size = Clients().getSize()
@@ -121,7 +118,7 @@ data class Clients(
         }
 
         val size = Clients().getSize()
-        params.defaults.add { it::login to "base_client_$size" }
+        params.defaults.add { it::login to "client_$size" }
         params.defaults.add { it::password to generateShortClientPassword(size) }
         params.defaults.add { it::salt to generateSalt() }
         params.defaults.add { it::role to EnumBearerRoles.USER.name }
@@ -139,14 +136,14 @@ data class Clients(
             val user = call.receive<Clients>()
 
             if (user.login.isNullOrEmpty())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Необходимо указать Логин(login)"))
+                return ClientsErrors.ERROR_LOGIN.toResultResponse(call, user)
 
             if (user.password.isNullOrEmpty())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Необходимо указать Пароль(password)"))
+                return ClientsErrors.ERROR_PASSWORD.toResultResponse(call, user)
 
             val client = repo_clients.getRepositoryData().find { it.login?.lowercase() == user.login?.lowercase() && verifyPassword(it.password, it.salt, user.password) }
             if (client == null)
-                return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 103 to "Не найден пользователь с указанным Логином и Паролем"))
+                return ClientsErrors.ERROR_LOGINPASSWORD.toResultResponse(call, user)
 
             var token = Authentications.getTokenFromClient(client)
             printTextLog("[Clients::auth] token: $token")
@@ -162,10 +159,10 @@ data class Clients(
 
             call.response.setToken(token.token?:"", GMTDate(token.dateExpired!!.toInstant(TimeZone.UTC).toEpochMilliseconds()))
 
-            return ResultResponse.Success(EnumHttpCode.COMPLETED, client)
+            return ResultResponse.Success(client)
         } catch (e: Exception) {
             e.printStackTrace()
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+            return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage))
         }
     }
 
@@ -175,22 +172,22 @@ data class Clients(
             val password = call.parameters["password"]
 
             if (email.isNullOrEmpty())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'email'($email). This parameter must be 'String' type"))
+                return ClientsErrors.ERROR_EMAIL.toResultResponse(call, this)
             if (password.isNullOrEmpty())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 102 to "Incorrect parameter 'password'($password). This parameter must be 'String' type"))
+                return ClientsErrors.ERROR_PASSWORD.toResultResponse(call, this)
 
             val findedClient = repo_clients.getRepositoryData().find { it.email == AESEncryption.encrypt(email) }
             if (findedClient == null)
-                return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 103 to "Не найден Клиент с адресом $email"))
+                return ClientsErrors.ERROR_EMAIL_DONTFIND.toResultResponse(call, this)
 
             findedClient.setNewPassword(password)
             val updated = findedClient.update("Clients::changePasswordFromEmail")
 
             repo_clients.updateData(updated)
 
-            return ResultResponse.Success(EnumHttpCode.COMPLETED, updated)
+            return ResultResponse.Success(updated)
         } catch (e: Exception) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+            return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage))
         }
     }
 
@@ -200,27 +197,26 @@ data class Clients(
             val send = call.parameters["send"]
 
             if (email.isNullOrEmpty())
-                return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 101 to "Incorrect parameter 'email'($email). This parameter must be 'String' type"))
+                return ClientsErrors.ERROR_EMAIL.toResultResponse(call, this)
 
             val findedClient = repo_clients.getRepositoryData().find { it.email == AESEncryption.encrypt(email) }
             if (findedClient == null)
-                return ResultResponse.Error(EnumHttpCode.NOT_FOUND, generateMapError(call, 102 to "Не найден Клиент с адресом $email"))
+                return ClientsErrors.ERROR_EMAIL_DONTFIND.toResultResponse(call, this)
 
             val generatedPassword = generateEmailRecoveryCode()
             if (send != null) {
                 val boolSend = send.toBooleanStrictOrNull()
                 if (boolSend == null) {
-                    return ResultResponse.Error(EnumHttpCode.INCORRECT_PARAMETER, generateMapError(call, 103 to "Параметр send($send) должен быть boolean"))
+                    return ClientsErrors.ERROR_SEND_PARAMETER.toResultResponse(call, this)
                 }
                 if (boolSend) {
                     GMailSender().sendMail("Восстановление пароля", "Код для восстановления пароля: $generatedPassword", email)
                 }
             }
 
-            return ResultResponse.Success(EnumHttpCode.COMPLETED, generatedPassword)
-
+            return ResultResponse.Success(generatedPassword)
         } catch (e: Exception) {
-            return ResultResponse.Error(EnumHttpCode.BAD_REQUEST, generateMapError(call, 440 to e.localizedMessage))
+            return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage))
         }
     }
 
@@ -238,9 +234,11 @@ data class Clients(
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<Clients>): ResultResponse {
-        params.checkings.add { CheckObj(it.salt != null, EnumHttpCode.BAD_REQUEST, 301, "Попытка модификации системных данных. Информация о запросе передана Администраторам") }
-        params.checkings.add { CheckObj(it.role != null, EnumHttpCode.INCORRECT_PARAMETER, 302, "Попытка модификации системных данных") }
-        params.checkings.add { CheckObj(it.login != null && repo_clients.isHaveDataField(Clients::login, it.login), EnumHttpCode.DUPLICATE, 303, "Клиент с указанным Логином уже существует") }
+        params.checkings.add { ClientsErrors.ERROR_SALT_NOTNULL.toCheckObj(it) }
+        params.checkings.add { ClientsErrors.ERROR_ROLE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { ClientsErrors.ERROR_LOGIN_DUPLICATE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { ClientsErrors.ERROR_PHONE_DUPLICATE_NUTNULL.toCheckObj(it) }
+        params.checkings.add { ClientsErrors.ERROR_EMAIL_DUPLICATE_NOTNULL.toCheckObj(it) }
 
         params.onBeforeCompleted = { obj ->
             val size = Clients().getSize()

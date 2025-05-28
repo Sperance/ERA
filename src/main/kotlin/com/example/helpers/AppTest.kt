@@ -2,12 +2,14 @@ package com.example.helpers
 
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.catalogs.Catalogs.Companion.tbl_catalogs
+import com.example.datamodel.catalogs.CatalogsErrors
 import com.example.datamodel.clients.Clients
 import com.example.datamodel.clients.Clients.Companion.tbl_clients
 import com.example.datamodel.employees.Employees
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.services.Services
+import com.example.logObjectProperties
 import com.example.logging.DailyLogger.printTextLog
 import com.example.minus
 import com.example.plugins.db
@@ -36,6 +38,13 @@ data class Recordsdata(
 )
 
 class AppTest {
+
+    @Test
+    fun test_all_methods() {
+        logObjectProperties(CatalogsErrors, Catalogs()).forEach {
+            printTextLog("LOG: $it")
+        }
+    }
 
     @Test
     fun testColumns() {

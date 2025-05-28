@@ -1,6 +1,7 @@
 package com.example
 
 import com.example.basemodel.configureTests
+import com.example.captcha.configureGCaptcha
 import com.example.helpers.ENCRYPT_KEY
 import com.example.helpers.TOML_FILE_NAME
 import com.example.logging.DailyLogger.printTextLog
@@ -51,6 +52,8 @@ fun main() {
             configureAuthentication()
             configureDatabases()
             configureSockets()
+            configureGCaptcha()
+
             configureTests()
     }).start(wait = true)
 }

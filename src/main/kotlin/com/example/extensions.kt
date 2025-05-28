@@ -1,5 +1,6 @@
 package com.example
 
+import com.example.basemodel.CheckObjCondition
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.ResultResponse
 import com.example.helpers.getField
@@ -7,6 +8,7 @@ import com.example.helpers.putField
 import com.example.helpers.CommentField
 import com.example.logging.DailyLogger.printTextLog
 import io.ktor.http.Cookie
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.uri
@@ -25,6 +27,8 @@ import java.lang.reflect.Field
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.reflect.full.memberProperties
+import kotlin.reflect.jvm.isAccessible
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
@@ -80,7 +84,7 @@ suspend fun ApplicationCall.respond(response: ResultResponse) {
                 this.response.headers.append("Answer-TimeStamp", LocalDateTime.currectDatetime().toString())
                 this.response.headers.append("Answer-Error", response.message.toString())
                 respond(
-                    status = response.status.httpCode,
+                    status = HttpStatusCode(350, "Request error"),
                     message = response.message)
             }
             is ResultResponse.Success -> {
@@ -88,7 +92,7 @@ suspend fun ApplicationCall.respond(response: ResultResponse) {
                 response.headers?.forEach { (key, value) ->
                     this.response.headers.append(key, value)
                 }
-                respond(status = response.status.httpCode, message = response.data ?: "")
+                respond(status = HttpStatusCode.OK, message = response.data ?: "")
             }
         }
     } catch (e: Exception) {
@@ -167,4 +171,25 @@ fun ApplicationResponse.setToken(token: String, dateExpired: GMTDate) {
         expires = dateExpired,
         extensions = mapOf("SameSite" to "None"))
     )
+}
+
+data class DataLogError(
+    val code: Int,
+    val message: String,
+)
+fun <T> logObjectProperties(obj: Any, sample: T): Collection<String> {
+    val list = ArrayList<DataLogError>()
+    obj::class.memberProperties.forEach { prop ->
+        try {
+            prop.isAccessible = true
+            val value = prop.getter.call(obj)
+            if (value is CheckObjCondition<*>) {
+                val condition = value as CheckObjCondition<T>
+                val messageText = condition.message(sample)
+                if (list.find { it.code == condition.code } == null)
+                    list.add(DataLogError(condition.code, messageText))
+            }
+        } catch (_: Exception) {}
+    }
+    return list.sortedBy { it.code }.map { it.code.toString() + " -> " + it.message }
 }

@@ -5,7 +5,6 @@ import com.example.datamodel.authentications.secureGet
 import com.example.datamodel.authentications.securePost
 import com.example.datamodel.clients.Clients
 import com.example.enums.EnumBearerRoles
-import com.example.enums.EnumHttpCode
 import com.example.enums.EnumSQLTypes
 import com.example.minus
 import com.example.helpers.GMailSender
@@ -41,7 +40,7 @@ fun Application.configureTests() {
             }
             get("/authentications/clearTable") {
                 Authentications().clearTable()
-                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, "Таблица успешно очищена"))
+                call.respond(ResultResponse.Success("Таблица успешно очищена"))
             }
             post ("/emailMessage") {
                 val email = call.parameters["email"]

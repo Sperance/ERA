@@ -2,9 +2,12 @@ package com.example.datamodel.news
 
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
-import com.example.enums.EnumHttpCode
+import com.example.datamodel.catalogs.Catalogs
+import com.example.datamodel.catalogs.CatalogsErrors
+import com.example.logObjectProperties
 import com.example.respond
 import io.ktor.server.application.Application
+import io.ktor.server.response.respond
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -17,12 +20,16 @@ fun Application.configureNews() {
         route("/news") {
 
             get("/structure") {
-                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, News().getCommentArray()))
+                call.respond(ResultResponse.Success(News().getCommentArray()))
             }
 
             get("/clearTable") {
                 News.repo_news.clearTable()
-                call.respond(ResultResponse.Success(EnumHttpCode.COMPLETED, "Таблица успешно очищена"))
+                call.respond(ResultResponse.Success("Таблица успешно очищена"))
+            }
+
+            get("/errors") {
+                call.respond(logObjectProperties(NewsErrors, News()))
             }
 
             get("/all") {

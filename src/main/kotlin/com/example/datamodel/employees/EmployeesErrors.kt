@@ -1,0 +1,114 @@
+package com.example.datamodel.employees
+
+import com.example.basemodel.CheckObjCondition
+import com.example.datamodel.catalogs.Catalogs
+import com.example.datamodel.clients.Clients
+import com.example.datamodel.employees.Employees.Companion.repo_employees
+import com.example.enums.EnumBearerRoles
+import com.example.isNullOrZero
+import com.example.security.AESEncryption
+
+object EmployeesErrors {
+
+    val ERROR_FIRSTNAME = CheckObjCondition<Employees>(200,
+        { "Необходимо указать Имя сотрудника 'firstName'" },
+        { it.firstName.isNullOrEmpty() })
+
+    val ERROR_LASTNAME = CheckObjCondition<Employees>(201,
+        { "Необходимо указать Фамилию сотрудника 'lastName'" },
+        { it.lastName.isNullOrEmpty() })
+
+    val ERROR_PHONE = CheckObjCondition<Employees>(202,
+        { "Необходимо указать Телефон сотрудника 'phone'" },
+        { it.phone.isNullOrEmpty() })
+
+    val ERROR_PHONE_NOTNULL = CheckObjCondition<Employees>(202,
+        { "Необходимо указать Телефон сотрудника 'phone'" },
+        { it.phone != null && it.phone.isNullOrEmpty() })
+
+    val ERROR_EMAIL = CheckObjCondition<Employees>(203,
+        { "Необходимо указать Почтовый адрес сотрудника 'email'" },
+        { it.email.isNullOrEmpty() })
+
+    val ERROR_GENDER = CheckObjCondition<Employees>(204,
+        { "Необходимо указать Пол сотрудника 'gender'" },
+        { it.gender.isNullOrZero() })
+
+    val ERROR_LOGIN = CheckObjCondition<Employees>(205,
+        { "Необходимо указать Логин сотрудника 'login'" },
+        { it.login.isNullOrEmpty() })
+
+    val ERROR_LOGIN_NOTNULL = CheckObjCondition<Employees>(205,
+        { "Необходимо указать Логин сотрудника 'login'" },
+        { it.login != null && it.login.isNullOrEmpty() })
+
+    val ERROR_ROLE = CheckObjCondition<Employees>(206,
+        { "Необходимо указать Роль сотрудника 'role'" },
+        { it.role.isNullOrEmpty() })
+
+    val ERROR_ROLE_NOTNULL = CheckObjCondition<Employees>(206,
+        { "Необходимо указать Роль сотрудника 'role'" },
+        { it.role != null && it.role.isNullOrEmpty() })
+
+    val ERROR_PHONE_DUPLICATE = CheckObjCondition<Employees>(207,
+        { "Сотрудник с указанным Номером телефона уже существует" },
+        { repo_employees.isHaveDataField(Employees::phone, AESEncryption.encrypt(it.phone)) })
+
+    val ERROR_EMAIL_DUPLICATE = CheckObjCondition<Employees>(208,
+        { "Сотрудник с указанным Почтовым адресом уже существует" },
+        { repo_employees.isHaveDataField(Employees::email, AESEncryption.encrypt(it.email)) })
+
+    val ERROR_EMAIL_DUPLICATE_NOTNULL = CheckObjCondition<Employees>(208,
+        { "Сотрудник с указанным Почтовым адресом уже существует" },
+        { it.email != null && repo_employees.isHaveDataField(Employees::email, AESEncryption.encrypt(it.email)) })
+
+    val ERROR_LOGIN_DUPLICATE = CheckObjCondition<Employees>(209,
+        { "Сотрудник с указанным Логином (${it.login}) уже существует" },
+        { repo_employees.isHaveDataField(Employees::login, it.login) })
+
+    val ERROR_POSITION_DUPLICATE_NOTNULL = CheckObjCondition<Employees>(210,
+        { "Не найдена Должность с id ${it.position}" },
+        { it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position) })
+
+    val ERROR_ARRAYTYPEWORK_DUPLICATE_NOTNULL = CheckObjCondition<Employees>(211,
+        { "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}" },
+        { it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()) })
+
+    val ERROR_SALT_NOTNULL = CheckObjCondition<Employees>(212,
+        { "Попытка модификации системных данных. Информация о запросе передана Администраторам" },
+        { it.salt != null })
+
+    val ERROR_ROLE_ENUM = CheckObjCondition<Employees>(213,
+        { "Роль Сотрудника (${it.role}) не соответствует одному из доступных: ${EnumBearerRoles.entries.joinToString { role -> role.name }}" },
+        { EnumBearerRoles.getFromNameOrNull(it.role) == null })
+
+    /***********************************************************/
+
+    val ERROR_LOGINPASSWORD = CheckObjCondition<Employees>(100,
+        { "Не найден пользователь с указанным Логином и Паролем" },
+        { true })
+
+    val ERROR_PASSWORD = CheckObjCondition<Employees>(101,
+        { "Необходимо указать Пароль сотрудника 'password'" },
+        { true })
+
+    val ERROR_CLIENTID_PARAMETER = CheckObjCondition<Employees>(102,
+        { "Incorrect parameter 'clientId'. This parameter must be 'Int' type" },
+        { true })
+
+    val ERROR_SERVICELENGTH_PARAMETER = CheckObjCondition<Employees>(103,
+        { "Incorrect parameter 'servceLength'. This parameter must be 'Int' type" },
+        { true })
+
+    val ERROR_ID_PARAMETER = CheckObjCondition<Employees>(104,
+        { "Incorrect parameter 'id'. This parameter must be 'Int' type" },
+        { true })
+
+    val ERROR_DATA_PARAMETER = CheckObjCondition<Employees>(105,
+        { "Необходимо указать параметр даты 'data'" },
+        { true })
+
+    val ERROR_DATA_INCORRECT_PARAMETER = CheckObjCondition<Employees>(106,
+        { "Неверный формат даты" },
+        { true })
+}
