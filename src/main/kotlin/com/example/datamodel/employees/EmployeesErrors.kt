@@ -2,7 +2,6 @@ package com.example.datamodel.employees
 
 import com.example.basemodel.CheckObjCondition
 import com.example.datamodel.catalogs.Catalogs
-import com.example.datamodel.clients.Clients
 import com.example.datamodel.employees.Employees.Companion.repo_employees
 import com.example.enums.EnumBearerRoles
 import com.example.isNullOrZero
@@ -82,6 +81,14 @@ object EmployeesErrors {
         { "Роль Сотрудника (${it.role}) не соответствует одному из доступных: ${EnumBearerRoles.entries.joinToString { role -> role.name }}" },
         { EnumBearerRoles.getFromNameOrNull(it.role) == null })
 
+    val ERROR_ROLE_ADMIN = CheckObjCondition<Employees>(214,
+        { "Создание Администраторов запрещено. Обратитесь к разработчикам" },
+        { EnumBearerRoles.getFromNameOrNull(it.role) == EnumBearerRoles.ADMIN })
+
+    val ERROR_ROLE_ADMIN_NOTNULL = CheckObjCondition<Employees>(214,
+        { "Создание Администраторов запрещено. Обратитесь к разработчикам" },
+        { it.role != null && EnumBearerRoles.getFromNameOrNull(it.role) == EnumBearerRoles.ADMIN })
+
     /***********************************************************/
 
     val ERROR_LOGINPASSWORD = CheckObjCondition<Employees>(100,
@@ -110,5 +117,17 @@ object EmployeesErrors {
 
     val ERROR_DATA_INCORRECT_PARAMETER = CheckObjCondition<Employees>(106,
         { "Неверный формат даты" },
+        { true })
+
+    val ERROR_ID_NOT_INT_PARAMETER = CheckObjCondition<Employees>(107,
+        { "Параметр идентификатора 'id' должен быть Integer" },
+        { true })
+
+    val ERROR_ID_DONTFIND = CheckObjCondition<Employees>(108,
+        { "Клент с указанным параметром 'id' не найден в базе данных" },
+        { true })
+
+    val ERROR_LOGINKEY_DONTFIND = CheckObjCondition<Employees>(109,
+        { "Для указанного клиента не найден токен авторизации" },
         { true })
 }

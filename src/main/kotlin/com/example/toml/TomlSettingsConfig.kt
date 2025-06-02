@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class TomlSettingsConfig(
     val ENDPOINT: String = "https://api.salon-era.ru/",
-    val CAPTHCA_V3: String = "6LdB2UkrAAAAAGtd8EAXEWNn7qMgpS92g8nniFgI"
+    val CAPTHCA_V3: String = "6Lc4ZFMrAAAAALw8tNGrMkzTpkdGMhnqthuB0dtB"
 ) : IntTomlSettings {
     override fun checkForCorrect(): String? {
         val nodeName = "SETTINGS"

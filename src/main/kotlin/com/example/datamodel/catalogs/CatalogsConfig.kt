@@ -23,7 +23,7 @@ fun Application.configureCatalogs() {
                 call.respond(ResultResponse.Success(Catalogs().getCommentArray()))
             }
 
-            secureGet("/clearTable", EnumBearerRoles.ADMIN) {
+            get("/clearTable") {
                 Catalogs.repo_catalogs.clearTable()
                 call.respond(ResultResponse.Success("Таблица успешно очищена"))
             }
@@ -36,7 +36,7 @@ fun Application.configureCatalogs() {
                 call.respond(Catalogs().get(call))
             }
 
-            get("/all/invalid") {
+            secureGet("/all/invalid", EnumBearerRoles.ADMIN) {
                 call.respond(Catalogs().getInvalid(call))
             }
 
@@ -44,7 +44,7 @@ fun Application.configureCatalogs() {
                 call.respond(Catalogs().getFilter(call))
             }
 
-            securePost("/update", EnumBearerRoles.USER) {
+            securePost("/update", EnumBearerRoles.MODERATOR) {
                 call.respond(Catalogs().update(call, RequestParams(), Catalogs.serializer()))
             }
 

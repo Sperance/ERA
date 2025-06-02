@@ -8,9 +8,14 @@ import com.example.basemodel.ResultResponse
 import com.example.currectDatetime
 import com.example.currentZeroDate
 import com.example.datamodel.authentications.Authentications
+import com.example.datamodel.authentications.Authentications.Companion.tbl_authentications
+import com.example.datamodel.clients.Clients.Companion.repo_clients
+import com.example.datamodel.clients.ClientsErrors
 import com.example.datamodel.clientsschelude.ClientsSchelude
+import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.repo_clientsschelude
 import com.example.datamodel.feedbacks.FeedBacks
 import com.example.datamodel.records.Records
+import com.example.datamodel.records.Records.Companion.repo_records
 import com.example.datamodel.records.Records.Companion.tbl_records
 import com.example.datamodel.services.Services.Companion.repo_services
 import com.example.enums.EnumBearerRoles
@@ -18,6 +23,7 @@ import com.example.generateMapError
 import com.example.helpers.CommentField
 import com.example.helpers.delete
 import com.example.helpers.getData
+import com.example.helpers.getDataOne
 import com.example.helpers.getField
 import com.example.helpers.getSize
 import com.example.helpers.haveField
@@ -100,6 +106,8 @@ data class Employees(
     @Transient
     @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
+    override val deleted: Boolean = false
 ) : IntBaseDataImpl<Employees>() {
 
     companion object {
@@ -128,6 +136,7 @@ data class Employees(
         params.checkings.add { EmployeesErrors.ERROR_ARRAYTYPEWORK_DUPLICATE_NOTNULL.toCheckObj(it) }
         params.checkings.add { EmployeesErrors.ERROR_SALT_NOTNULL.toCheckObj(it) }
         params.checkings.add { EmployeesErrors.ERROR_ROLE_ENUM.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_ROLE_ADMIN.toCheckObj(it) }
 
         params.onBeforeCompleted = { obj ->
             val size = Employees().getSize()
@@ -153,23 +162,22 @@ data class Employees(
         params.checkings.add { EmployeesErrors.ERROR_ROLE_NOTNULL.toCheckObj(it) }
         params.checkings.add { EmployeesErrors.ERROR_PHONE_NOTNULL.toCheckObj(it) }
         params.checkings.add { EmployeesErrors.ERROR_EMAIL_DUPLICATE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_ROLE_ADMIN_NOTNULL.toCheckObj(it) }
 
         params.onBeforeCompleted = { obj ->
-            val size = Employees().getSize()
             if (obj.lastName != null) obj.lastName = AESEncryption.encrypt(obj.lastName)
             if (obj.firstName != null) obj.firstName = AESEncryption.encrypt(obj.firstName)
             if (obj.patronymic != null) obj.patronymic = AESEncryption.encrypt(obj.patronymic)
             if (obj.email != null) obj.email = AESEncryption.encrypt(obj.email)
             if (obj.phone != null) obj.phone = AESEncryption.encrypt(obj.phone)
             if (obj.password != null) obj.setNewPassword(obj.password!!)
-            if (obj.role != null) obj.role = AESEncryption.encrypt(obj.role + "_" + size)
+            if (obj.role != null) obj.role = AESEncryption.encrypt(obj.role + "_" + obj.id)
         }
 
         params.checkOnUpdate = { finded, new ->
             if (new.haveField("salt") && finded.haveField("salt")) {
                 new.putField("salt", finded.getField("salt"))
             }
-            if (new.password != null) new.setNewPassword(new.password!!)
             if (new.role != null && EnumBearerRoles.getFromNameOrNull(finded.role) != EnumBearerRoles.getFromNameOrNull(new.role)) {
                 printTextLog("[Employees::update] Обновление Роли у сотрудника id: ${finded.id} логин: ${finded.login}")
                 val token = Authentications.getTokenFromEmployee(finded)
@@ -248,8 +256,8 @@ data class Employees(
         val startDate = LocalDateTime.currentZeroDate()
         val endDate = startDate.plus((daysLoaded).days)
 
-        val currentRecords = Records().getData({ tbl_records.id_employee_to eq employeeId ; tbl_records.dateRecord.between(startDate..endDate) ; tbl_records.status lessEq 100 })
-        val currentSheludes = ClientsSchelude().getData({ ClientsSchelude().getTable().idEmployee eq employeeId })
+        val currentRecords = repo_records.getRepositoryData().filter { it.id_employee_to == employeeId && it.dateRecord!! in startDate..endDate && it.status!! <= 100 }
+        val currentSheludes = repo_clientsschelude.getRepositoryData().filter { it.idEmployee == employeeId }
         val allServices = repo_services.getRepositoryData()
 
         val stockPeriod = 30
@@ -312,9 +320,34 @@ data class Employees(
             val dateStart = LocalDateTime(data.year, data.monthNumber, data.dayOfMonth, 0, 0, 0)
             val dateEnd = LocalDateTime(data.year, data.monthNumber, data.dayOfMonth, 23, 59, 0)
 
-            val currentDayRecords = Records().getData({ tbl_records.id_employee_to eq id ; tbl_records.dateRecord.between(dateStart..dateEnd) })
+            val currentDayRecords = repo_records.getRepositoryData().filter { it.id_employee_to == id && it.dateRecord!! in dateStart..dateEnd }
 
             return ResultResponse.Success(currentDayRecords)
+        } catch (e: Exception) {
+            return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage))
+        }
+    }
+
+    suspend fun onExitSite(call: ApplicationCall): ResultResponse {
+        try {
+            val id = call.parameters["id"]
+            if (id.isNullOrEmpty())
+                return EmployeesErrors.ERROR_ID_PARAMETER.toResultResponse(call, this)
+
+            if (!id.toIntPossible())
+                return EmployeesErrors.ERROR_ID_NOT_INT_PARAMETER.toResultResponse(call, this)
+
+            val findedClient = repo_clients.getDataFromId(id.toIntOrNull())
+            if (findedClient == null)
+                return EmployeesErrors.ERROR_ID_DONTFIND.toResultResponse(call, this)
+
+            val key = Authentications().getDataOne({ tbl_authentications.clientId eq id.toIntOrNull() ; tbl_authentications.employee eq true })
+            if (key == null) {
+                return EmployeesErrors.ERROR_LOGINKEY_DONTFIND.toResultResponse(call, this)
+            }
+            key.delete()
+
+            return ResultResponse.Success("")
         } catch (e: Exception) {
             return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage))
         }

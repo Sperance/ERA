@@ -2,8 +2,12 @@ package com.example.datamodel.news
 
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
+import com.example.datamodel.authentications.secureDelete
+import com.example.datamodel.authentications.secureGet
+import com.example.datamodel.authentications.securePost
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.catalogs.CatalogsErrors
+import com.example.enums.EnumBearerRoles
 import com.example.logObjectProperties
 import com.example.respond
 import io.ktor.server.application.Application
@@ -36,7 +40,7 @@ fun Application.configureNews() {
                 call.respond(News().get(call))
             }
 
-            get("/all/invalid") {
+            secureGet("/all/invalid", EnumBearerRoles.ADMIN) {
                 call.respond(News().getInvalid(call))
             }
 
@@ -44,15 +48,15 @@ fun Application.configureNews() {
                 call.respond(News().getFilter(call))
             }
 
-            post("/update") {
+            securePost("/update", EnumBearerRoles.MODERATOR) {
                 call.respond(News().update(call, RequestParams(), News.serializer()))
             }
 
-            post {
+            securePost("", EnumBearerRoles.MODERATOR) {
                 call.respond(News().post(call, RequestParams(), ListSerializer(News.serializer())))
             }
 
-            delete {
+            secureDelete("", EnumBearerRoles.MODERATOR) {
                 call.respond(News().delete(call, RequestParams()))
             }
         }

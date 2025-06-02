@@ -38,10 +38,6 @@ fun Application.configureTests() {
                 val res = Clients().executeDelColumn("newColumn")
                 call.respond(HttpStatusCode.OK, res?:"")
             }
-            get("/authentications/clearTable") {
-                Authentications().clearTable()
-                call.respond(ResultResponse.Success("Таблица успешно очищена"))
-            }
             post ("/emailMessage") {
                 val email = call.parameters["email"]
 

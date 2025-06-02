@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "com.example"
-version = "1.9.0"
+version = "1.9.1"
 
 application {
     mainClass.set("com.example.ApplicationKt")
@@ -72,4 +72,5 @@ dependencies {
     implementation("io.ktor:ktor-client-core:2.0.2")
     implementation("io.ktor:ktor-client-cio:2.0.2")
     implementation("io.ktor:ktor-client-content-negotiation:2.0.2")
+    implementation("com.github.ua-parser:uap-java:1.6.1")
 }

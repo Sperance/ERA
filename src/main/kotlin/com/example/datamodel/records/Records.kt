@@ -67,6 +67,8 @@ data class Records(
     @Transient
     @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
+    override val deleted: Boolean = false
 ) : IntBaseDataImpl<Records>() {
 
     companion object {
@@ -80,13 +82,26 @@ data class Records(
         return id_client_from != null && id_employee_to != null && id_service != null && status != null
     }
 
-    suspend fun getFilledRecords() : ArrayList<Recordsdata> {
+    suspend fun toRecordsData(): Recordsdata {
+        val listClients = Clients.repo_clients.getRepositoryData()
+        val listEmployees = Employees.repo_employees.getRepositoryData()
+        val listServices = Services.repo_services.getRepositoryData()
+
+        return (Recordsdata(
+            clientFrom = listClients.find { f -> f.id == this.id_client_from },
+            employeeTo = listEmployees.find { f -> f.id == this.id_employee_to },
+            service = listServices.find { f -> f.id == this.id_service },
+            record = this)
+        )
+    }
+
+    suspend fun getFilledRecords(statuses: Collection<Int>? = null) : ArrayList<Recordsdata> {
         val listResults = ArrayList<Recordsdata>()
         val listClients = Clients.repo_clients.getRepositoryData()
         val listEmployees = Employees.repo_employees.getRepositoryData()
         val listServices = Services.repo_services.getRepositoryData()
 
-        repo_records.getRepositoryData().forEach {
+        repo_records.getRepositoryData().filter { statuses?.contains(it.status)?:true }.forEach {
             listResults.add(
                 Recordsdata(
                 clientFrom = listClients.find { f -> f.id == it.id_client_from },

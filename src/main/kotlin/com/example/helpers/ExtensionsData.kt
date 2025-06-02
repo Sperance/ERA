@@ -51,6 +51,14 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<
 }
 
 @Suppress("UNCHECKED_CAST")
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.deleteSafe() {
+    val metaTable = getTable() as META
+    printTextLog("[DELETE object '${this::class.java.simpleName}' with id '${this@deleteSafe.getField("id")}']")
+    this.putField("deleted", true)
+    db.runQuery { QueryDsl.update(metaTable).single(this@deleteSafe).returning() } as TYPE
+}
+
+@Suppress("UNCHECKED_CAST")
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.getData(declaration: WhereDeclaration? = null, sortExpression: SortExpression? = null) : List<TYPE> {
     val metaTable = getTable() as META
     val whereExpr = declaration ?: {metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> greaterEq 0}

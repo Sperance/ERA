@@ -77,37 +77,27 @@ suspend fun RoleAwareJWT?.checkAuthenticate(call: ApplicationCall, role: EnumBea
         return ResultResponse.Error(generateMapError(call, 101 to "Principal RoleAwareJWT is null"))
     }
 
+    if (this.role == null) {
+        return ResultResponse.Error(generateMapError(call, 102 to "Dont find Role in token"))
+    }
+
+    if (this.role == EnumBearerRoles.DEFAULT) {
+        return ResultResponse.Error(generateMapError(call, 103 to "Current role don`t support system"))
+    }
+
+    if (role != null && role.ordinal > this.role.ordinal) {
+        return ResultResponse.Error(generateMapError(call, 104 to "This method is blocked for the current role"))
+    }
+
     val findedToken = Authentications().getDataOne({ tbl_authentications.employee eq this@checkAuthenticate.employee ; tbl_authentications.clientId eq this@checkAuthenticate.userId })
     if (findedToken == null) {
         call.response.setToken("", GMTDate())
-        return ResultResponse.Error(generateMapError(call, 102 to "The token cannot be found in the database. Please log in again."))
+        return ResultResponse.Error(generateMapError(call, 105 to "The token cannot be found in the database. Please log in again."))
     }
 
-    if (findedToken.dateExpired!! <= LocalDateTime.currectDatetime()) {
+    if (findedToken.isExpires()) {
         call.response.setToken("", GMTDate())
-        return ResultResponse.Error(generateMapError(call, 103 to "Token in database is expired. Please log in again."))
-    }
-
-    if (this.employee) {
-        if (this.role == null) {
-            return ResultResponse.Error(generateMapError(call, 110 to "Dont find Role in token"))
-        }
-        if (this.role == EnumBearerRoles.DEFAULT) {
-            return ResultResponse.Error(generateMapError(call, 111 to "Current role don`t support system"))
-        }
-        if (role != null && role.ordinal > this.role.ordinal) {
-            return ResultResponse.Error(generateMapError(call, 112 to "This method is blocked for the current role"))
-        }
-    } else {
-        if (this.role == null) {
-            return ResultResponse.Error(generateMapError(call, 120 to "Dont find Role in token"))
-        }
-        if (this.role == EnumBearerRoles.DEFAULT) {
-            return ResultResponse.Error(generateMapError(call, 121 to "Current role don`t support system"))
-        }
-        if (role != null && role.ordinal > this.role.ordinal) {
-            return ResultResponse.Error(generateMapError(call, 122 to "This method is blocked for the current role"))
-        }
+        return ResultResponse.Error(generateMapError(call, 106 to "Token in database is expired. Please log in again."))
     }
 
     findedToken.dateUsed = LocalDateTime.currectDatetime()

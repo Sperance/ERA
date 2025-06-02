@@ -2,8 +2,12 @@ package com.example.datamodel.clientsschelude
 
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
+import com.example.datamodel.authentications.secureDelete
+import com.example.datamodel.authentications.secureGet
+import com.example.datamodel.authentications.securePost
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.catalogs.CatalogsErrors
+import com.example.enums.EnumBearerRoles
 import com.example.logObjectProperties
 import com.example.respond
 import io.ktor.server.application.Application
@@ -32,31 +36,27 @@ fun Application.configureClientsSchelude() {
                 call.respond(logObjectProperties(ClientsScheludeErrors, ClientsSchelude()))
             }
 
-            get("/all") {
+            secureGet("/all", EnumBearerRoles.USER) {
                 call.respond(ClientsSchelude().get(call))
             }
 
-            get("/all/invalid") {
+            secureGet("/all/invalid", EnumBearerRoles.ADMIN) {
                 call.respond(ClientsSchelude().getInvalid(call))
             }
 
-            get("/all/filter") {
+            secureGet("/all/filter", EnumBearerRoles.USER) {
                 call.respond(ClientsSchelude().getFilter(call))
             }
 
-            post("/update") {
+            securePost("/update", EnumBearerRoles.MODERATOR) {
                 call.respond(ClientsSchelude().update(call, RequestParams(), ClientsSchelude.serializer()))
             }
 
-            post("/update/many") {
-                call.respond(ClientsSchelude().updateMany(call, RequestParams(), ListSerializer(ClientsSchelude.serializer())))
-            }
-
-            post {
+            securePost("", EnumBearerRoles.MODERATOR) {
                 call.respond(ClientsSchelude().post(call, RequestParams(), ListSerializer(ClientsSchelude.serializer())))
             }
 
-            delete {
+            secureDelete("", EnumBearerRoles.MODERATOR) {
                 call.respond(ClientsSchelude().delete(call, RequestParams()))
             }
         }

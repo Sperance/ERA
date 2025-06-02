@@ -26,7 +26,7 @@ fun Application.configureCallLogging() {
                 call.response.headers["Answer-Error"]
             }
 
-            val str = "Request: ${call.request.local.remoteAddress}::${call.request.httpMethod.value} ${call.request.path()} params: [${call.request.queryParameters.entries().joinToString()}] -> Response: ${call.response.status()} $errorMsg"
+            val str = "Request: ${call.request.local.remoteAddress}::${call.request.httpMethod.value} ${call.request.path()} params: [${call.request.queryParameters.entries().joinToString()}] -> Response: ${call.response.status()} ${errorMsg?:""}"
             printTextLog("[CallLogging] $str", false)
 
             if (call.response.headers["Answer-TimeStamp"] != null) ServerRequests.addServerRecord(call)

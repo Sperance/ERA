@@ -76,4 +76,20 @@ object ClientsErrors {
     val ERROR_SEND_PARAMETER = CheckObjCondition<Clients>(102,
         { "Параметр 'send' должен быть boolean" },
         { true })
+
+    val ERROR_ID_PARAMETER = CheckObjCondition<Clients>(103,
+        { "Не указан параметр идентификатора 'id'" },
+        { true })
+
+    val ERROR_ID_NOT_INT_PARAMETER = CheckObjCondition<Clients>(104,
+        { "Параметр идентификатора 'id' должен быть Integer" },
+        { true })
+
+    val ERROR_ID_DONTFIND = CheckObjCondition<Clients>(105,
+        { "Клент с указанным параметром 'id' не найден в базе данных" },
+        { true })
+
+    val ERROR_LOGINKEY_DONTFIND = CheckObjCondition<Clients>(106,
+        { "Для указанного клиента не найден токен авторизации" },
+        { true })
 }

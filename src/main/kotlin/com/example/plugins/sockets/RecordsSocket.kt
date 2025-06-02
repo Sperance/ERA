@@ -2,6 +2,7 @@ package com.example.plugins.sockets
 
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.RecordsChanged
+import com.example.helpers.Recordsdata
 import com.example.logging.DailyLogger.printTextLog
 import io.ktor.server.application.Application
 import io.ktor.server.request.header
@@ -26,13 +27,13 @@ fun Application.recordsSocket() {
             socketsRecords.addConnection(secKey, this)
 
             try {
-                val jsonAll = Json.encodeToString(Records().getFilledRecords())
+                val jsonAll = Json.encodeToString(Records().getFilledRecords(listOf(0, 100)))
                 send(Frame.Text(jsonAll))
                 while (true) {
                     if (Records.repo_records.onChangedObject.isNotEmpty()) {
                         val array = ArrayList<RecordsChanged>()
                         Records.repo_records.onChangedObject.forEach { (records, s) ->
-                            array.add(RecordsChanged(records, s))
+                            array.add(RecordsChanged(records?.toRecordsData(), s))
                             printTextLog("[recordsSocket] send data: $records TYPE: $s")
                         }
                         val json = Json.encodeToString(array)
@@ -40,7 +41,7 @@ fun Application.recordsSocket() {
                         Records.repo_records.onChangedObject.clear()
                     }
                     socketsRecords.removeClosedConnections()
-                    delay(1000)
+                    delay(500)
                 }
             } catch (e: ClosedReceiveChannelException) {
                 printTextLog("[recordsSocket] Connection closed: ${e.message}")

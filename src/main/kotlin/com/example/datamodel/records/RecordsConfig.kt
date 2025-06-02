@@ -2,8 +2,12 @@ package com.example.datamodel.records
 
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
+import com.example.datamodel.authentications.secureDelete
+import com.example.datamodel.authentications.secureGet
+import com.example.datamodel.authentications.securePost
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.catalogs.CatalogsErrors
+import com.example.enums.EnumBearerRoles
 import com.example.logObjectProperties
 import com.example.respond
 import io.ktor.server.application.Application
@@ -32,31 +36,31 @@ fun Application.configureRecords() {
                 call.respond(logObjectProperties(RecordsErrors, Records()))
             }
 
-            get("/all") {
+            secureGet("/all", EnumBearerRoles.MODERATOR) {
                 call.respond(Records().get(call))
             }
 
-            get("/all/invalid") {
+            secureGet("/all/invalid", EnumBearerRoles.ADMIN) {
                 call.respond(Records().getInvalid(call))
             }
 
-            get("/all/filter") {
+            secureGet("/all/filter", EnumBearerRoles.USER) {
                 call.respond(Records().getFilter(call))
             }
 
-            get("/id") {
+            secureGet("/id", EnumBearerRoles.USER) {
                 call.respond(Records().getFromId(call, RequestParams()))
             }
 
-            post("/update") {
+            securePost("/update", EnumBearerRoles.USER) {
                 call.respond(Records().update(call, RequestParams(), Records.serializer()))
             }
 
-            post {
+            securePost("", EnumBearerRoles.USER) {
                 call.respond(Records().post(call, RequestParams(), ListSerializer(Records.serializer())))
             }
 
-            delete {
+            secureDelete("", EnumBearerRoles.MODERATOR) {
                 call.respond(Records().delete(call, RequestParams()))
             }
         }

@@ -46,6 +46,8 @@ data class Catalogs(
     @Transient
     @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
+    override val deleted: Boolean = false
 ) : IntBaseDataImpl<Catalogs>() {
 
     companion object {

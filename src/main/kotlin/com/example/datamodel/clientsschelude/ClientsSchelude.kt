@@ -42,6 +42,8 @@ data class ClientsSchelude(
     @Transient
     @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
+    override val deleted: Boolean = false
 ) : IntBaseDataImpl<ClientsSchelude>() {
 
     companion object {
@@ -61,6 +63,8 @@ data class ClientsSchelude(
         params.checkings.add { ClientsScheludeErrors.ERROR_SCHELUDEDATESTART.toCheckObj(it) }
         params.checkings.add { ClientsScheludeErrors.ERROR_SCHELUDEDATEEND.toCheckObj(it) }
         params.checkings.add { ClientsScheludeErrors.ERROR_SCHELUDEDATESCOMPARE.toCheckObj(it) }
+        params.checkings.add { ClientsScheludeErrors.ERROR_CURRENTDATE.toCheckObj(it) }
+        params.checkings.add { ClientsScheludeErrors.ERROR_CURRENTDAY.toCheckObj(it) }
 
         return super.post(call, params, serializer)
     }
@@ -68,15 +72,10 @@ data class ClientsSchelude(
     override suspend fun update(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<ClientsSchelude>): ResultResponse {
         params.checkings.add { ClientsScheludeErrors.ERROR_EMPLOYEE_DUPLICATE_NOTNULL.toCheckObj(it) }
         params.checkings.add { ClientsScheludeErrors.ERROR_SCHELUDEDATESCOMPARE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { ClientsScheludeErrors.ERROR_CURRENTDATE_NOTNULL.toCheckObj(it) }
+        params.checkings.add { ClientsScheludeErrors.ERROR_CURRENTDAY_NOTNULL.toCheckObj(it) }
 
         return super.update(call, params, serializer)
-    }
-
-    override suspend fun updateMany(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<List<ClientsSchelude>>): ResultResponse {
-        params.checkings.add { ClientsScheludeErrors.ERROR_EMPLOYEE_DUPLICATE_NOTNULL.toCheckObj(it) }
-        params.checkings.add { ClientsScheludeErrors.ERROR_SCHELUDEDATESCOMPARE_NOTNULL.toCheckObj(it) }
-
-        return super.updateMany(call, params, serializer)
     }
 }
 

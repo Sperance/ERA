@@ -44,6 +44,8 @@ data class ServerRequests(
     override val version: Int = 0,
     @Transient
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
+    override val deleted: Boolean = false
 ) : IntPostgreTable<ServerRequests> {
     companion object {
         val tbl_serverrequests = Meta.serverRequests

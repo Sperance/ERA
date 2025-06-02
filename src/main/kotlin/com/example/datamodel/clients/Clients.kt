@@ -9,6 +9,7 @@ import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
 import com.example.datamodel.authentications.Authentications
+import com.example.datamodel.authentications.Authentications.Companion.tbl_authentications
 import com.example.datamodel.feedbacks.FeedBacks
 import com.example.helpers.getSize
 import com.example.datamodel.records.Records
@@ -17,6 +18,7 @@ import com.example.generateMapError
 import com.example.helpers.update
 import com.example.helpers.GMailSender
 import com.example.helpers.delete
+import com.example.helpers.getDataOne
 import com.example.helpers.getField
 import com.example.helpers.haveField
 import com.example.helpers.putField
@@ -25,6 +27,7 @@ import com.example.security.AESEncryption
 import com.example.security.generateSalt
 import com.example.security.hashString
 import com.example.security.verifyPassword
+import com.example.toIntPossible
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
 import io.ktor.util.date.GMTDate
@@ -82,6 +85,8 @@ data class Clients(
     @Transient
     @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
+    override val deleted: Boolean = false
 ) : IntBaseDataImpl<Clients>() {
 
     companion object {
@@ -191,6 +196,31 @@ data class Clients(
         }
     }
 
+    suspend fun onExitSite(call: ApplicationCall): ResultResponse {
+        try {
+            val id = call.parameters["id"]
+            if (id.isNullOrEmpty())
+                return ClientsErrors.ERROR_ID_PARAMETER.toResultResponse(call, this)
+
+            if (!id.toIntPossible())
+                return ClientsErrors.ERROR_ID_NOT_INT_PARAMETER.toResultResponse(call, this)
+
+            val findedClient = repo_clients.getDataFromId(id.toIntOrNull())
+            if (findedClient == null)
+                return ClientsErrors.ERROR_ID_DONTFIND.toResultResponse(call, this)
+
+            val key = Authentications().getDataOne({ tbl_authentications.clientId eq id.toIntOrNull() ; tbl_authentications.employee eq false })
+            if (key == null) {
+                return ClientsErrors.ERROR_LOGINKEY_DONTFIND.toResultResponse(call, this)
+            }
+            key.delete()
+
+            return ResultResponse.Success("")
+        } catch (e: Exception) {
+            return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage))
+        }
+    }
+
     suspend fun postRecoveryPassword(call: ApplicationCall): ResultResponse {
         try {
             val email = call.parameters["email"]
@@ -241,26 +271,26 @@ data class Clients(
         params.checkings.add { ClientsErrors.ERROR_EMAIL_DUPLICATE_NOTNULL.toCheckObj(it) }
 
         params.onBeforeCompleted = { obj ->
-            val size = Clients().getSize()
             if (obj.lastName != null) obj.lastName = AESEncryption.encrypt(obj.lastName)
             if (obj.firstName != null) obj.firstName = AESEncryption.encrypt(obj.firstName)
             if (obj.patronymic != null) obj.patronymic = AESEncryption.encrypt(obj.patronymic)
             if (obj.email != null) obj.email = AESEncryption.encrypt(obj.email)
             if (obj.phone != null) obj.phone = AESEncryption.encrypt(obj.phone)
+            printTextLog("OLD PASS: ${obj.password}")
             if (obj.password != null) obj.setNewPassword(obj.password!!)
-            if (obj.role != null) obj.role = AESEncryption.encrypt(obj.role + "_" + size)
+            printTextLog("NEW PASS: ${obj.password}")
         }
 
         params.checkOnUpdate = { finded, new ->
             if (new.haveField("salt") && finded.haveField("salt")) {
                 new.putField("salt", finded.getField("salt"))
             }
-            if (new.password != null) new.setNewPassword(new.password!!)
+            true
         }
         return super.update(call, params, serializer)
     }
 
-    fun setNewPassword(newPass: String) {
+    private fun setNewPassword(newPass: String) {
         password = hashString(newPass, salt!!)
     }
 

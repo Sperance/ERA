@@ -2,8 +2,13 @@ package com.example.datamodel.employees
 
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
+import com.example.datamodel.authentications.secureDelete
+import com.example.datamodel.authentications.secureGet
+import com.example.datamodel.authentications.securePost
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.catalogs.CatalogsErrors
+import com.example.datamodel.clients.Clients
+import com.example.enums.EnumBearerRoles
 import com.example.logObjectProperties
 import com.example.respond
 import io.ktor.server.application.Application
@@ -27,7 +32,7 @@ fun Application.configureEmployees() {
                 call.respond(ResultResponse.Success("Таблица успешно очищена"))
             }
 
-            get ("/timeslot/{clientId}/{servceLength}") {
+            secureGet("/timeslot/{clientId}/{servceLength}", EnumBearerRoles.USER) {
                 call.respond(Employees().getTimeSlots(call))
             }
 
@@ -39,7 +44,7 @@ fun Application.configureEmployees() {
                 call.respond(Employees().get(call))
             }
 
-            get("/all/invalid") {
+            secureGet("/all/invalid", EnumBearerRoles.ADMIN) {
                 call.respond(Employees().getInvalid(call))
             }
 
@@ -47,15 +52,15 @@ fun Application.configureEmployees() {
                 call.respond(Employees().getFilter(call))
             }
 
-            get("/id") {
-                call.respond(Employees().getFromId(call, RequestParams()))
-            }
-
             get("/role") {
                 call.respond(Employees().getByRole(call))
             }
 
-            get("/slots/{id}/{data}") {
+            secureGet("/id", EnumBearerRoles.MODERATOR) {
+                call.respond(Employees().getFromId(call, RequestParams()))
+            }
+
+            secureGet("/slots/{id}/{data}", EnumBearerRoles.USER) {
                 call.respond(Employees().getSlots(call))
             }
 
@@ -63,15 +68,19 @@ fun Application.configureEmployees() {
                 call.respond(Employees().auth(call))
             }
 
-            post("/update") {
+            securePost("/update", EnumBearerRoles.USER) {
                 call.respond(Employees().update(call, RequestParams(), Employees.serializer()))
             }
 
-            post {
+            securePost("", EnumBearerRoles.MODERATOR) {
                 call.respond(Employees().post(call, RequestParams(), ListSerializer(Employees.serializer())))
             }
 
-            delete {
+            securePost("/onExit", EnumBearerRoles.USER) {
+                call.respond(Employees().onExitSite(call))
+            }
+
+            secureDelete("", EnumBearerRoles.MODERATOR) {
                 call.respond(Employees().delete(call, RequestParams()))
             }
         }

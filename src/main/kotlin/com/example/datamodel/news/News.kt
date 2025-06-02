@@ -42,6 +42,8 @@ data class News(
     override val version: Int = 0,
     @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
+    override val deleted: Boolean = false
 ) : IntBaseDataImpl<News>() {
 
     companion object {

@@ -101,14 +101,15 @@ fun Application.configureAuthentication() {
                     null
                 }
             }
-            challenge { _, _ ->
-                val errorMsg = if (call.attributes.contains(AUTH_ERROR_KEY)) {
-                    call.attributes[AUTH_ERROR_KEY]
-                } else {
-                    "Token is not valid or has expired"
-                }
-                call.respond(ResultResponse.Error(generateMapError(call, 401 to errorMsg)))
-            }
+//            challenge { _, _ ->
+//                if (call.attributes.contains(AUTH_ERROR_KEY)) {
+//                    call.respond(ResultResponse.Error(generateMapError(call, 401 to call.attributes[AUTH_ERROR_KEY])))
+//                }
+//                else {
+//                    "Token is not valid or has expired"
+//                }
+
+//            }
             authHeader { call ->
                 val token = call.request.cookies["era_auth_token"]
                 token?.let { HttpAuthHeader.Single("Bearer", it) }

@@ -2,8 +2,12 @@ package com.example.datamodel.clients
 
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
+import com.example.datamodel.authentications.secureDelete
+import com.example.datamodel.authentications.secureGet
+import com.example.datamodel.authentications.securePost
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.catalogs.CatalogsErrors
+import com.example.enums.EnumBearerRoles
 import com.example.logObjectProperties
 import com.example.respond
 import io.ktor.server.application.Application
@@ -18,9 +22,9 @@ import kotlinx.serialization.builtins.ListSerializer
 fun Application.configureClients() {
     routing {
         route("/clients") {
-            get("/structure") {
-                call.respond(ResultResponse.Success(Clients().getCommentArray()))
-            }
+//            get("/structure") {
+//                call.respond(ResultResponse.Success(Clients().getCommentArray()))
+//            }
 
             get("/clearTable") {
                 Clients.repo_clients.clearTable()
@@ -31,7 +35,7 @@ fun Application.configureClients() {
                 call.respond(logObjectProperties(ClientsErrors, Clients()))
             }
 
-            get("/all") {
+            secureGet("/all", EnumBearerRoles.MODERATOR) {
                 call.respond(Clients().get(call))
             }
 
@@ -39,11 +43,11 @@ fun Application.configureClients() {
                 call.respond(Clients().getInvalid(call))
             }
 
-            get("/all/filter") {
+            secureGet("/all/filter", EnumBearerRoles.USER) {
                 call.respond(Clients().getFilter(call))
             }
 
-            get("/id") {
+            secureGet("/id", EnumBearerRoles.USER) {
                 call.respond(Clients().getFromId(call, RequestParams()))
             }
 
@@ -51,7 +55,7 @@ fun Application.configureClients() {
                 call.respond(Clients().auth(call))
             }
 
-            post("/update") {
+            securePost("/update", EnumBearerRoles.USER) {
                 call.respond(Clients().update(call, RequestParams(), Clients.serializer()))
             }
 
@@ -59,15 +63,19 @@ fun Application.configureClients() {
                 call.respond(Clients().post(call, RequestParams(), ListSerializer(Clients.serializer())))
             }
 
-            post("/recoveryPassword") {
+            securePost("/recoveryPassword", EnumBearerRoles.USER) {
                 call.respond(Clients().postRecoveryPassword(call))
             }
 
-            post("/changePasswordFromEmail") {
+            securePost("/changePasswordFromEmail", EnumBearerRoles.USER) {
                 call.respond(Clients().changePasswordFromEmail(call))
             }
 
-            delete {
+            securePost("/onExit", EnumBearerRoles.USER) {
+                call.respond(Clients().onExitSite(call))
+            }
+
+            secureDelete("", EnumBearerRoles.USER) {
                 call.respond(Clients().delete(call, RequestParams()))
             }
         }

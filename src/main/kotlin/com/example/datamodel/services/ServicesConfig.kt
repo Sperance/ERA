@@ -2,8 +2,12 @@ package com.example.datamodel.services
 
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
+import com.example.datamodel.authentications.secureDelete
+import com.example.datamodel.authentications.secureGet
+import com.example.datamodel.authentications.securePost
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.catalogs.CatalogsErrors
+import com.example.enums.EnumBearerRoles
 import com.example.logObjectProperties
 import com.example.respond
 import io.ktor.server.application.Application
@@ -36,7 +40,7 @@ fun Application.configureServices() {
                 call.respond(Services().get(call))
             }
 
-            get("/all/invalid") {
+            secureGet("/all/invalid", EnumBearerRoles.ADMIN) {
                 call.respond(Services().getInvalid(call))
             }
 
@@ -44,15 +48,15 @@ fun Application.configureServices() {
                 call.respond(Services().getFilter(call))
             }
 
-            post("/update") {
+            securePost("/update", EnumBearerRoles.MODERATOR) {
                 call.respond(Services().update(call, RequestParams(), Services.serializer()))
             }
 
-            post {
+            securePost("", EnumBearerRoles.MODERATOR) {
                 call.respond(Services().post(call, RequestParams(), ListSerializer(Services.serializer())))
             }
 
-            delete {
+            secureDelete("", EnumBearerRoles.ADMIN) {
                 call.respond(Services().delete(call, RequestParams()))
             }
         }

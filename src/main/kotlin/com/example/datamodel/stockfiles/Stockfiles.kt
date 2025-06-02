@@ -43,6 +43,8 @@ data class Stockfiles(
     @Transient
     @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
+    override val deleted: Boolean = false
 ) : IntBaseDataImpl<Stockfiles>() {
 
     companion object {

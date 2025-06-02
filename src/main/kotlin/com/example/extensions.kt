@@ -37,6 +37,11 @@ fun String?.toIntPossible() : Boolean {
     return this.toIntOrNull() != null
 }
 
+fun String?.toBoolPossible() : Boolean {
+    if (this == null) return false
+    return this.toBooleanStrictOrNull() != null
+}
+
 fun LocalDateTime.plus(duration: Duration) : LocalDateTime {
     return this.toInstant(TimeZone.UTC).plus(duration).toLocalDateTime(TimeZone.UTC)
 }

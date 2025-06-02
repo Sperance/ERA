@@ -2,8 +2,12 @@ package com.example.datamodel.feedbacks
 
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
+import com.example.datamodel.authentications.secureDelete
+import com.example.datamodel.authentications.secureGet
+import com.example.datamodel.authentications.securePost
 import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.catalogs.CatalogsErrors
+import com.example.enums.EnumBearerRoles
 import com.example.logObjectProperties
 import com.example.respond
 import io.ktor.server.application.Application
@@ -36,7 +40,7 @@ fun Application.configureFeedbacks() {
                 call.respond(FeedBacks().get(call))
             }
 
-            get("/all/invalid") {
+            secureGet("/all/invalid", EnumBearerRoles.ADMIN) {
                 call.respond(FeedBacks().getInvalid(call))
             }
 
@@ -44,15 +48,15 @@ fun Application.configureFeedbacks() {
                 call.respond(FeedBacks().getFilter(call))
             }
 
-            post("/update") {
+            securePost("/update", EnumBearerRoles.USER) {
                 call.respond(FeedBacks().update(call, RequestParams(), FeedBacks.serializer()))
             }
 
-            post {
+            securePost("", EnumBearerRoles.USER) {
                 call.respond(FeedBacks().post(call, RequestParams(), ListSerializer(FeedBacks.serializer())))
             }
 
-            delete {
+            secureDelete("", EnumBearerRoles.USER) {
                 call.respond(FeedBacks().delete(call, RequestParams()))
             }
         }

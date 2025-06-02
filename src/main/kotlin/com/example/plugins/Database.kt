@@ -3,6 +3,7 @@ package com.example.plugins
 import com.example.applicationTomlSettings
 import com.example.basemodel.ResultResponse
 import com.example.datamodel.authentications.Authentications.Companion.tbl_authentications
+import com.example.datamodel.authentications.configureAuthentications
 import com.example.datamodel.catalogs.Catalogs.Companion.tbl_catalogs
 import com.example.datamodel.catalogs.configureCatalogs
 import com.example.datamodel.clients.Clients.Companion.tbl_clients
@@ -39,6 +40,7 @@ import org.komapper.r2dbc.R2dbcDatabase
 import io.ktor.server.routing.get
 import java.io.File
 import com.example.respond
+import io.ktor.server.plugins.origin
 
 private val connectionFactory: ConnectionFactoryOptions = ConnectionFactoryOptions.builder()
     .option(ConnectionFactoryOptions.DRIVER, "postgresql")
@@ -78,6 +80,7 @@ fun Application.configureDatabases() {
         configureNews()
         configureClientsSchelude()
         configureCatalogs()
+        configureAuthentications()
         configureWorkServer()
 
         defaultsConfig()

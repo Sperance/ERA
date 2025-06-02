@@ -10,6 +10,8 @@ fun Application.configureCORS() {
     install(CORS) {
         allowHost("www.salon-era.ru", schemes = listOf("https"))
         allowHost("salon-era.ru", schemes = listOf("https"))
+        allowHost("www.salon-era.online", schemes = listOf("https"))
+        allowHost("salon-era.online", schemes = listOf("https"))
         allowHost("localhost:3000", schemes = listOf("http"))
 
         allowMethod(HttpMethod.Get)
