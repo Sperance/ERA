@@ -20,6 +20,7 @@ import org.komapper.annotation.KomapperColumn
 import org.komapper.annotation.KomapperEntity
 import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
+import org.komapper.annotation.KomapperUpdatedAt
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
 import kotlin.time.Duration.Companion.minutes
@@ -44,6 +45,9 @@ data class ServerRequests(
     override val version: Int = 0,
     @Transient
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
+    @KomapperUpdatedAt
+    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntPostgreTable<ServerRequests> {

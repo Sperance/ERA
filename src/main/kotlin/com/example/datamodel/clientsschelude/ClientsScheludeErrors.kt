@@ -46,7 +46,7 @@ object ClientsScheludeErrors {
 
     val ERROR_CURRENTDAY = CheckObjCondition<ClientsSchelude>(206,
         { "На выбранную дату уже есть занятый слот. Редактируйте его" },
-        { it.scheludeDateStart!!.dayOfYear == it.scheludeDateEnd!!.dayOfYear && repo_clientsschelude.getRepositoryData().find { dt -> dt.scheludeDateStart!!.dayOfYear == it.scheludeDateStart!!.dayOfYear } != null })
+        { it.scheludeDateStart!!.dayOfYear == it.scheludeDateEnd!!.dayOfYear && repo_clientsschelude.getRepositoryData().find { dt -> dt.scheludeDateStart!!.dayOfYear == it.scheludeDateStart!!.dayOfYear && dt.idEmployee == it.idEmployee } != null })
 
     val ERROR_CURRENTDAY_NOTNULL = CheckObjCondition<ClientsSchelude>(206,
         { "На выбранную дату уже есть занятый слот. Редактируйте его" },

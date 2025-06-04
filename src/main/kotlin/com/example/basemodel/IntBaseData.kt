@@ -8,12 +8,15 @@ import com.example.helpers.SYS_FIELDS_ARRAY
 import com.example.getCommentFieldAnnotation
 import com.example.helpers.create
 import com.example.helpers.delete
+import com.example.helpers.deleteSafe
 import com.example.helpers.executeAddColumn
 import com.example.helpers.executeDelColumn
 import com.example.helpers.getDataOne
+import com.example.helpers.getDataPagination
 import com.example.helpers.getField
 import com.example.helpers.haveField
 import com.example.helpers.putField
+import com.example.helpers.restoreSafe
 import com.example.helpers.update
 import com.example.interfaces.IntPostgreTableRepository
 import com.example.isAllNullOrEmpty
@@ -26,11 +29,16 @@ import io.ktor.http.content.forEachPart
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receiveMultipart
 import io.ktor.utils.io.toByteArray
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
+import org.komapper.core.dsl.expression.WhereDeclaration
 import org.komapper.core.dsl.metamodel.EntityMetamodel
 import org.komapper.core.dsl.metamodel.PropertyMetamodel
 import org.komapper.core.dsl.metamodel.getAutoIncrementProperty
+import org.komapper.core.dsl.operator.and
 import java.io.File
 import java.nio.file.Paths
 import kotlin.io.path.absolutePathString
@@ -103,7 +111,12 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
     open suspend fun get(call: ApplicationCall): ResultResponse {
         return db.withTransaction { tx ->
             try {
-                return@withTransaction ResultResponse.Success(getRepository().getRepositoryData())
+                val page = call.parameters["page"]?.toIntOrNull()
+                if (page == null) {
+                    return@withTransaction ResultResponse.Success(getRepository().getRepositoryData())
+                } else {
+                    return@withTransaction ResultResponse.Success(this.getDataPagination(page = page))
+                }
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
@@ -154,8 +167,14 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     return@withTransaction ResultResponse.Error(generateMapError(call, 305 to "Incorrect parameter 'state'(${state}). This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"))
                 }
 
-                val resultList = getRepository().getDataFilter(field, stateEnum, value)
-                return@withTransaction ResultResponse.Success(resultList as Collection<*>)
+                val page = call.parameters["page"]?.toIntOrNull()
+                if (page == null) {
+                    val resultList = getRepository().getDataFilter(field, stateEnum, value)
+                    return@withTransaction ResultResponse.Success(resultList as Collection<*>)
+                } else {
+                    val resultList = getRepository().getDataFilter(field, stateEnum, value)
+                    return@withTransaction ResultResponse.Success(resultList as Collection<*>)
+                }
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
@@ -242,6 +261,104 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 getRepository().deleteData(id.toInt())
 
                 ResultResponse.Success("$currectObjClassName with id $id successfully deleted")
+            } catch (e: Exception) {
+                tx.setRollbackOnly()
+                getRepository().resetData()
+                return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
+            }
+        }
+    }
+
+    open suspend fun deleteSafe(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
+        return db.withTransaction { tx ->
+            try {
+                val id = call.parameters["id"]
+                if (id == null || !id.toIntPossible()) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(generateMapError(call, 301 to "Incorrect parameter 'id'($id). This parameter must be 'Int' type"))
+                }
+
+                params.checkings.forEach { check ->
+                    val res = check.invoke(this as T)
+                    if (res.result) {
+                        tx.setRollbackOnly()
+                        return@withTransaction ResultResponse.Error(generateMapError(call, res.errorCode to res.errorText))
+                    }
+                }
+
+                params.defaults.forEach { def ->
+                    val res = def.invoke(this as T)
+                    val property = res.first as KMutableProperty0<Any?>
+                    if (!property.get().isAllNullOrEmpty()) return@forEach
+                    val value = res.second
+                    property.set(value)
+                }
+
+                val currectObjClassName = this::class.simpleName!!
+                val tblObj = getField("tbl_${currectObjClassName.lowercase()}") as EntityMetamodel<*, *, *>
+                val auProp = tblObj.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int>
+                val findedObj = getDataOne({ auProp eq id.toInt() })
+                if (findedObj == null) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(generateMapError(call, 302 to "Not found $currectObjClassName with id $id"))
+                }
+
+                params.onBeforeCompleted?.invoke(findedObj as T)
+
+                findedObj.deleteSafe()
+
+                getRepository().updateData(findedObj)
+
+                ResultResponse.Success("$currectObjClassName with id $id successfully safe deleted")
+            } catch (e: Exception) {
+                tx.setRollbackOnly()
+                getRepository().resetData()
+                return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
+            }
+        }
+    }
+
+    open suspend fun restore(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
+        return db.withTransaction { tx ->
+            try {
+                val id = call.parameters["id"]
+                if (id == null || !id.toIntPossible()) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(generateMapError(call, 301 to "Incorrect parameter 'id'($id). This parameter must be 'Int' type"))
+                }
+
+                params.checkings.forEach { check ->
+                    val res = check.invoke(this as T)
+                    if (res.result) {
+                        tx.setRollbackOnly()
+                        return@withTransaction ResultResponse.Error(generateMapError(call, res.errorCode to res.errorText))
+                    }
+                }
+
+                params.defaults.forEach { def ->
+                    val res = def.invoke(this as T)
+                    val property = res.first as KMutableProperty0<Any?>
+                    if (!property.get().isAllNullOrEmpty()) return@forEach
+                    val value = res.second
+                    property.set(value)
+                }
+
+                val currectObjClassName = this::class.simpleName!!
+                val tblObj = getField("tbl_${currectObjClassName.lowercase()}") as EntityMetamodel<*, *, *>
+                val auProp = tblObj.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int>
+                val findedObj = getDataOne({ auProp eq id.toInt() })
+                if (findedObj == null) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(generateMapError(call, 302 to "Not found $currectObjClassName with id $id"))
+                }
+
+                params.onBeforeCompleted?.invoke(findedObj as T)
+
+                findedObj.restoreSafe()
+
+                getRepository().updateData(findedObj)
+
+                ResultResponse.Success("$currectObjClassName with id $id successfully safe restored")
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 getRepository().resetData()
@@ -426,6 +543,53 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 getRepository().resetData()
+                return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
+            }
+        }
+    }
+
+    suspend fun getDataFilterPagination(call: ApplicationCall): ResultResponse {
+        val field = call.parameters["field"]
+        if (field.isNullOrEmpty()) {
+            return ResultResponse.Error(generateMapError(call, 301 to "Incorrect parameter 'field'. This parameter must be 'String' type"))
+        }
+        val _state = call.parameters["state"]
+        if (_state.isNullOrEmpty()) {
+            return ResultResponse.Error(generateMapError(call, 302 to "Incorrect parameter 'state'. This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"))
+        }
+
+        val state = EnumDataFilter.entries.find { it.name == _state.uppercase() }
+        if (state == null) {
+            return ResultResponse.Error(generateMapError(call, 303 to "Incorrect parameter 'state'(${_state}). This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"))
+        }
+
+        val value = call.parameters["value"]
+        val page = call.parameters["page"]?.toIntOrNull()
+        if (page == null) {
+            return ResultResponse.Error(generateMapError(call, 303 to "Incorrect parameter 'page'. This parameter must be 'Int' type"))
+        }
+
+        var withDeleted = call.parameters["withDeleted"]?.toBooleanStrictOrNull()
+        if (withDeleted == null) withDeleted = false
+
+        return db.withTransaction { tx ->
+            try {
+                val whereExpr: WhereDeclaration = when (state) {
+                    EnumDataFilter.EQ -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).eq(value)} }
+                    EnumDataFilter.NE -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).notEq(value)} }
+                    EnumDataFilter.LT -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).less(value)} }
+                    EnumDataFilter.GT ->  { {(getTable()[field] as PropertyMetamodel<T, Any, *>).greater(value)} }
+                    EnumDataFilter.LE -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).lessEq(value)} }
+                    EnumDataFilter.GE -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).greaterEq(value)} }
+                    EnumDataFilter.CONTAINS -> { {(getTable()[field] as PropertyMetamodel<T, Any, String>).contains(value)} }
+                    EnumDataFilter.NOT_CONTAINS -> { {(getTable()[field] as PropertyMetamodel<T, Any, String>).notContains(value)} }
+                }
+                val deleteExpr: WhereDeclaration = {(getTable()["deleted"] as PropertyMetamodel<T, Any, Boolean>).eq(withDeleted)}
+                val sumWhere: WhereDeclaration = whereExpr.and(deleteExpr)
+
+                return@withTransaction ResultResponse.Success(this.getDataPagination(declaration = sumWhere, page = page))
+            } catch (e: Exception) {
+                tx.setRollbackOnly()
                 return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
             }
         }

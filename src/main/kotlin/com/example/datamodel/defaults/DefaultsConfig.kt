@@ -4,7 +4,7 @@ import com.example.datamodel.catalogs.Catalogs
 import com.example.datamodel.employees.Employees
 import com.example.enums.EnumBearerRoles
 import com.example.helpers.createBatch
-import com.example.helpers.isEmpty
+import com.example.helpers.getSize
 import com.example.security.AESEncryption
 import com.example.security.generateSalt
 import kotlinx.coroutines.runBlocking
@@ -15,7 +15,7 @@ fun defaultsConfig() = runBlocking {
 }
 
 private suspend fun defaultEmployees() {
-    if (Employees().isEmpty()) {
+    if (Employees().getSize() == 0L) {
         Employees().createBatch("defaultEmployees", listOf(
             Employees().apply {
                 firstName = AESEncryption.encrypt("admin")
@@ -43,7 +43,7 @@ private suspend fun defaultEmployees() {
 }
 
 private suspend fun defaultCatalogs() {
-    if (Catalogs().isEmpty()) {
+    if (Catalogs().getSize() == 0L) {
         Catalogs().createBatch("defaultCatalogs", listOf(
             Catalogs().apply {
                 type = "Типы работ"

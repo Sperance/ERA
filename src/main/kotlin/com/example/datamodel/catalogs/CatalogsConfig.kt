@@ -6,6 +6,8 @@ import com.example.datamodel.authentications.secureDelete
 import com.example.datamodel.authentications.secureGet
 import com.example.datamodel.authentications.securePost
 import com.example.enums.EnumBearerRoles
+import com.example.helpers.getDataPagination
+import com.example.helpers.restoreSafe
 import com.example.logObjectProperties
 import com.example.respond
 import io.ktor.server.application.Application
@@ -44,12 +46,24 @@ fun Application.configureCatalogs() {
                 call.respond(Catalogs().getFilter(call))
             }
 
+            get("/all/pages/filter") {
+                call.respond(Catalogs().getDataFilterPagination(call))
+            }
+
             securePost("/update", EnumBearerRoles.MODERATOR) {
                 call.respond(Catalogs().update(call, RequestParams(), Catalogs.serializer()))
             }
 
             securePost("", EnumBearerRoles.MODERATOR) {
                 call.respond(Catalogs().post(call, RequestParams(), ListSerializer(Catalogs.serializer())))
+            }
+
+            securePost("/restore", EnumBearerRoles.MODERATOR) {
+                call.respond(Catalogs().restore(call, RequestParams()))
+            }
+
+            secureDelete("/safe", EnumBearerRoles.MODERATOR) {
+                call.respond(Catalogs().deleteSafe(call, RequestParams()))
             }
 
             secureDelete("", EnumBearerRoles.MODERATOR) {

@@ -5,15 +5,11 @@ import com.example.basemodel.ResultResponse
 import com.example.datamodel.authentications.secureDelete
 import com.example.datamodel.authentications.secureGet
 import com.example.datamodel.authentications.securePost
-import com.example.datamodel.catalogs.Catalogs
-import com.example.datamodel.catalogs.CatalogsErrors
-import com.example.datamodel.clients.Clients
 import com.example.enums.EnumBearerRoles
 import com.example.logObjectProperties
 import com.example.respond
 import io.ktor.server.application.Application
 import io.ktor.server.response.respond
-import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
@@ -78,6 +74,14 @@ fun Application.configureEmployees() {
 
             securePost("/onExit", EnumBearerRoles.USER) {
                 call.respond(Employees().onExitSite(call))
+            }
+
+            securePost("/restore", EnumBearerRoles.MODERATOR) {
+                call.respond(Employees().restore(call, RequestParams()))
+            }
+
+            secureDelete("/safe", EnumBearerRoles.USER) {
+                call.respond(Employees().deleteSafe(call, RequestParams()))
             }
 
             secureDelete("", EnumBearerRoles.MODERATOR) {

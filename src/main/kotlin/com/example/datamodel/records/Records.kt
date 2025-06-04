@@ -11,8 +11,11 @@ import com.example.datamodel.clients.Clients
 import com.example.datamodel.employees.Employees
 import com.example.helpers.getSize
 import com.example.datamodel.services.Services
+import com.example.enums.EnumDataFilter
 import com.example.generateMapError
+import com.example.helpers.haveField
 import com.example.logging.DailyLogger.printTextLog
+import com.example.plugins.db
 import com.example.toIntPossible
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
@@ -24,6 +27,7 @@ import org.komapper.annotation.KomapperColumn
 import org.komapper.annotation.KomapperEntity
 import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
+import org.komapper.annotation.KomapperUpdatedAt
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
 import java.text.SimpleDateFormat
@@ -67,6 +71,9 @@ data class Records(
     @Transient
     @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
+    @KomapperUpdatedAt
+    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntBaseDataImpl<Records>() {
@@ -158,6 +165,47 @@ data class Records(
         params.defaults.add { it::number to generateShortOrderNumber(Records().getSize()) }
 
         return super.post(call, params, serializer)
+    }
+
+    override suspend fun getFilter(call: ApplicationCall): ResultResponse {
+        return db.withTransaction { tx ->
+            try {
+                val field = call.parameters["field"]
+                if (field.isNullOrEmpty()) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(generateMapError(call, 301 to "Incorrect parameter 'field'. This parameter must be 'String' type"))
+                }
+
+                val state = call.parameters["state"]
+                if (state.isNullOrEmpty()) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(generateMapError(call, 302 to "Incorrect parameter 'state'. This parameter must be 'String' type"))
+                }
+
+                val value = call.parameters["value"]
+                if (value.isNullOrEmpty()) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(generateMapError(call, 303 to "Incorrect parameter 'value'. This parameter must be 'String' type"))
+                }
+
+                if (!this.haveField(field)) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(generateMapError(call, 304 to "Class ${this::class.simpleName} dont have field '$field'"))
+                }
+
+                val stateEnum = EnumDataFilter.entries.find { it.name == state.uppercase() }
+                if (stateEnum == null) {
+                    tx.setRollbackOnly()
+                    return@withTransaction ResultResponse.Error(generateMapError(call, 305 to "Incorrect parameter 'state'(${state}). This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"))
+                }
+
+                val resultList = getRepository().getDataFilter(field, stateEnum, value).map { it.toRecordsData() }
+                return@withTransaction ResultResponse.Success(resultList as Collection<*>)
+            } catch (e: Exception) {
+                tx.setRollbackOnly()
+                return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
+            }
+        }
     }
 
     private fun generateShortOrderNumber(allRecords: Long): String {

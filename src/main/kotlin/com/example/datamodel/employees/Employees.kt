@@ -14,6 +14,7 @@ import com.example.datamodel.clients.ClientsErrors
 import com.example.datamodel.clientsschelude.ClientsSchelude
 import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.repo_clientsschelude
 import com.example.datamodel.feedbacks.FeedBacks
+import com.example.datamodel.feedbacks.FeedBacks.Companion.repo_feedbacks
 import com.example.datamodel.records.Records
 import com.example.datamodel.records.Records.Companion.repo_records
 import com.example.datamodel.records.Records.Companion.tbl_records
@@ -51,6 +52,7 @@ import org.komapper.annotation.KomapperColumn
 import org.komapper.annotation.KomapperEntity
 import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
+import org.komapper.annotation.KomapperUpdatedAt
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
 import kotlin.time.Duration.Companion.days
@@ -106,6 +108,9 @@ data class Employees(
     @Transient
     @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
+    @KomapperUpdatedAt
+    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntBaseDataImpl<Employees>() {
@@ -189,9 +194,9 @@ data class Employees(
 
     override suspend fun delete(call: ApplicationCall, params: RequestParams<Employees>): ResultResponse {
         params.onBeforeCompleted = { obj ->
-            Records.repo_records.clearLinkEqual(Records::id_employee_to, obj.id)
-            ClientsSchelude.repo_clientsschelude.clearLinkEqual(ClientsSchelude::idEmployee, obj.id)
-            FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_employee_to, obj.id)
+            repo_records.clearLinkEqual(Records::id_employee_to, obj.id)
+            repo_clientsschelude.clearLinkEqual(ClientsSchelude::idEmployee, obj.id)
+            repo_feedbacks.clearLinkEqual(FeedBacks::id_employee_to, obj.id)
 
             val token = Authentications.getTokenFromEmployee(obj)
             token?.delete()
@@ -337,11 +342,11 @@ data class Employees(
             if (!id.toIntPossible())
                 return EmployeesErrors.ERROR_ID_NOT_INT_PARAMETER.toResultResponse(call, this)
 
-            val findedClient = repo_clients.getDataFromId(id.toIntOrNull())
-            if (findedClient == null)
+            val findedEmployee = repo_employees.getDataFromId(id.toIntOrNull())
+            if (findedEmployee == null)
                 return EmployeesErrors.ERROR_ID_DONTFIND.toResultResponse(call, this)
 
-            val key = Authentications().getDataOne({ tbl_authentications.clientId eq id.toIntOrNull() ; tbl_authentications.employee eq true })
+            val key = Authentications.getTokenFromEmployee(findedEmployee)
             if (key == null) {
                 return EmployeesErrors.ERROR_LOGINKEY_DONTFIND.toResultResponse(call, this)
             }

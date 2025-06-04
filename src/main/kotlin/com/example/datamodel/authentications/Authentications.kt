@@ -34,6 +34,7 @@ import org.komapper.annotation.KomapperColumn
 import org.komapper.annotation.KomapperEntity
 import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
+import org.komapper.annotation.KomapperUpdatedAt
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
 import org.komapper.core.type.ClobString
@@ -69,6 +70,9 @@ data class Authentications(
     override val version: Int = 0,
     @Transient
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
+    @KomapperUpdatedAt
+    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntPostgreTable<Authentications> {
@@ -123,11 +127,11 @@ data class Authentications(
         }
 
         suspend fun getTokenFromClient(client: Clients): Authentications? {
-            return Authentications().getDataOne({ tbl_authentications.clientId eq client.id ; tbl_authentications.employee eq false })
+            return Authentications().getDataOne({ tbl_authentications.clientId eq client.id ; tbl_authentications.employee eq false ; tbl_authentications.deleted eq false })
         }
 
         suspend fun getTokenFromEmployee(employee: Employees): Authentications? {
-            return Authentications().getDataOne({ tbl_authentications.clientId eq employee.id ; tbl_authentications.employee eq true })
+            return Authentications().getDataOne({ tbl_authentications.clientId eq employee.id ; tbl_authentications.employee eq true ; tbl_authentications.deleted eq false })
         }
     }
 
@@ -153,7 +157,7 @@ data class Authentications(
             val _id = id.toInt()
             val _employee = employee.toBoolean()
 
-            val findedAuthArray = Authentications().getData({ tbl_authentications.employee eq _employee ; tbl_authentications.clientId eq _id })
+            val findedAuthArray = Authentications().getData({ tbl_authentications.employee eq _employee ; tbl_authentications.clientId eq _id ; tbl_authentications.deleted eq false })
             return ResultResponse.Success(findedAuthArray.sortedBy { it.dateUsed })
         } catch (e: Exception) {
             return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage))
@@ -172,7 +176,7 @@ data class Authentications(
 
             val _id = id.toInt()
 
-            val findedAuthArray = Authentications().getDataOne({ tbl_authentications.id eq _id })
+            val findedAuthArray = Authentications().getDataOne({ tbl_authentications.id eq _id ; tbl_authentications.deleted eq false })
 
             if (findedAuthArray == null)
                 return AuthenticationsErrors.ERROR_AUTH_NOTFOUND.toResultResponse(call, this)

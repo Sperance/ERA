@@ -5,16 +5,12 @@ import com.example.basemodel.ResultResponse
 import com.example.datamodel.authentications.secureDelete
 import com.example.datamodel.authentications.secureGet
 import com.example.datamodel.authentications.securePost
-import com.example.datamodel.catalogs.Catalogs
-import com.example.datamodel.catalogs.CatalogsErrors
 import com.example.enums.EnumBearerRoles
 import com.example.logObjectProperties
 import com.example.respond
 import io.ktor.server.application.Application
 import io.ktor.server.response.respond
-import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
-import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.serialization.builtins.ListSerializer
@@ -54,6 +50,14 @@ fun Application.configureServices() {
 
             securePost("", EnumBearerRoles.MODERATOR) {
                 call.respond(Services().post(call, RequestParams(), ListSerializer(Services.serializer())))
+            }
+
+            securePost("/restore", EnumBearerRoles.MODERATOR) {
+                call.respond(Services().restore(call, RequestParams()))
+            }
+
+            secureDelete("/safe", EnumBearerRoles.MODERATOR) {
+                call.respond(Services().deleteSafe(call, RequestParams()))
             }
 
             secureDelete("", EnumBearerRoles.ADMIN) {

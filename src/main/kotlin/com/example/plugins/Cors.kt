@@ -7,6 +7,8 @@ import io.ktor.server.application.install
 import io.ktor.server.plugins.cors.routing.CORS
 
 fun Application.configureCORS() {
+//    install(XForwardedHeaders)
+//    install(ForwardedHeaders)
     install(CORS) {
         allowHost("www.salon-era.ru", schemes = listOf("https"))
         allowHost("salon-era.ru", schemes = listOf("https"))
@@ -17,10 +19,10 @@ fun Application.configureCORS() {
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
         allowMethod(HttpMethod.Delete)
+        allowMethod(HttpMethod.Options)
 
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Authorization)
-
         allowHeader(HttpHeaders.Accept)
 
         exposeHeader(HttpHeaders.ContentType)

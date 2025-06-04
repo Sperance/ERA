@@ -1,5 +1,6 @@
 package com.example.helpers
 
+import com.example.applicationTomlSettings
 import com.example.enums.EnumSQLTypes
 import com.example.interfaces.IntPostgreTable
 import com.example.logging.DailyLogger.printTextLog
@@ -53,9 +54,17 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<
 @Suppress("UNCHECKED_CAST")
 suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.deleteSafe() {
     val metaTable = getTable() as META
-    printTextLog("[DELETE object '${this::class.java.simpleName}' with id '${this@deleteSafe.getField("id")}']")
+    printTextLog("[DELETE_SAFE object '${this::class.java.simpleName}' with id '${this@deleteSafe.getField("id")}']")
     this.putField("deleted", true)
     db.runQuery { QueryDsl.update(metaTable).single(this@deleteSafe).returning() } as TYPE
+}
+
+@Suppress("UNCHECKED_CAST")
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.restoreSafe() {
+    val metaTable = getTable() as META
+    printTextLog("[RESTORE_SAFE object '${this::class.java.simpleName}' with id '${this@restoreSafe.getField("id")}']")
+    this.putField("deleted", false)
+    db.runQuery { QueryDsl.update(metaTable).single(this@restoreSafe).returning() } as TYPE
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -64,6 +73,15 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<
     val whereExpr = declaration ?: {metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> greaterEq 0}
     return if (sortExpression == null) db.runQuery { QueryDsl.from(metaTable).where(whereExpr) } as List<TYPE>
     else db.runQuery { QueryDsl.from(metaTable).where(whereExpr).orderBy(sortExpression) } as List<TYPE>
+}
+
+@Suppress("UNCHECKED_CAST")
+suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.getDataPagination(declaration: WhereDeclaration? = null, page: Int) : List<TYPE> {
+    val metaTable = getTable() as META
+    val whereExpr = declaration ?: {metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int> greaterEq 0}
+    val orderKey = metaTable.getAutoIncrementProperty() as PropertyMetamodel<Any, Int, Int>
+    val pageSize = applicationTomlSettings!!.SETTINGS.PAGINATION_PAGE_SIZE
+    return db.runQuery { QueryDsl.from(metaTable).where(whereExpr).orderBy(orderKey).offset((page - 1) * pageSize).limit(pageSize) } as List<TYPE>
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -91,12 +109,6 @@ suspend fun <T: Any> IntPostgreTable<T>.executeDelColumn(columnName: String): St
     val columns = this.getColumns()
     if (columns.find { it == columnName } == null) return "В таблице tbl_${this::class.simpleName} нет колонки $columnName"
     return executeScript("""ALTER TABLE ${getTable().tableName()} DROP COLUMN IF EXISTS $columnName RESTRICT""")
-}
-
-@Suppress("UNCHECKED_CAST")
-suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<TYPE>.isEmpty() : Boolean {
-    val metaTable = Meta.all().find { it.tableName() == getTable().tableName() } as META
-    return db.runQuery { QueryDsl.from(metaTable).select(count()) } == 0L
 }
 
 suspend fun <T: Any> IntPostgreTable<T>.getColumns() : Collection<String> {

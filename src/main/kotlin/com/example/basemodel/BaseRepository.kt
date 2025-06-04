@@ -113,28 +113,28 @@ open class BaseRepository<T : IntPostgreTable<T>>(private val obj: IntPostgreTab
         }
     }
 
-    open suspend fun isHaveData(id: Int?): Boolean {
+    open suspend fun isHaveData(id: Int?, withDeleted: Boolean = false): Boolean {
         if (id == null) return false
         return withContext(Dispatchers.IO) {
             if (repoData.isEmpty()) resetData()
             mutex.withLock {
-                repoData.any { it.getField("id") == id }
+                repoData.any { it.getField("id") == id && it.deleted == withDeleted }
             }
         }
     }
 
-    open suspend fun getDataFromId(id: Int?): T? {
+    open suspend fun getDataFromId(id: Int?, withDeleted: Boolean = false): T? {
         if (id == null) return null
         printTextLog("[BaseRepository::getDataFromId] id: $id Record: ${obj::class.simpleName}")
         return withContext(Dispatchers.IO) {
             if (repoData.isEmpty()) resetData()
             mutex.withLock {
-                repoData.find { it.getField("id") == id }
+                repoData.find { it.getField("id") == id && it.deleted == withDeleted }
             }
         }
     }
 
-    open suspend fun isHaveDataField(field: KMutableProperty1<T, *>, value: Any?): Boolean {
+    open suspend fun isHaveDataField(field: KMutableProperty1<T, *>, value: Any?, withDeleted: Boolean = false): Boolean {
         if (value == null) return false
         if (!obj.haveField(field.name)) {
             printTextLog("[isHaveDataField] object $obj dont have field ${field.name}")
@@ -143,17 +143,17 @@ open class BaseRepository<T : IntPostgreTable<T>>(private val obj: IntPostgreTab
         return withContext(Dispatchers.IO) {
             if (repoData.isEmpty()) resetData()
             mutex.withLock {
-                repoData.firstOrNull { field.get(it) == value } != null
+                repoData.firstOrNull { field.get(it) == value && it.deleted == withDeleted } != null
             }
         }
     }
 
-    open suspend fun isHaveData(ids: Collection<Int>?): Boolean {
+    open suspend fun isHaveData(ids: Collection<Int>?, withDeleted: Boolean = false): Boolean {
         if (ids == null) return false
         return withContext(Dispatchers.IO) {
             if (repoData.isEmpty()) resetData()
             mutex.withLock {
-                val result = repoData.count { ids.contains(it.getField("id")) }
+                val result = repoData.count { ids.contains(it.getField("id")) && it.deleted == withDeleted }
                 printTextLog("COUNT RES: $result")
                 result == ids.size
             }
@@ -210,7 +210,7 @@ open class BaseRepository<T : IntPostgreTable<T>>(private val obj: IntPostgreTab
         }
     }
 
-    open suspend fun getDataFilter(field: String?, state: EnumDataFilter, value: Any?): Collection<T> {
+    open suspend fun getDataFilter(field: String?, state: EnumDataFilter, value: Any?, withDeleted: Boolean = false): Collection<T> {
         if (field == null) return emptyList()
 
         return withContext(Dispatchers.IO) {
@@ -220,6 +220,7 @@ open class BaseRepository<T : IntPostgreTable<T>>(private val obj: IntPostgreTab
                     val fieldValue = it.getField(field)?.toString()?.lowercase()
                     val filterValue = value?.toString()?.lowercase()
 
+                    it.deleted == withDeleted &&
                     when (state) {
                         EnumDataFilter.EQ -> fieldValue == filterValue
                         EnumDataFilter.NE -> fieldValue != filterValue
@@ -235,12 +236,12 @@ open class BaseRepository<T : IntPostgreTable<T>>(private val obj: IntPostgreTab
         }
     }
 
-    open suspend fun getRepositoryData(): Collection<T> {
+    open suspend fun getRepositoryData(withDeleted: Boolean = false): Collection<T> {
         if (repoData.isEmpty()) resetData()
 
         return withContext(Dispatchers.IO) {
             mutex.withLock {
-                repoData
+                repoData.filter { it.deleted == withDeleted }
             }
         }
     }

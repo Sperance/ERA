@@ -18,8 +18,10 @@ import org.komapper.annotation.KomapperColumn
 import org.komapper.annotation.KomapperEntity
 import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
+import org.komapper.annotation.KomapperUpdatedAt
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
+import org.komapper.core.dsl.expression.Operand
 
 /**
  * Справочник информации
@@ -46,6 +48,9 @@ data class Catalogs(
     @Transient
     @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
+    @KomapperUpdatedAt
+    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntBaseDataImpl<Catalogs>() {
@@ -83,7 +88,15 @@ data class Catalogs(
             Employees.repo_employees.clearLinkEqualArray(Employees::arrayTypeWork, obj.id)
             Services.repo_services.clearLinkEqual(Services::category, obj.id)
         }
-
         return super.delete(call, params)
+    }
+
+    override suspend fun deleteSafe(call: ApplicationCall, params: RequestParams<Catalogs>): ResultResponse {
+        params.onBeforeCompleted = { obj ->
+            Employees.repo_employees.clearLinkEqual(Employees::position, obj.id)
+            Employees.repo_employees.clearLinkEqualArray(Employees::arrayTypeWork, obj.id)
+            Services.repo_services.clearLinkEqual(Services::category, obj.id)
+        }
+        return super.deleteSafe(call, params)
     }
 }

@@ -16,6 +16,7 @@ import org.komapper.annotation.KomapperColumn
 import org.komapper.annotation.KomapperEntity
 import org.komapper.annotation.KomapperId
 import org.komapper.annotation.KomapperTable
+import org.komapper.annotation.KomapperUpdatedAt
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
 
@@ -42,6 +43,9 @@ data class ClientsSchelude(
     @Transient
     @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
+    @KomapperUpdatedAt
+    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntBaseDataImpl<ClientsSchelude>() {
@@ -73,7 +77,6 @@ data class ClientsSchelude(
         params.checkings.add { ClientsScheludeErrors.ERROR_EMPLOYEE_DUPLICATE_NOTNULL.toCheckObj(it) }
         params.checkings.add { ClientsScheludeErrors.ERROR_SCHELUDEDATESCOMPARE_NOTNULL.toCheckObj(it) }
         params.checkings.add { ClientsScheludeErrors.ERROR_CURRENTDATE_NOTNULL.toCheckObj(it) }
-        params.checkings.add { ClientsScheludeErrors.ERROR_CURRENTDAY_NOTNULL.toCheckObj(it) }
 
         return super.update(call, params, serializer)
     }

@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "com.example"
-version = "1.9.1"
+version = "1.9.2"
 
 application {
     mainClass.set("com.example.ApplicationKt")
@@ -26,15 +26,15 @@ repositories {
     maven("https://jitpack.io")
 }
 
-tasks {
-    jar {
-        enabled = false
-    }
-    shadowJar {
-        archiveFileName.set("ERAkt-${project.version}.jar")
-        mergeServiceFiles()
-    }
-}
+//tasks {
+//    jar {
+//        enabled = false
+//    }
+//    shadowJar {
+//        archiveFileName.set("ERAkt-${project.version}.jar")
+//        mergeServiceFiles()
+//    }
+//}
 
 ksp {
     arg("komapper.enableEntityMetamodelListing", "true")
@@ -55,6 +55,7 @@ dependencies {
     implementation("io.ktor:ktor-server-auth-jvm")
     implementation("io.ktor:ktor-server-auth-jwt-jvm")
     implementation("io.ktor:ktor-server-websockets-jvm")
+    implementation("io.ktor:ktor-server-forwarded-header-jvm")
     implementation("org.junit.jupiter:junit-jupiter:5.8.1")
     implementation("io.ktor:ktor-network-tls-certificates-jvm")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0-RC.2")

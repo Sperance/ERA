@@ -86,6 +86,9 @@ data class Clients(
     @CommentField("Дата создания строки")
     override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
+    @KomapperUpdatedAt
+    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    @Transient
     override val deleted: Boolean = false
 ) : IntBaseDataImpl<Clients>() {
 
@@ -209,7 +212,7 @@ data class Clients(
             if (findedClient == null)
                 return ClientsErrors.ERROR_ID_DONTFIND.toResultResponse(call, this)
 
-            val key = Authentications().getDataOne({ tbl_authentications.clientId eq id.toIntOrNull() ; tbl_authentications.employee eq false })
+            val key = Authentications.getTokenFromClient(findedClient)
             if (key == null) {
                 return ClientsErrors.ERROR_LOGINKEY_DONTFIND.toResultResponse(call, this)
             }
