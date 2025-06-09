@@ -2,12 +2,12 @@ package com.example.datamodel.services
 
 import com.example.helpers.CommentField
 import com.example.currectDatetime
-import com.example.basemodel.BaseRepository
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
 import com.example.datamodel.records.Records
 import com.example.datamodel.stockfiles.Stockfiles
+import com.example.helpers.clearLinks
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -40,37 +40,35 @@ data class Services(
     @CommentField("Категория услуги")
     var category: Int? = null,
     @CommentField("Минимальная стоимость")
-    var priceLow: Double? = null,
+    var price_low: Double? = null,
     @CommentField("Максимальная стоимость")
-    var priceMax: Double? = null,
+    var price_max: Double? = null,
     @CommentField("Продолжительность услуги (1 пункт = 15 мин, т.е. если услуга длится 60 мин, то необходимо указать (60 / 15) = 4 пункта)")
     var duration: Byte? = null,
     @CommentField("К какому полу относится услуга (по умолчанию -1 (к любому полу))")
     var gender: Byte? = null,
     @CommentField("Ссылка на изображение услуги")
-    var imageLink: String? = null,
+    var image_link: String? = null,
     @Transient
-    var imageFormat: String? = null,
+    var image_format: String? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
     @Transient
     @CommentField("Дата создания строки")
-    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val created_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     @KomapperUpdatedAt
-    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val updated_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntBaseDataImpl<Services>() {
 
     companion object {
         val tbl_services = Meta.services
-        val repo_services = BaseRepository(Services())
     }
 
     override fun getTable() = tbl_services
-    override fun getRepository() = repo_services
     override fun isValidLine(): Boolean {
         return name != null && category != null
     }
@@ -97,8 +95,8 @@ data class Services(
 
     override suspend fun delete(call: ApplicationCall, params: RequestParams<Services>): ResultResponse {
         params.onBeforeCompleted = { obj ->
-            Records.repo_records.clearLinkEqual(Records::id_service, obj.id)
-            Stockfiles.repo_stockfiles.clearLinkEqual(Stockfiles::service, obj.id)
+            Records().clearLinks(Records::id_service, obj.id)
+            Stockfiles().clearLinks(Stockfiles::service, obj.id)
         }
 
         return super.delete(call, params)

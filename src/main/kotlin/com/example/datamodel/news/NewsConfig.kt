@@ -6,6 +6,7 @@ import com.example.datamodel.authentications.secureDelete
 import com.example.datamodel.authentications.secureGet
 import com.example.datamodel.authentications.securePost
 import com.example.enums.EnumBearerRoles
+import com.example.helpers.clearTable
 import com.example.logObjectProperties
 import com.example.respond
 import io.ktor.server.application.Application
@@ -24,7 +25,7 @@ fun Application.configureNews() {
             }
 
             get("/clearTable") {
-                News.repo_news.clearTable()
+                News().clearTable()
                 call.respond(ResultResponse.Success("Таблица успешно очищена"))
             }
 

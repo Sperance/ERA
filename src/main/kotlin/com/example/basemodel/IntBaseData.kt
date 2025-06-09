@@ -11,9 +11,12 @@ import com.example.helpers.delete
 import com.example.helpers.deleteSafe
 import com.example.helpers.executeAddColumn
 import com.example.helpers.executeDelColumn
+import com.example.helpers.getData
+import com.example.helpers.getDataFromId
 import com.example.helpers.getDataOne
 import com.example.helpers.getDataPagination
 import com.example.helpers.getField
+import com.example.helpers.getWhereDeclarationFilter
 import com.example.helpers.haveField
 import com.example.helpers.putField
 import com.example.helpers.restoreSafe
@@ -29,16 +32,11 @@ import io.ktor.http.content.forEachPart
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receiveMultipart
 import io.ktor.utils.io.toByteArray
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
-import org.komapper.core.dsl.expression.WhereDeclaration
 import org.komapper.core.dsl.metamodel.EntityMetamodel
 import org.komapper.core.dsl.metamodel.PropertyMetamodel
 import org.komapper.core.dsl.metamodel.getAutoIncrementProperty
-import org.komapper.core.dsl.operator.and
 import java.io.File
 import java.nio.file.Paths
 import kotlin.io.path.absolutePathString
@@ -109,113 +107,85 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
     }
 
     open suspend fun get(call: ApplicationCall): ResultResponse {
-        return db.withTransaction { tx ->
-            try {
-                val page = call.parameters["page"]?.toIntOrNull()
-                if (page == null) {
-                    return@withTransaction ResultResponse.Success(getRepository().getRepositoryData())
-                } else {
-                    return@withTransaction ResultResponse.Success(this.getDataPagination(page = page))
-                }
-            } catch (e: Exception) {
-                tx.setRollbackOnly()
-                return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
+        return try {
+            val page = call.parameters["page"]?.toIntOrNull()
+            if (page == null) {
+                ResultResponse.Success(getData())
+            } else {
+                ResultResponse.Success(getDataPagination(page = page))
             }
+        } catch (e: Exception) {
+            ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
         }
     }
 
     open suspend fun getInvalid(call: ApplicationCall): ResultResponse {
-        return db.withTransaction { tx ->
-            try {
-                return@withTransaction ResultResponse.Success(getRepository().getRepositoryData().filter { !it.isValidLine() })
-            } catch (e: Exception) {
-                tx.setRollbackOnly()
-                return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
-            }
+        return try {
+            ResultResponse.Success(getData().filter { !it.isValidLine() })
+        } catch (e: Exception) {
+            ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
         }
     }
 
     open suspend fun getFilter(call: ApplicationCall): ResultResponse {
-        return db.withTransaction { tx ->
-            try {
-                val field = call.parameters["field"]
-                if (field.isNullOrEmpty()) {
-                    tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(generateMapError(call, 301 to "Incorrect parameter 'field'. This parameter must be 'String' type"))
-                }
-
-                val state = call.parameters["state"]
-                if (state.isNullOrEmpty()) {
-                    tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(generateMapError(call, 302 to "Incorrect parameter 'state'. This parameter must be 'String' type"))
-                }
-
-                val value = call.parameters["value"]
-                if (value.isNullOrEmpty()) {
-                    tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(generateMapError(call, 303 to "Incorrect parameter 'value'. This parameter must be 'String' type"))
-                }
-
-                if (!this.haveField(field)) {
-                    tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(generateMapError(call, 304 to "Class ${this::class.simpleName} dont have field '$field'"))
-                }
-
-                val stateEnum = EnumDataFilter.entries.find { it.name == state.uppercase() }
-                if (stateEnum == null) {
-                    tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(generateMapError(call, 305 to "Incorrect parameter 'state'(${state}). This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"))
-                }
-
-                val page = call.parameters["page"]?.toIntOrNull()
-                if (page == null) {
-                    val resultList = getRepository().getDataFilter(field, stateEnum, value)
-                    return@withTransaction ResultResponse.Success(resultList as Collection<*>)
-                } else {
-                    val resultList = getRepository().getDataFilter(field, stateEnum, value)
-                    return@withTransaction ResultResponse.Success(resultList as Collection<*>)
-                }
-            } catch (e: Exception) {
-                tx.setRollbackOnly()
-                return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
+        try {
+            val field = call.parameters["field"]
+            if (field.isNullOrEmpty()) {
+                return ResultResponse.Error(generateMapError(call, 301 to "Incorrect parameter 'field'. This parameter must be 'String' type"))
             }
+            val state = call.parameters["state"]
+            if (state.isNullOrEmpty()) {
+                return ResultResponse.Error(generateMapError(call, 302 to "Incorrect parameter 'state'. This parameter must be 'String' type"))
+            }
+            val value = call.parameters["value"]
+            if (value.isNullOrEmpty()) {
+                return ResultResponse.Error(generateMapError(call, 303 to "Incorrect parameter 'value'. This parameter must be 'String' type"))
+            }
+            if (!this.haveField(field)) {
+                return ResultResponse.Error(generateMapError(call, 304 to "Class ${this::class.simpleName} dont have field '$field'"))
+            }
+            val stateEnum = EnumDataFilter.entries.find { it.name == state.uppercase() }
+            if (stateEnum == null) {
+                return ResultResponse.Error(generateMapError(call, 305 to "Incorrect parameter 'state'(${state}). This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"))
+            }
+            val page = call.parameters["page"]?.toIntOrNull()
+            if (page == null) {
+                val resultList = getData(declaration = getWhereDeclarationFilter(field, stateEnum, value))
+                return ResultResponse.Success(resultList as Collection<*>)
+            } else {
+                val resultList = getDataPagination(declaration = getWhereDeclarationFilter(field, stateEnum, value), page)
+                return ResultResponse.Success(resultList as Collection<*>)
+            }
+        } catch (e: Exception) {
+            return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
         }
     }
 
     open suspend fun getFromId(call: ApplicationCall, params: RequestParams<T>): ResultResponse {
-        return db.withTransaction { tx ->
-            try {
-                val id = call.parameters["id"]
-                if (id.isNullOrEmpty() || !id.toIntPossible()) {
-                    tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(generateMapError(call, 301 to "Incorrect parameter 'id'. This parameter must be 'Int' type"))
-                }
-
-                params.checkings.forEach { check ->
-                    val res = check.invoke(this as T)
-                    if (res.result) {
-                        tx.setRollbackOnly()
-                        return@withTransaction ResultResponse.Error(generateMapError(call, res.errorCode to res.errorText))
-                    }
-                }
-
-                params.defaults.forEach { def ->
-                    val res = def.invoke(this as T)
-                    val property = res.first as KMutableProperty0<Any?>
-                    if (!property.get().isAllNullOrEmpty()) return@forEach
-                    property.set(res.second)
-                }
-
-                val data = getRepository().getDataFromId(id.toIntOrNull())
-                if (data == null) {
-                    return@withTransaction ResultResponse.Error(generateMapError(call, 302 to "Не найдена запись ${this::class.simpleName} с id $id"))
-                }
-
-                return@withTransaction ResultResponse.Success(data)
-            } catch (e: Exception) {
-                tx.setRollbackOnly()
-                return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
+        try {
+            val id = call.parameters["id"]
+            if (id.isNullOrEmpty() || !id.toIntPossible()) {
+                return ResultResponse.Error(generateMapError(call, 301 to "Incorrect parameter 'id'. This parameter must be 'Int' type"))
             }
+            params.checkings.forEach { check ->
+                val res = check.invoke(this as T)
+                if (res.result) {
+                    return ResultResponse.Error(generateMapError(call, res.errorCode to res.errorText))
+                }
+            }
+            params.defaults.forEach { def ->
+                val res = def.invoke(this as T)
+                val property = res.first as KMutableProperty0<Any?>
+                if (!property.get().isAllNullOrEmpty()) return@forEach
+                property.set(res.second)
+            }
+            val data = getDataFromId(id.toIntOrNull())
+            if (data == null) {
+                return ResultResponse.Error(generateMapError(call, 302 to "Не найдена запись ${this::class.simpleName} с id $id"))
+            }
+            return ResultResponse.Success(data)
+        } catch (e: Exception) {
+            return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
         }
     }
 
@@ -258,12 +228,9 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 getFileImageIcon(findedObj, currectObjClassName.lowercase())?.delete()
                 findedObj.delete()
 
-                getRepository().deleteData(id.toInt())
-
                 ResultResponse.Success("$currectObjClassName with id $id successfully deleted")
             } catch (e: Exception) {
                 tx.setRollbackOnly()
-                getRepository().resetData()
                 return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
             }
         }
@@ -307,12 +274,9 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
 
                 findedObj.deleteSafe()
 
-                getRepository().updateData(findedObj)
-
                 ResultResponse.Success("$currectObjClassName with id $id successfully safe deleted")
             } catch (e: Exception) {
                 tx.setRollbackOnly()
-                getRepository().resetData()
                 return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
             }
         }
@@ -356,12 +320,9 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
 
                 findedObj.restoreSafe()
 
-                getRepository().updateData(findedObj)
-
                 ResultResponse.Success("$currectObjClassName with id $id successfully safe restored")
             } catch (e: Exception) {
                 tx.setRollbackOnly()
-                getRepository().resetData()
                 return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
             }
         }
@@ -382,7 +343,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     when (part) {
                         is PartData.FormItem -> {
                             newObject = Json.decodeFromString(serializer, part.value)
-                            printTextLog("[${this::class.simpleName}::update] $newObject")
                         }
 
                         is PartData.FileItem -> {
@@ -421,7 +381,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     val value = res.second
                     property.set(value)
                 }
-                val findedObj = getRepository().getDataFromId(newObject?.id)
+                val findedObj = getDataFromId(newObject?.id)
                 if (findedObj == null) {
                     tx.setRollbackOnly()
                     return@withTransaction ResultResponse.Error(generateMapError(call, 304 to "Not found $currectObjClassName with id ${newObject?.id}"))
@@ -440,18 +400,18 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 findedObj.updateFromNullable(newObject!!)
 
                 val updated = findedObj.update("IntBaseData::update")
-                getRepository().updateData(updated)
 
                 return@withTransaction ResultResponse.Success(updated)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
+                e.printStackTrace()
                 return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
             }
         }
     }
 
     private fun getFileImageIcon(findedObj: IntBaseDataImpl<T>, pathName: String): File? {
-        if (!findedObj.haveField("imageLink")) return null
+        if (!findedObj.haveField("image_link")) return null
         val currentFile = File(
             Paths.get("").absolutePathString() + "/files/$pathName/icon_${findedObj.id}.${findedObj.getField("imageFormat")}"
         )
@@ -522,9 +482,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
 
                 newObject.forEach { item ->
                     params.onBeforeCompleted?.invoke(item)
-
                     finishObject = item.create("IntBaseDataImpl::post")
-                    getRepository().addData(finishObject)
                 }
 
                 if (fileBytes != null) {
@@ -536,13 +494,11 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                     params.onBeforeCompleted?.invoke(finishObject!!)
 
                     finishObject = finishObject!!.update("IntBaseData::post")
-                    getRepository().updateData(finishObject)
                 }
 
                 return@withTransaction ResultResponse.Success(finishObject as Any)
             } catch (e: Exception) {
                 tx.setRollbackOnly()
-                getRepository().resetData()
                 return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
             }
         }
@@ -569,25 +525,10 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
             return ResultResponse.Error(generateMapError(call, 303 to "Incorrect parameter 'page'. This parameter must be 'Int' type"))
         }
 
-        var withDeleted = call.parameters["withDeleted"]?.toBooleanStrictOrNull()
-        if (withDeleted == null) withDeleted = false
-
+        val withDeleted = call.parameters["withDeleted"]?.toBooleanStrictOrNull()?:false
         return db.withTransaction { tx ->
             try {
-                val whereExpr: WhereDeclaration = when (state) {
-                    EnumDataFilter.EQ -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).eq(value)} }
-                    EnumDataFilter.NE -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).notEq(value)} }
-                    EnumDataFilter.LT -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).less(value)} }
-                    EnumDataFilter.GT ->  { {(getTable()[field] as PropertyMetamodel<T, Any, *>).greater(value)} }
-                    EnumDataFilter.LE -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).lessEq(value)} }
-                    EnumDataFilter.GE -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).greaterEq(value)} }
-                    EnumDataFilter.CONTAINS -> { {(getTable()[field] as PropertyMetamodel<T, Any, String>).contains(value)} }
-                    EnumDataFilter.NOT_CONTAINS -> { {(getTable()[field] as PropertyMetamodel<T, Any, String>).notContains(value)} }
-                }
-                val deleteExpr: WhereDeclaration = {(getTable()["deleted"] as PropertyMetamodel<T, Any, Boolean>).eq(withDeleted)}
-                val sumWhere: WhereDeclaration = whereExpr.and(deleteExpr)
-
-                return@withTransaction ResultResponse.Success(this.getDataPagination(declaration = sumWhere, page = page))
+                return@withTransaction ResultResponse.Success(getDataPagination(declaration = getWhereDeclarationFilter(field, state, value, withDeleted), page = page))
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
@@ -599,7 +540,7 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
      * Проверка полей на наличие картинок
      */
     private fun isHaveImageFields(): Boolean {
-        return haveField("imageLink") && haveField("imageFormat")
+        return haveField("image_link") && haveField("image_format")
     }
 
     private fun saveImageToFields(newObject: T?, fileBytes: ByteArray?, fileExtension: String?) {
@@ -624,8 +565,8 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
         if (imageFile.exists()) imageFile.delete()
 
         imageFile.writeBytes(fileBytes)
-        newObject.putField("imageLink", "${applicationTomlSettings!!.SETTINGS.ENDPOINT}files/${currectObjClassName.lowercase()}/" + imageFile.name)
-        newObject.putField("imageFormat", imageFile.extension)
+        newObject.putField("image_link", "${applicationTomlSettings!!.SETTINGS.ENDPOINT}files/${currectObjClassName.lowercase()}/" + imageFile.name)
+        newObject.putField("image_format", imageFile.extension)
 
         printTextLog("[saveImageToFields] Save file for $currectObjClassName ${imageFile.path}")
     }

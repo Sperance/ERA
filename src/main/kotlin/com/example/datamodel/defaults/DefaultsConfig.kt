@@ -18,8 +18,8 @@ private suspend fun defaultEmployees() {
     if (Employees().getSize() == 0L) {
         Employees().createBatch("defaultEmployees", listOf(
             Employees().apply {
-                firstName = AESEncryption.encrypt("admin")
-                lastName = AESEncryption.encrypt("admin")
+                first_name = AESEncryption.encrypt("admin")
+                last_name = AESEncryption.encrypt("admin")
                 login = "admin"
                 phone = AESEncryption.encrypt("999")
                 salt = generateSalt()
@@ -28,8 +28,8 @@ private suspend fun defaultEmployees() {
                 setNewPassword("Password123.")
             },
             Employees().apply {
-                firstName = AESEncryption.encrypt("Dmitriy")
-                lastName = AESEncryption.encrypt("MMM")
+                first_name = AESEncryption.encrypt("Dmitriy")
+                last_name = AESEncryption.encrypt("MMM")
                 login = "tandine"
                 phone = AESEncryption.encrypt("+79779999999")
                 salt = generateSalt()
@@ -38,7 +38,6 @@ private suspend fun defaultEmployees() {
                 setNewPassword("Eme12345678.")
             })
         )
-        Employees.repo_employees.resetData()
     }
 }
 
@@ -131,6 +130,5 @@ private suspend fun defaultCatalogs() {
                 value = "Администратор"
             })
         )
-        Catalogs.repo_catalogs.resetData()
     }
 }

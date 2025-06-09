@@ -2,12 +2,12 @@ package com.example.datamodel.catalogs
 
 import com.example.helpers.CommentField
 import com.example.currectDatetime
-import com.example.basemodel.BaseRepository
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
 import com.example.datamodel.employees.Employees
 import com.example.datamodel.services.Services
+import com.example.helpers.clearLinks
 import io.ktor.server.application.ApplicationCall
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.KSerializer
@@ -21,7 +21,6 @@ import org.komapper.annotation.KomapperTable
 import org.komapper.annotation.KomapperUpdatedAt
 import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
-import org.komapper.core.dsl.expression.Operand
 
 /**
  * Справочник информации
@@ -47,21 +46,19 @@ data class Catalogs(
     override val version: Int = 0,
     @Transient
     @CommentField("Дата создания строки")
-    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val created_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     @KomapperUpdatedAt
-    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val updated_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntBaseDataImpl<Catalogs>() {
 
     companion object {
         val tbl_catalogs = Meta.catalogs
-        val repo_catalogs = BaseRepository(Catalogs())
     }
 
     override fun getTable() = tbl_catalogs
-    override fun getRepository() = repo_catalogs
     override fun isValidLine(): Boolean {
         return type != null && category != null && value != null
     }
@@ -84,18 +81,16 @@ data class Catalogs(
 
     override suspend fun delete(call: ApplicationCall, params: RequestParams<Catalogs>): ResultResponse {
         params.onBeforeCompleted = { obj ->
-            Employees.repo_employees.clearLinkEqual(Employees::position, obj.id)
-            Employees.repo_employees.clearLinkEqualArray(Employees::arrayTypeWork, obj.id)
-            Services.repo_services.clearLinkEqual(Services::category, obj.id)
+            Employees().clearLinks(Employees::position, obj.id)
+            Services().clearLinks(Services::category, obj.id)
         }
         return super.delete(call, params)
     }
 
     override suspend fun deleteSafe(call: ApplicationCall, params: RequestParams<Catalogs>): ResultResponse {
         params.onBeforeCompleted = { obj ->
-            Employees.repo_employees.clearLinkEqual(Employees::position, obj.id)
-            Employees.repo_employees.clearLinkEqualArray(Employees::arrayTypeWork, obj.id)
-            Services.repo_services.clearLinkEqual(Services::category, obj.id)
+            Employees().clearLinks(Employees::position, obj.id)
+            Services().clearLinks(Services::category, obj.id)
         }
         return super.deleteSafe(call, params)
     }

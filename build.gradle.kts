@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "com.example"
-version = "1.9.2"
+version = "1.10.1"
 
 application {
     mainClass.set("com.example.ApplicationKt")
@@ -66,9 +66,12 @@ dependencies {
     implementation("org.komapper:komapper-starter-r2dbc:$komapperVersion")
     runtimeOnly("org.komapper:komapper-datetime-r2dbc:$komapperVersion")
     runtimeOnly("org.komapper:komapper-dialect-postgresql-r2dbc")
+    implementation("org.komapper:komapper-r2dbc:$komapperVersion")
     ksp("org.komapper:komapper-processor")
     implementation("com.sun.mail:android-mail:1.6.7")
     implementation("com.akuleshov7:ktoml-core:0.5.1")
+    implementation("org.postgresql:r2dbc-postgresql:0.9.0.M2")
+    implementation("org.postgresql:postgresql:42.7.6")
 
     implementation("io.ktor:ktor-client-core:2.0.2")
     implementation("io.ktor:ktor-client-cio:2.0.2")

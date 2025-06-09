@@ -1,8 +1,9 @@
 package com.example.datamodel.feedbacks
 
 import com.example.basemodel.CheckObjCondition
-import com.example.datamodel.clients.Clients.Companion.repo_clients
-import com.example.datamodel.employees.Employees.Companion.repo_employees
+import com.example.datamodel.clients.Clients
+import com.example.datamodel.employees.Employees
+import com.example.helpers.getDataFromId
 import com.example.isNullOrZero
 
 object FeedBacksErrors {
@@ -40,17 +41,17 @@ object FeedBacksErrors {
 
     val ERROR_IDCLIENTFROM_DUPLICATE = CheckObjCondition<FeedBacks>(206,
         { "Не существует Клиента с id ${it.id_client_from}" },
-        { !repo_clients.isHaveData(it.id_client_from!!) })
+        { Clients().getDataFromId(it.id_client_from) == null })
 
     val ERROR_IDCLIENTFROM_DUPLICATE_NOTNULL = CheckObjCondition<FeedBacks>(206,
         { "Не существует Клиента с id ${it.id_client_from}" },
-        { it.id_client_from != null && !repo_clients.isHaveData(it.id_client_from!!) })
+        { it.id_client_from != null && ERROR_IDCLIENTFROM_DUPLICATE.condition.invoke(it) })
 
     val ERROR_IDEMPLOYEETO_DUPLICATE = CheckObjCondition<FeedBacks>(207,
         { "Не существует Сотрудника с id ${it.id_employee_to}" },
-        { !repo_employees.isHaveData(it.id_employee_to!!) })
+        { Employees().getDataFromId(it.id_employee_to) == null })
 
     val ERROR_IDEMPLOYEETO_DUPLICATE_NOTNULL = CheckObjCondition<FeedBacks>(207,
         { "Не существует Сотрудника с id ${it.id_employee_to}" },
-        { it.id_employee_to != null && !repo_employees.isHaveData(it.id_employee_to!!) })
+        { it.id_employee_to != null && ERROR_IDEMPLOYEETO_DUPLICATE.condition.invoke(it) })
 }

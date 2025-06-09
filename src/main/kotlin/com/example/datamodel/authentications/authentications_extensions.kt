@@ -24,7 +24,7 @@ import io.ktor.server.routing.post
 import io.ktor.util.date.GMTDate
 import kotlinx.datetime.LocalDateTime
 
-fun Route.secureGet(path: String, role: EnumBearerRoles? = null, body: suspend RoutingContext.(userId: Int) -> Unit) {
+fun Route.secureGet(path: String, role: EnumBearerRoles? = null, body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
     authenticate(JWT_AUTH_NAME) {
         get(path) {
             val principal = call.principal<RoleAwareJWT>()
@@ -33,14 +33,14 @@ fun Route.secureGet(path: String, role: EnumBearerRoles? = null, body: suspend R
                 call.respond(response = check)
                 return@get
             }
-            try { body.invoke(this, principal!!.userId) } catch (e: Exception) {
+            try { body.invoke(this, principal) } catch (e: Exception) {
                 call.respond(response = ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage)))
             }
         }
     }
 }
 
-fun Route.securePost(path: String, role: EnumBearerRoles? = null, body: suspend RoutingContext.(userId: Int) -> Unit) {
+fun Route.securePost(path: String, role: EnumBearerRoles? = null, body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
     authenticate(JWT_AUTH_NAME) {
         post(path) {
             val principal = call.principal<RoleAwareJWT>()
@@ -49,14 +49,14 @@ fun Route.securePost(path: String, role: EnumBearerRoles? = null, body: suspend 
                 call.respond(response = check)
                 return@post
             }
-            try { body.invoke(this, principal!!.userId) } catch (e: Exception) {
+            try { body.invoke(this, principal) } catch (e: Exception) {
                 call.respond(response = ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage)))
             }
         }
     }
 }
 
-fun Route.secureDelete(path: String, role: EnumBearerRoles? = null, body: suspend RoutingContext.(userId: Int) -> Unit) {
+fun Route.secureDelete(path: String, role: EnumBearerRoles? = null, body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
     authenticate(JWT_AUTH_NAME) {
         delete(path) {
             val principal = call.principal<RoleAwareJWT>()
@@ -65,7 +65,7 @@ fun Route.secureDelete(path: String, role: EnumBearerRoles? = null, body: suspen
                 call.respond(response = check)
                 return@delete
             }
-            try { body.invoke(this, principal!!.userId) } catch (e: Exception) {
+            try { body.invoke(this, principal) } catch (e: Exception) {
                 call.respond(response = ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage)))
             }
         }
@@ -89,7 +89,7 @@ suspend fun RoleAwareJWT?.checkAuthenticate(call: ApplicationCall, role: EnumBea
         return ResultResponse.Error(generateMapError(call, 104 to "This method is blocked for the current role"))
     }
 
-    val findedToken = Authentications().getDataOne({ tbl_authentications.employee eq this@checkAuthenticate.employee ; tbl_authentications.clientId eq this@checkAuthenticate.userId })
+    val findedToken = Authentications().getDataOne({ tbl_authentications.employee eq this@checkAuthenticate.employee ; tbl_authentications.client_id eq this@checkAuthenticate.userId })
     if (findedToken == null) {
         call.response.setToken("", GMTDate())
         return ResultResponse.Error(generateMapError(call, 105 to "The token cannot be found in the database. Please log in again."))
@@ -100,7 +100,7 @@ suspend fun RoleAwareJWT?.checkAuthenticate(call: ApplicationCall, role: EnumBea
         return ResultResponse.Error(generateMapError(call, 106 to "Token in database is expired. Please log in again."))
     }
 
-    findedToken.dateUsed = LocalDateTime.currectDatetime()
+    findedToken.date_used = LocalDateTime.currectDatetime()
     findedToken.update("RoleAwareJWT::checkAuthenticate")
     return null
 }

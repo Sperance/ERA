@@ -2,7 +2,6 @@ package com.example.datamodel.clientsschelude
 
 import com.example.helpers.CommentField
 import com.example.currectDatetime
-import com.example.basemodel.BaseRepository
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
@@ -32,33 +31,31 @@ data class ClientsSchelude(
     @KomapperColumn(name = "clientsschelude_id")
     override val id: Int = 0,
     @CommentField("Клиент")
-    var idEmployee: Int? = null,
+    var id_employee: Int? = null,
     @CommentField("Работа начало")
-    var scheludeDateStart: LocalDateTime? = null,
+    var schelude_date_start: LocalDateTime? = null,
     @CommentField("Работа конец")
-    var scheludeDateEnd: LocalDateTime? = null,
+    var schelude_date_end: LocalDateTime? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
     @Transient
     @CommentField("Дата создания строки")
-    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val created_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     @KomapperUpdatedAt
-    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val updated_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntBaseDataImpl<ClientsSchelude>() {
 
     companion object {
         val tbl_clientsschelude = Meta.clientsSchelude
-        val repo_clientsschelude = BaseRepository(ClientsSchelude())
     }
 
     override fun getTable() = tbl_clientsschelude
-    override fun getRepository() = repo_clientsschelude
     override fun isValidLine(): Boolean {
-        return idEmployee != null && scheludeDateStart != null && scheludeDateEnd != null
+        return id_employee != null && schelude_date_start != null && schelude_date_end != null
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<ClientsSchelude>, serializer: KSerializer<List<ClientsSchelude>>): ResultResponse {

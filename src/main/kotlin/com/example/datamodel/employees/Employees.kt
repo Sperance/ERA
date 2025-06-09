@@ -1,29 +1,25 @@
 package com.example.datamodel.employees
 
 import com.example.setToken
-import com.example.basemodel.BaseRepository
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
 import com.example.currectDatetime
 import com.example.currentZeroDate
 import com.example.datamodel.authentications.Authentications
-import com.example.datamodel.authentications.Authentications.Companion.tbl_authentications
-import com.example.datamodel.clients.Clients.Companion.repo_clients
-import com.example.datamodel.clients.ClientsErrors
 import com.example.datamodel.clientsschelude.ClientsSchelude
-import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.repo_clientsschelude
+import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.tbl_clientsschelude
 import com.example.datamodel.feedbacks.FeedBacks
-import com.example.datamodel.feedbacks.FeedBacks.Companion.repo_feedbacks
 import com.example.datamodel.records.Records
-import com.example.datamodel.records.Records.Companion.repo_records
 import com.example.datamodel.records.Records.Companion.tbl_records
-import com.example.datamodel.services.Services.Companion.repo_services
+import com.example.datamodel.services.Services
 import com.example.enums.EnumBearerRoles
 import com.example.generateMapError
 import com.example.helpers.CommentField
+import com.example.helpers.clearLinks
 import com.example.helpers.delete
 import com.example.helpers.getData
+import com.example.helpers.getDataFromId
 import com.example.helpers.getDataOne
 import com.example.helpers.getField
 import com.example.helpers.getSize
@@ -67,9 +63,9 @@ data class Employees(
     @KomapperColumn(name = "employee_id")
     override val id: Int = 0,
     @CommentField("Имя")
-    var firstName: String? = null,
+    var first_name: String? = null,
     @CommentField("Фамилия")
-    var lastName: String? = null,
+    var last_name: String? = null,
     @CommentField("Отчество")
     var patronymic: String? = null,
     @CommentField("Логин от личного кабинета")
@@ -81,11 +77,11 @@ data class Employees(
     @CommentField("Почтовый адрес")
     var email: String? = null,
     @CommentField("Дата рождения")
-    var dateBirthday: LocalDateTime? = null,
+    var date_birthday: LocalDateTime? = null,
     @CommentField("Дата принятия на работу")
-    var dateWorkIn: LocalDateTime? = null,
+    var date_work_in: LocalDateTime? = null,
     @CommentField("Дата увольнения")
-    var dateWorkOut: LocalDateTime? = null,
+    var date_work_out: LocalDateTime? = null,
     @CommentField("Должность")
     var position: Int? = null,
     @CommentField("Описание")
@@ -95,11 +91,11 @@ data class Employees(
     @CommentField("Пол сотрудника")
     var gender: Byte? = null,
     @CommentField("Прямая ссылка на картинку")
-    var imageLink: String? = null,
+    var image_link: String? = null,
     @Transient
-    var imageFormat: String? = null,
+    var image_format: String? = null,
     @CommentField("Массив ссылок на работы сотрудника")
-    var arrayTypeWork: Array<Int>? = null,
+    var array_type_work: Array<Int>? = null,
     @Transient
     var salt: String? = null,
     @Transient
@@ -107,23 +103,21 @@ data class Employees(
     override val version: Int = 0,
     @Transient
     @CommentField("Дата создания строки")
-    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val created_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     @KomapperUpdatedAt
-    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val updated_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntBaseDataImpl<Employees>() {
 
     companion object {
         val tbl_employees = Meta.employees
-        val repo_employees = BaseRepository(Employees())
     }
 
-    override fun getRepository() = repo_employees
     override fun getTable() = tbl_employees
     override fun isValidLine(): Boolean {
-        return firstName != null && login != null && password != null && role != null && salt != null
+        return first_name != null && login != null && password != null && role != null && salt != null
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Employees>, serializer: KSerializer<List<Employees>>): ResultResponse {
@@ -138,15 +132,15 @@ data class Employees(
         params.checkings.add { EmployeesErrors.ERROR_EMAIL_DUPLICATE.toCheckObj(it) }
         params.checkings.add { EmployeesErrors.ERROR_LOGIN_DUPLICATE.toCheckObj(it) }
         params.checkings.add { EmployeesErrors.ERROR_POSITION_DUPLICATE_NOTNULL.toCheckObj(it) }
-        params.checkings.add { EmployeesErrors.ERROR_ARRAYTYPEWORK_DUPLICATE_NOTNULL.toCheckObj(it) }
+//        params.checkings.add { EmployeesErrors.ERROR_ARRAYTYPEWORK_DUPLICATE_NOTNULL.toCheckObj(it) }
         params.checkings.add { EmployeesErrors.ERROR_SALT_NOTNULL.toCheckObj(it) }
         params.checkings.add { EmployeesErrors.ERROR_ROLE_ENUM.toCheckObj(it) }
         params.checkings.add { EmployeesErrors.ERROR_ROLE_ADMIN.toCheckObj(it) }
 
         params.onBeforeCompleted = { obj ->
             val size = Employees().getSize()
-            if (obj.lastName != null) obj.lastName = AESEncryption.encrypt(obj.lastName)
-            if (obj.firstName != null) obj.firstName = AESEncryption.encrypt(obj.firstName)
+            if (obj.last_name != null) obj.last_name = AESEncryption.encrypt(obj.last_name)
+            if (obj.first_name != null) obj.first_name = AESEncryption.encrypt(obj.first_name)
             if (obj.patronymic != null) obj.patronymic = AESEncryption.encrypt(obj.patronymic)
             if (obj.email != null) obj.email = AESEncryption.encrypt(obj.email)
             if (obj.phone != null) obj.phone = AESEncryption.encrypt(obj.phone)
@@ -161,17 +155,15 @@ data class Employees(
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Employees>, serializer: KSerializer<Employees>): ResultResponse {
         params.checkings.add { EmployeesErrors.ERROR_POSITION_DUPLICATE_NOTNULL.toCheckObj(it) }
-        params.checkings.add { EmployeesErrors.ERROR_ARRAYTYPEWORK_DUPLICATE_NOTNULL.toCheckObj(it) }
+//        params.checkings.add { EmployeesErrors.ERROR_ARRAYTYPEWORK_DUPLICATE_NOTNULL.toCheckObj(it) }
         params.checkings.add { EmployeesErrors.ERROR_SALT_NOTNULL.toCheckObj(it) }
-        params.checkings.add { EmployeesErrors.ERROR_LOGIN_NOTNULL.toCheckObj(it) }
-        params.checkings.add { EmployeesErrors.ERROR_ROLE_NOTNULL.toCheckObj(it) }
-        params.checkings.add { EmployeesErrors.ERROR_PHONE_NOTNULL.toCheckObj(it) }
         params.checkings.add { EmployeesErrors.ERROR_EMAIL_DUPLICATE_NOTNULL.toCheckObj(it) }
         params.checkings.add { EmployeesErrors.ERROR_ROLE_ADMIN_NOTNULL.toCheckObj(it) }
+        params.checkings.add { EmployeesErrors.ERROR_LOGIN_DUPLICATE_NOTNULL.toCheckObj(it) }
 
         params.onBeforeCompleted = { obj ->
-            if (obj.lastName != null) obj.lastName = AESEncryption.encrypt(obj.lastName)
-            if (obj.firstName != null) obj.firstName = AESEncryption.encrypt(obj.firstName)
+            if (obj.last_name != null) obj.last_name = AESEncryption.encrypt(obj.last_name)
+            if (obj.first_name != null) obj.first_name = AESEncryption.encrypt(obj.first_name)
             if (obj.patronymic != null) obj.patronymic = AESEncryption.encrypt(obj.patronymic)
             if (obj.email != null) obj.email = AESEncryption.encrypt(obj.email)
             if (obj.phone != null) obj.phone = AESEncryption.encrypt(obj.phone)
@@ -194,30 +186,15 @@ data class Employees(
 
     override suspend fun delete(call: ApplicationCall, params: RequestParams<Employees>): ResultResponse {
         params.onBeforeCompleted = { obj ->
-            repo_records.clearLinkEqual(Records::id_employee_to, obj.id)
-            repo_clientsschelude.clearLinkEqual(ClientsSchelude::idEmployee, obj.id)
-            repo_feedbacks.clearLinkEqual(FeedBacks::id_employee_to, obj.id)
+            Records().clearLinks(Records::id_employee_to, obj.id)
+            ClientsSchelude().clearLinks(ClientsSchelude::id_employee, obj.id)
+            FeedBacks().clearLinks(FeedBacks::id_employee_to, obj.id)
 
-            val token = Authentications.getTokenFromEmployee(obj)
-            token?.delete()
+            Authentications.getTokenFromEmployee(obj)?.delete()
             true
         }
 
         return super.delete(call, params)
-    }
-
-    suspend fun getByRole(call: ApplicationCall): ResultResponse {
-        try {
-            val _role = call.parameters["role"]
-
-            if (_role.isNullOrEmpty()) return EmployeesErrors.ERROR_ROLE.toResultResponse(call, this)
-            val role = EnumBearerRoles.getFromNameOrNull(_role.uppercase())
-            if (role == null) return EmployeesErrors.ERROR_ROLE_ENUM.toResultResponse(call, this)
-
-            return ResultResponse.Success(repo_employees.getRepositoryData().filter { it.getRoleAsEnum() == role })
-        } catch (e: Exception) {
-            return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage))
-        }
     }
 
     suspend fun auth(call: ApplicationCall): ResultResponse {
@@ -230,9 +207,12 @@ data class Employees(
             if (user.password.isNullOrEmpty())
                 return EmployeesErrors.ERROR_PASSWORD.toResultResponse(call, this)
 
-            val employee = repo_employees.getRepositoryData().find { it.login?.lowercase() == user.login?.lowercase() && verifyPassword(it.password, it.salt, user.password) }
+            val employee = getDataOne({ tbl_employees.login eq user.login })
             if (employee == null)
                 return EmployeesErrors.ERROR_LOGINPASSWORD.toResultResponse(call, this)
+            val verifyPass = verifyPassword(employee.password, employee.salt, user.password)
+            if (!verifyPass)
+                return EmployeesErrors.ERROR_LOGINPASSWORD.toResultResponse(call, employee)
 
             var token = Authentications.getTokenFromEmployee(employee)
             printTextLog("[Employees::auth] token: $token")
@@ -246,7 +226,7 @@ data class Employees(
                 }
             }
 
-            call.response.setToken(token.token?:"", GMTDate(token.dateExpired!!.toInstant(TimeZone.UTC).toEpochMilliseconds()))
+            call.response.setToken(token.token?:"", GMTDate(token.date_expired!!.toInstant(TimeZone.UTC).toEpochMilliseconds()))
 
             return ResultResponse.Success(employee)
         } catch (e: Exception) {
@@ -261,19 +241,19 @@ data class Employees(
         val startDate = LocalDateTime.currentZeroDate()
         val endDate = startDate.plus((daysLoaded).days)
 
-        val currentRecords = repo_records.getRepositoryData().filter { it.id_employee_to == employeeId && it.dateRecord!! in startDate..endDate && it.status!! <= 100 }
-        val currentSheludes = repo_clientsschelude.getRepositoryData().filter { it.idEmployee == employeeId }
-        val allServices = repo_services.getRepositoryData()
+        val currentRecords = Records().getData({ tbl_records.id_employee_to eq employeeId ; tbl_records.date_record between startDate..endDate ; tbl_records.status lessEq 100 })
+        val currentSheludes = ClientsSchelude().getData({ tbl_clientsschelude.id_employee eq employeeId })
+        val allServices = Services().getData()
 
         val stockPeriod = 30
         val removePeriodMin = 1
         val blockSlots = servceLength * stockPeriod
 
         val arrayClosed = ArrayList<ClosedRange<LocalDateTime>>()
-        currentRecords.filter { it.dateRecord!! in startDate..endDate }.forEach {
+        currentRecords.filter { it.date_record!! in startDate..endDate }.forEach {
             val servLen = allServices.find { serv -> serv.id == it.id_service }!!
-            val servDateBegin = it.dateRecord!!.minus((blockSlots - removePeriodMin).minutes)
-            val servDateEnd = it.dateRecord!!.plus((servLen.duration!! * stockPeriod - removePeriodMin).minutes)
+            val servDateBegin = it.date_record!!.minus((blockSlots - removePeriodMin).minutes)
+            val servDateEnd = it.date_record!!.plus((servLen.duration!! * stockPeriod - removePeriodMin).minutes)
             arrayClosed.add(servDateBegin..servDateEnd)
         }
 
@@ -283,9 +263,9 @@ data class Employees(
         while (true) {
             if (stockDate >= maxDateTime) break
             val finded = arrayClosed.find { ar -> stockDate in ar }
-            val sheludeDate = currentSheludes.find { she -> she.scheludeDateStart!!.dayOfMonth == stockDate.dayOfMonth }
-            if (sheludeDate != null && finded == null && stockDate in sheludeDate.scheludeDateStart!!..sheludeDate.scheludeDateEnd!!) {
-                if (stockDate.plus(blockSlots.minutes) <= sheludeDate.scheludeDateEnd!!)
+            val sheludeDate = currentSheludes.find { she -> she.schelude_date_start!!.dayOfMonth == stockDate.dayOfMonth }
+            if (sheludeDate != null && finded == null && stockDate in sheludeDate.schelude_date_start!!..sheludeDate.schelude_date_end!!) {
+                if (stockDate.plus(blockSlots.minutes) <= sheludeDate.schelude_date_end!!)
                     araResult.add(stockDate)
             }
             stockDate = stockDate.plus((stockPeriod).minutes)
@@ -325,7 +305,7 @@ data class Employees(
             val dateStart = LocalDateTime(data.year, data.monthNumber, data.dayOfMonth, 0, 0, 0)
             val dateEnd = LocalDateTime(data.year, data.monthNumber, data.dayOfMonth, 23, 59, 0)
 
-            val currentDayRecords = repo_records.getRepositoryData().filter { it.id_employee_to == id && it.dateRecord!! in dateStart..dateEnd }
+            val currentDayRecords = Records().getData({ tbl_records.id_employee_to eq id ; tbl_records.date_record between dateStart..dateEnd })
 
             return ResultResponse.Success(currentDayRecords)
         } catch (e: Exception) {
@@ -342,7 +322,7 @@ data class Employees(
             if (!id.toIntPossible())
                 return EmployeesErrors.ERROR_ID_NOT_INT_PARAMETER.toResultResponse(call, this)
 
-            val findedEmployee = repo_employees.getDataFromId(id.toIntOrNull())
+            val findedEmployee = getDataFromId(id.toIntOrNull())
             if (findedEmployee == null)
                 return EmployeesErrors.ERROR_ID_DONTFIND.toResultResponse(call, this)
 
@@ -367,6 +347,6 @@ data class Employees(
     }
 
     override fun toString(): String {
-        return "Employees(login=$login, id=$id, firstName=$firstName, lastName=$lastName, password=$password, phone=$phone, email=$email, position=$position, role=$role, imageLink=$imageLink, imageFormat=$imageFormat, arrayTypeWork=${arrayTypeWork?.contentToString()})"
+        return "Employees(id=$id, first_name=$first_name, last_name=$last_name, patronymic=$patronymic, login=$login, password=$password, phone=$phone, email=$email, position=$position, role=$role, image_link=$image_link, image_format=$image_format, array_type_work=${array_type_work?.contentToString()}, deleted=$deleted)"
     }
 }

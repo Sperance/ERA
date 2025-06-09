@@ -1,8 +1,10 @@
 package com.example.schedulers
 
 import com.example.currentZeroDate
-import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.repo_clientsschelude
+import com.example.datamodel.clientsschelude.ClientsSchelude
+import com.example.datamodel.clientsschelude.ClientsSchelude.Companion.tbl_clientsschelude
 import com.example.helpers.delete
+import com.example.helpers.getData
 import com.example.logging.DailyLogger.printTextLog
 import com.example.minus
 import kotlinx.coroutines.CoroutineScope
@@ -34,13 +36,12 @@ object DailyTaskScheduler {
     /**
      * Очистка старых графиков работ (60+ дней)
      */
-    suspend fun execute_clearClientsSheluders() {
-        printTextLog("[Scheduler '${this::class.java.simpleName}' checked at ${LocalDateTime.now()}]")
+    private suspend fun execute_clearClientsSheluders() {
+        printTextLog("[Scheduler '${this::class.java.simpleName}' 'execute_clearClientsSheluders' checked at ${LocalDateTime.now()}]")
         val currentDate = kotlinx.datetime.LocalDateTime.currentZeroDate().minus((60).days)
-        val dataRemove = repo_clientsschelude.getRepositoryData().filter { fil -> fil.scheludeDateEnd!! < currentDate }
+        val dataRemove = ClientsSchelude().getData({ tbl_clientsschelude.schelude_date_end less currentDate })
         dataRemove.forEach { dat ->
-            printTextLog("[DELETE] $dat - on over older by date (${dat.scheludeDateEnd}) < $currentDate")
-            repo_clientsschelude.deleteData(dat)
+            printTextLog("[DELETE] $dat - on over older by date (${dat.schelude_date_end}) < $currentDate")
             dat.delete()
         }
     }

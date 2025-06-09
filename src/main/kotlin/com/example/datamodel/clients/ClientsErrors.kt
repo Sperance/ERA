@@ -1,19 +1,19 @@
 package com.example.datamodel.clients
 
 import com.example.basemodel.CheckObjCondition
-import com.example.datamodel.clients.Clients.Companion.repo_clients
+import com.example.helpers.isHaveDataField
 import com.example.isNullOrZero
 import com.example.security.AESEncryption
 
 object ClientsErrors {
 
     val ERROR_NAME = CheckObjCondition<Clients>(200,
-        { "Необходимо указать Имя клиента 'firstName'" },
-        { it.firstName.isNullOrEmpty() })
+        { "Необходимо указать Имя клиента 'first_name'" },
+        { it.first_name.isNullOrEmpty() })
 
     val ERROR_SURNAME = CheckObjCondition<Clients>(201,
-        { "Необходимо указать Фамилию клиента 'lastName'" },
-        { it.lastName.isNullOrEmpty() })
+        { "Необходимо указать Фамилию клиента 'last_name'" },
+        { it.last_name.isNullOrEmpty() })
 
     val ERROR_PHONE = CheckObjCondition<Clients>(202,
         { "Необходимо указать Номер телефона клиента 'phone'" },
@@ -33,19 +33,19 @@ object ClientsErrors {
 
     val ERROR_PHONE_DUPLICATE = CheckObjCondition<Clients>(206,
         { "Клиент с указанным Номером телефона (${it.phone}) уже существует" },
-        { repo_clients.isHaveDataField(Clients::phone, AESEncryption.encrypt(it.phone)) })
+        { Clients().isHaveDataField(Clients::phone, AESEncryption.encrypt(it.phone)) })
 
     val ERROR_PHONE_DUPLICATE_NUTNULL = CheckObjCondition<Clients>(206,
         { "Клиент с указанным Номером телефона (${it.phone}) уже существует" },
-        { it.phone != null && repo_clients.isHaveDataField(Clients::phone, AESEncryption.encrypt(it.phone)) })
+        { it.phone != null && ERROR_PHONE_DUPLICATE.condition.invoke(it) })
 
     val ERROR_EMAIL_DUPLICATE = CheckObjCondition<Clients>(207,
         { "Клиент с указанным Почтовым адресом (${it.email}) уже существует" },
-        { repo_clients.isHaveDataField(Clients::email, AESEncryption.encrypt(it.email)) })
+        { Clients().isHaveDataField(Clients::email, AESEncryption.encrypt(it.email)) })
 
     val ERROR_EMAIL_DUPLICATE_NOTNULL = CheckObjCondition<Clients>(207,
         { "Клиент с указанным Почтовым адресом (${it.email}) уже существует" },
-        { it.email != null && repo_clients.isHaveDataField(Clients::email, AESEncryption.encrypt(it.email)) })
+        { it.email != null && ERROR_EMAIL_DUPLICATE.condition.invoke(it) })
 
     val ERROR_SALT_NOTNULL = CheckObjCondition<Clients>(208,
         { "Попытка модификации системных данных. Информация о запросе передана Администраторам" },
@@ -57,7 +57,7 @@ object ClientsErrors {
 
     val ERROR_LOGIN_DUPLICATE_NOTNULL = CheckObjCondition<Clients>(209,
         { "Клиент с указанным Логином (${it.login}) уже существует" },
-        { it.login != null && repo_clients.isHaveDataField(Clients::login, it.login) })
+        { it.login != null && Clients().isHaveDataField(Clients::login, it.login) })
 
     val ERROR_PASSWORD = CheckObjCondition<Clients>(210,
         { "Необходимо указать Пароль клиента 'password'" },

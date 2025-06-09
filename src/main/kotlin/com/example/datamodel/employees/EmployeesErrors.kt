@@ -2,8 +2,9 @@ package com.example.datamodel.employees
 
 import com.example.basemodel.CheckObjCondition
 import com.example.datamodel.catalogs.Catalogs
-import com.example.datamodel.employees.Employees.Companion.repo_employees
 import com.example.enums.EnumBearerRoles
+import com.example.helpers.getDataFromId
+import com.example.helpers.isHaveDataField
 import com.example.isNullOrZero
 import com.example.security.AESEncryption
 
@@ -11,11 +12,11 @@ object EmployeesErrors {
 
     val ERROR_FIRSTNAME = CheckObjCondition<Employees>(200,
         { "Необходимо указать Имя сотрудника 'firstName'" },
-        { it.firstName.isNullOrEmpty() })
+        { it.first_name.isNullOrEmpty() })
 
     val ERROR_LASTNAME = CheckObjCondition<Employees>(201,
         { "Необходимо указать Фамилию сотрудника 'lastName'" },
-        { it.lastName.isNullOrEmpty() })
+        { it.last_name.isNullOrEmpty() })
 
     val ERROR_PHONE = CheckObjCondition<Employees>(202,
         { "Необходимо указать Телефон сотрудника 'phone'" },
@@ -51,27 +52,31 @@ object EmployeesErrors {
 
     val ERROR_PHONE_DUPLICATE = CheckObjCondition<Employees>(207,
         { "Сотрудник с указанным Номером телефона уже существует" },
-        { repo_employees.isHaveDataField(Employees::phone, AESEncryption.encrypt(it.phone)) })
+        { Employees().isHaveDataField(Employees::phone, AESEncryption.encrypt(it.phone)) })
 
     val ERROR_EMAIL_DUPLICATE = CheckObjCondition<Employees>(208,
         { "Сотрудник с указанным Почтовым адресом уже существует" },
-        { repo_employees.isHaveDataField(Employees::email, AESEncryption.encrypt(it.email)) })
+        { Employees().isHaveDataField(Employees::email, AESEncryption.encrypt(it.email)) })
 
     val ERROR_EMAIL_DUPLICATE_NOTNULL = CheckObjCondition<Employees>(208,
         { "Сотрудник с указанным Почтовым адресом уже существует" },
-        { it.email != null && repo_employees.isHaveDataField(Employees::email, AESEncryption.encrypt(it.email)) })
+        { it.email != null && ERROR_EMAIL_DUPLICATE.condition.invoke(it) })
 
     val ERROR_LOGIN_DUPLICATE = CheckObjCondition<Employees>(209,
         { "Сотрудник с указанным Логином (${it.login}) уже существует" },
-        { repo_employees.isHaveDataField(Employees::login, it.login) })
+        { Employees().isHaveDataField(Employees::login, it.login) })
+
+    val ERROR_LOGIN_DUPLICATE_NOTNULL = CheckObjCondition<Employees>(209,
+        { "Сотрудник с указанным Логином (${it.login}) уже существует" },
+        { it.login != null && ERROR_LOGIN_DUPLICATE.condition.invoke(it) })
 
     val ERROR_POSITION_DUPLICATE_NOTNULL = CheckObjCondition<Employees>(210,
         { "Не найдена Должность с id ${it.position}" },
-        { it.position != null && !Catalogs.repo_catalogs.isHaveData(it.position) })
+        { it.position != null && Catalogs().getDataFromId(it.position) == null })
 
-    val ERROR_ARRAYTYPEWORK_DUPLICATE_NOTNULL = CheckObjCondition<Employees>(211,
-        { "Не найдены Категории с arrayTypeWork ${it.arrayTypeWork?.joinToString()}" },
-        { it.arrayTypeWork != null && !Catalogs.repo_catalogs.isHaveData(it.arrayTypeWork?.toList()) })
+//    val ERROR_ARRAYTYPEWORK_DUPLICATE_NOTNULL = CheckObjCondition<Employees>(211,
+//        { "Не найдены Категории с arrayTypeWork ${it.array_type_work?.joinToString()}" },
+//        { it.array_type_work != null && !Catalogs.repo_catalogs.isHaveData(it.array_type_work?.toList()) })
 
     val ERROR_SALT_NOTNULL = CheckObjCondition<Employees>(212,
         { "Попытка модификации системных данных. Информация о запросе передана Администраторам" },
@@ -87,7 +92,7 @@ object EmployeesErrors {
 
     val ERROR_ROLE_ADMIN_NOTNULL = CheckObjCondition<Employees>(214,
         { "Создание Администраторов запрещено. Обратитесь к разработчикам" },
-        { it.role != null && EnumBearerRoles.getFromNameOrNull(it.role) == EnumBearerRoles.ADMIN })
+        { it.role != null && ERROR_ROLE_ADMIN.condition.invoke(it) })
 
     /***********************************************************/
 

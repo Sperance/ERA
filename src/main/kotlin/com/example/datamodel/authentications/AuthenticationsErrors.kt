@@ -24,4 +24,8 @@ object AuthenticationsErrors {
         { "Не найдена запись с указанным id" },
         { true })
 
+    val ERROR_JWT = CheckObjCondition<Authentications>(105,
+        { "RoleAwareJWT token is null" },
+        { true })
+
 }

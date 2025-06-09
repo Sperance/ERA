@@ -3,16 +3,22 @@ package com.example.datamodel.records
 import com.example.helpers.CommentField
 import com.example.helpers.Recordsdata
 import com.example.currectDatetime
-import com.example.basemodel.BaseRepository
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
 import com.example.datamodel.clients.Clients
+import com.example.datamodel.clients.Clients.Companion.tbl_clients
 import com.example.datamodel.employees.Employees
+import com.example.datamodel.employees.Employees.Companion.tbl_employees
 import com.example.helpers.getSize
 import com.example.datamodel.services.Services
+import com.example.datamodel.services.Services.Companion.tbl_services
 import com.example.enums.EnumDataFilter
 import com.example.generateMapError
+import com.example.helpers.getData
+import com.example.helpers.getDataFromId
+import com.example.helpers.getDataPagination
+import com.example.helpers.getWhereDeclarationFilter
 import com.example.helpers.haveField
 import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.db
@@ -54,61 +60,59 @@ data class Records(
     @CommentField("Номер заказа (генерируется автоматически)")
     var number: String? = null,
     @CommentField("Дата и время на которую записан клиент")
-    var dateRecord: LocalDateTime? = null,
+    var date_record: LocalDateTime? = null,
     @CommentField("Статус записи (по умолчанию '0 - Создана')")
     var status: Int? = null,
     @CommentField("Просмотрен ли заказ после изменения статуса (при смене статуса ставится false)")
-    var statusViewed: Boolean? = null,
+    var status_viewed: Boolean? = null,
     @CommentField("Стоимость записи")
     var price: Double? = null,
     @CommentField("Тип оплаты")
-    var payType: String? = null,
+    var pay_type: String? = null,
     @CommentField("Статус оплаты")
-    var payStatus: Int? = null,
+    var pay_status: Int? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
-    @Transient
     @CommentField("Дата создания строки")
-    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val created_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     @KomapperUpdatedAt
-    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val updated_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntBaseDataImpl<Records>() {
 
     companion object {
         val tbl_records = Meta.records
-        val repo_records = BaseRepository(Records())
     }
 
     override fun getTable() = tbl_records
-    override fun getRepository() = repo_records
     override fun isValidLine(): Boolean {
         return id_client_from != null && id_employee_to != null && id_service != null && status != null
     }
 
     suspend fun toRecordsData(): Recordsdata {
-        val listClients = Clients.repo_clients.getRepositoryData()
-        val listEmployees = Employees.repo_employees.getRepositoryData()
-        val listServices = Services.repo_services.getRepositoryData()
+        val listClients = Clients().getDataFromId(this.id_client_from)
+        val listEmployees = Employees().getDataFromId(this.id_employee_to)
+        val listServices = Services().getDataFromId(this.id_service)
 
-        return (Recordsdata(
-            clientFrom = listClients.find { f -> f.id == this.id_client_from },
-            employeeTo = listEmployees.find { f -> f.id == this.id_employee_to },
-            service = listServices.find { f -> f.id == this.id_service },
-            record = this)
-        )
+        return (Recordsdata(clientFrom = listClients, employeeTo = listEmployees, service = listServices, record = this))
     }
 
-    suspend fun getFilledRecords(statuses: Collection<Int>? = null) : ArrayList<Recordsdata> {
+    suspend fun getFilledRecords(statuses: List<Int>? = null) : ArrayList<Recordsdata> {
         val listResults = ArrayList<Recordsdata>()
-        val listClients = Clients.repo_clients.getRepositoryData()
-        val listEmployees = Employees.repo_employees.getRepositoryData()
-        val listServices = Services.repo_services.getRepositoryData()
 
-        repo_records.getRepositoryData().filter { statuses?.contains(it.status)?:true }.forEach {
+        val listRecords = getData({ tbl_records.status inList statuses!! })
+        val setClients = listRecords.map { it.id_client_from }.toSet().toList()
+        val setEmployees = listRecords.map { it.id_employee_to }.toSet().toList()
+        val setServices = listRecords.map { it.id_service }.toSet().toList()
+
+        val listClients = Clients().getData({ tbl_clients.id inList setClients })
+        val listEmployees = Employees().getData({ tbl_employees.id inList setEmployees })
+        val listServices = Services().getData({ tbl_services.id inList setServices })
+
+        listRecords.forEach {
             listResults.add(
                 Recordsdata(
                 clientFrom = listClients.find { f -> f.id == it.id_client_from },
@@ -126,11 +130,20 @@ data class Records(
             return ResultResponse.Error(generateMapError(call, 101 to "Incorrect parameter 'id'($id). This parameter must be 'Int' type"))
         }
 
-        return ResultResponse.Success(getFilledRecords().find { it.record?.id == id.toIntOrNull() })
+        return ResultResponse.Success(getDataFromId(id.toIntOrNull())?.toRecordsData())
     }
 
     override suspend fun get(call: ApplicationCall): ResultResponse {
-        return ResultResponse.Success(getFilledRecords())
+        return try {
+            val page = call.parameters["page"]?.toIntOrNull()
+            if (page == null) {
+                ResultResponse.Success(getFilledRecords())
+            } else {
+                ResultResponse.Success(getDataPagination(page = page).map { it.toRecordsData() })
+            }
+        } catch (e: Exception) {
+            ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
+        }
     }
 
     override suspend fun update(call: ApplicationCall, params: RequestParams<Records>, serializer: KSerializer<Records>): ResultResponse {
@@ -141,7 +154,7 @@ data class Records(
 
         params.checkOnUpdate = { old: Records, new: Records ->
             if (new.status != null && old.status != new.status) {
-                new.statusViewed = false
+                new.status_viewed = false
                 printTextLog("[Records::update] Update statusViewed: $new")
             }
         }
@@ -161,7 +174,7 @@ data class Records(
         params.checkings.add { RecordsErrors.ERROR_IDSERVICE_DUPLICATE.toCheckObj(it) }
 
         params.defaults.add { it::status to 0 }
-        params.defaults.add { it::statusViewed to false }
+        params.defaults.add { it::status_viewed to false }
         params.defaults.add { it::number to generateShortOrderNumber(Records().getSize()) }
 
         return super.post(call, params, serializer)
@@ -198,8 +211,9 @@ data class Records(
                     tx.setRollbackOnly()
                     return@withTransaction ResultResponse.Error(generateMapError(call, 305 to "Incorrect parameter 'state'(${state}). This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"))
                 }
+                val page = call.parameters["page"]?.toIntOrNull()?:0
 
-                val resultList = getRepository().getDataFilter(field, stateEnum, value).map { it.toRecordsData() }
+                val resultList = getDataPagination(declaration = getWhereDeclarationFilter(field, stateEnum, value), page).map { it.toRecordsData() }
                 return@withTransaction ResultResponse.Success(resultList as Collection<*>)
             } catch (e: Exception) {
                 tx.setRollbackOnly()

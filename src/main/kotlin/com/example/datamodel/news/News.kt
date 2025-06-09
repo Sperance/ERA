@@ -2,7 +2,6 @@ package com.example.datamodel.news
 
 import com.example.helpers.CommentField
 import com.example.currectDatetime
-import com.example.basemodel.BaseRepository
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
@@ -31,32 +30,30 @@ data class News(
     @CommentField("Наименование новости")
     var name: String? = null,
     @CommentField("Текст новости")
-    var mainText: String? = null,
+    var main_text: String? = null,
     @CommentField("Прямая ссылка на картинку")
-    var imageLink: String? = null,
+    var image_link: String? = null,
     @Transient
-    var imageFormat: String? = null,
+    var image_format: String? = null,
     @CommentField("Дата для новости")
-    var dateNews: LocalDateTime? = null,
+    var date_news: LocalDateTime? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
     @CommentField("Дата создания строки")
-    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val created_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     @KomapperUpdatedAt
-    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val updated_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntBaseDataImpl<News>() {
 
     companion object {
         val tbl_news = Meta.news
-        val repo_news = BaseRepository(News())
     }
 
     override fun getTable() = tbl_news
-    override fun getRepository() = repo_news
     override fun isValidLine(): Boolean {
         return name != null
     }
@@ -65,7 +62,7 @@ data class News(
         params.checkings.add { NewsErrors.ERROR_MAINTEXT.toCheckObj(it) }
         params.checkings.add { NewsErrors.ERROR_NAME.toCheckObj(it) }
 
-        params.defaults.add { it::dateNews to LocalDateTime.currectDatetime() }
+        params.defaults.add { it::date_news to LocalDateTime.currectDatetime() }
 
         return super.post(call, params, serializer)
     }

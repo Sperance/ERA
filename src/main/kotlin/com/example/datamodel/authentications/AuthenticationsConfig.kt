@@ -17,8 +17,8 @@ fun Application.configureAuthentications() {
                 call.respond(ResultResponse.Success("Таблица успешно очищена"))
             }
 
-            secureGet("/user", EnumBearerRoles.ADMIN) {
-                call.respond(Authentications().getByUser(call))
+            secureGet("/me", EnumBearerRoles.USER) {
+                call.respond(Authentications().getByUser(call, it))
             }
 
             secureDelete("", EnumBearerRoles.ADMIN) {

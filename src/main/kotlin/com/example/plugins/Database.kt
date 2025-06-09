@@ -18,6 +18,7 @@ import com.example.datamodel.feedbacks.configureFeedbacks
 import com.example.datamodel.news.News.Companion.tbl_news
 import com.example.datamodel.news.configureNews
 import com.example.datamodel.records.Records.Companion.tbl_records
+import com.example.datamodel.records.RecordsChanged
 import com.example.datamodel.records.configureRecords
 import com.example.datamodel.serverrequests.ServerRequests
 import com.example.datamodel.serverrequests.ServerRequests.Companion.tbl_serverrequests
@@ -40,7 +41,7 @@ import org.komapper.r2dbc.R2dbcDatabase
 import io.ktor.server.routing.get
 import java.io.File
 import com.example.respond
-import io.ktor.server.plugins.origin
+import kotlinx.serialization.json.Json
 
 private val connectionFactory: ConnectionFactoryOptions = ConnectionFactoryOptions.builder()
     .option(ConnectionFactoryOptions.DRIVER, "postgresql")
@@ -52,6 +53,11 @@ private val connectionFactory: ConnectionFactoryOptions = ConnectionFactoryOptio
     .build()
 
 val db = R2dbcDatabase(connectionFactory, executionOptions = ExecutionOptions(suppressLogging = true))
+
+val jsonParser = Json {
+    ignoreUnknownKeys = true
+    coerceInputValues = true
+}
 
 fun Application.configureDatabases() {
     launch(Dispatchers.IO) {
@@ -84,9 +90,11 @@ fun Application.configureDatabases() {
         configureWorkServer()
 
         defaultsConfig()
+
     }.invokeOnCompletion {
         configureSchedulers()
 
+        RecordsChanged.watchOrders()
         ServerRequests.lauchBatchedWriteDB()
 
         printTextLog("[configureDatabases] Server is Started")
@@ -98,6 +106,11 @@ fun Application.configureWorkServer() {
         route("/server") {
             get("/status") {
                 call.respond(ResultResponse.Success("Server is Work"))
+            }
+            get("/updates") {
+                val listUpdates = ArrayList<String>()
+                listUpdates.add("* у всех полей всех таблиц изменены названия (убран весь верхний регистр)")
+                call.respond(ResultResponse.Success(listUpdates))
             }
         }
     }

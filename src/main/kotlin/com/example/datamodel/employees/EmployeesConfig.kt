@@ -6,6 +6,7 @@ import com.example.datamodel.authentications.secureDelete
 import com.example.datamodel.authentications.secureGet
 import com.example.datamodel.authentications.securePost
 import com.example.enums.EnumBearerRoles
+import com.example.helpers.clearTable
 import com.example.logObjectProperties
 import com.example.respond
 import io.ktor.server.application.Application
@@ -24,7 +25,7 @@ fun Application.configureEmployees() {
             }
 
             get("/clearTable") {
-                Employees.repo_employees.clearTable()
+                Employees().clearTable()
                 call.respond(ResultResponse.Success("Таблица успешно очищена"))
             }
 
@@ -46,10 +47,6 @@ fun Application.configureEmployees() {
 
             get("/all/filter") {
                 call.respond(Employees().getFilter(call))
-            }
-
-            get("/role") {
-                call.respond(Employees().getByRole(call))
             }
 
             secureGet("/id", EnumBearerRoles.MODERATOR) {

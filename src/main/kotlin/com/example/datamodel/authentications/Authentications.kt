@@ -17,12 +17,10 @@ import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.JWT_AUDIENCE
 import com.example.plugins.JWT_HMAC
 import com.example.plugins.JWT_ISSUER
+import com.example.plugins.RoleAwareJWT
 import com.example.plus
-import com.example.security.AESEncryption
-import com.example.toBoolPossible
 import com.example.toIntPossible
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.plugins.origin
 import io.ktor.server.request.header
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -39,6 +37,8 @@ import org.komapper.annotation.KomapperVersion
 import org.komapper.core.dsl.Meta
 import org.komapper.core.type.ClobString
 import ua_parser.Parser
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import java.util.Date
 
 /**
@@ -52,27 +52,27 @@ data class Authentications(
     @KomapperAutoIncrement
     @KomapperColumn(name = "authentications_id")
     override val id: Int = 0,
-    var clientId: Int? = null,
+    var client_id: Int? = null,
     @KomapperColumn(alternateType = ClobString::class)
     @Transient
     var token: String? = null,
-    var dateExpired: LocalDateTime? = null,
-    var dateUsed: LocalDateTime? = null,
+    var date_expired: LocalDateTime? = null,
+    var date_used: LocalDateTime? = null,
     var role: String? = null,
     var employee: Boolean? = null,
-    var requestIP: String? = null,
-    var requestGeo: String? = null,
-    var requestUserAgent: String? = null,
-    var requestOS: String? = null,
-    var requestDevice: String? = null,
+    var request_ip: String? = null,
+    var request_geo: String? = null,
+    var request_user_agent: String? = null,
+    var request_os: String? = null,
+    var request_device: String? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
     @Transient
-    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val created_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     @KomapperUpdatedAt
-    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val updated_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntPostgreTable<Authentications> {
@@ -83,8 +83,14 @@ data class Authentications(
         suspend fun createToken(userId: Int, employee: Boolean, role: EnumBearerRoles, call: ApplicationCall): Authentications {
             printTextLog("[Authentications::createToken::Clients] Создаем токен для пользователя $userId employee: $employee role: $role")
 
-            val _addressIP = call.request.header("Era-Auth-Ip")?.let { AESEncryption.decrypt(it) }
-            val _addressGeo = call.request.header("Era-Auth-Geo")?.let { AESEncryption.decrypt(it) }
+            val _addressIP = call.request.header("X-User-IP")
+            val _addressGeo = call.request.header("X-User-Geo")
+            var decodedGeo = ""
+            try {
+                decodedGeo = _addressGeo?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }?:""
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
 
             val userAgent = call.request.headers["User-Agent"]
             val parser = Parser().parse(userAgent)
@@ -99,17 +105,17 @@ data class Authentications(
 
             val tokenDuration = LocalDateTime.currectDatetime().plus(role.tokenDuration)
             val auth = Authentications(
-                clientId = userId,
+                client_id = userId,
                 token = generateJWTToken(userId, employee, tokenDuration),
-                dateExpired = tokenDuration,
-                dateUsed = LocalDateTime.currectDatetime(),
+                date_expired = tokenDuration,
+                date_used = LocalDateTime.currectDatetime(),
                 role = role.name,
                 employee = employee,
-                requestIP = _addressIP,
-                requestGeo = _addressGeo,
-                requestUserAgent = _requestUserAgent,
-                requestOS = _requestOS,
-                requestDevice = _requestDevice
+                request_ip = _addressIP,
+                request_geo = decodedGeo,
+                request_user_agent = _requestUserAgent,
+                request_os = _requestOS,
+                request_device = _requestDevice
             )
             val newauth = auth.create("Authentications::createToken")
             return newauth
@@ -127,38 +133,23 @@ data class Authentications(
         }
 
         suspend fun getTokenFromClient(client: Clients): Authentications? {
-            return Authentications().getDataOne({ tbl_authentications.clientId eq client.id ; tbl_authentications.employee eq false ; tbl_authentications.deleted eq false })
+            return Authentications().getDataOne({ tbl_authentications.client_id eq client.id ; tbl_authentications.employee eq false ; tbl_authentications.deleted eq false })
         }
 
         suspend fun getTokenFromEmployee(employee: Employees): Authentications? {
-            return Authentications().getDataOne({ tbl_authentications.clientId eq employee.id ; tbl_authentications.employee eq true ; tbl_authentications.deleted eq false })
+            return Authentications().getDataOne({ tbl_authentications.client_id eq employee.id ; tbl_authentications.employee eq true ; tbl_authentications.deleted eq false })
         }
     }
 
     override fun getTable() = tbl_authentications
 
-    suspend fun getByUser(call: ApplicationCall): ResultResponse {
+    suspend fun getByUser(call: ApplicationCall, roleAwareJWT: RoleAwareJWT?): ResultResponse {
         try {
-            val id = call.parameters["id"]
-            val employee = call.parameters["employee"]
-
-            if (id.isNullOrEmpty())
-                return AuthenticationsErrors.ERROR_ID_PARAM.toResultResponse(call, this)
-
-            if (!id.toIntPossible())
-                return AuthenticationsErrors.ERROR_ID_NOT_INT_PARAM.toResultResponse(call, this)
-
-            if (employee.isNullOrEmpty())
-                return AuthenticationsErrors.ERROR_EMPLOYEE_PARAM.toResultResponse(call, this)
-
-            if (!employee.toBoolPossible())
-                return AuthenticationsErrors.ERROR_EMPLOYEE_NOT_BOOL_PARAM.toResultResponse(call, this)
-
-            val _id = id.toInt()
-            val _employee = employee.toBoolean()
-
-            val findedAuthArray = Authentications().getData({ tbl_authentications.employee eq _employee ; tbl_authentications.clientId eq _id ; tbl_authentications.deleted eq false })
-            return ResultResponse.Success(findedAuthArray.sortedBy { it.dateUsed })
+            if (roleAwareJWT == null) {
+                return AuthenticationsErrors.ERROR_JWT.toResultResponse(call, this)
+            }
+            val findedAuthArray = Authentications().getData({ tbl_authentications.employee eq roleAwareJWT.employee ; tbl_authentications.client_id eq roleAwareJWT.userId ; tbl_authentications.deleted eq false })
+            return ResultResponse.Success(findedAuthArray.sortedBy { it.date_used })
         } catch (e: Exception) {
             return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage))
         }
@@ -189,11 +180,11 @@ data class Authentications(
     }
 
     fun isExpires(): Boolean {
-        if (dateExpired == null) return true
-        return dateExpired!! <= LocalDateTime.currectDatetime()
+        if (date_expired == null) return true
+        return date_expired!! <= LocalDateTime.currectDatetime()
     }
 
     override fun toString(): String {
-        return "Authentications(id=$id, clientId=$clientId, token=$token, dateExpired=$dateExpired, dateUsed=$dateUsed, employee=$employee version=$version)"
+        return "Authentications(id=$id, client_id=$client_id, token=$token, date_expired=$date_expired, date_used=$date_used, role=$role, employee=$employee, request_ip=$request_ip, request_geo=$request_geo, request_user_agent=$request_user_agent, request_os=$request_os, request_device=$request_device, deleted=$deleted)"
     }
 }

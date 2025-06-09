@@ -1,6 +1,5 @@
 package com.example.plugins
 
-import com.example.plugins.sockets.catalogsSocket
 import com.example.plugins.sockets.recordsSocket
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -12,12 +11,11 @@ import kotlin.time.Duration.Companion.seconds
 fun Application.configureSockets() {
 
     install(WebSockets) {
-        pingPeriod = 10.seconds
-        timeout = 10.seconds
+        pingPeriod = 15.seconds
+        timeout = 15.seconds
         maxFrameSize = Long.MAX_VALUE
         masking = false
     }
 
     recordsSocket()
-    catalogsSocket()
 }

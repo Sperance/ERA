@@ -122,6 +122,8 @@ fun <T: Any> IntBaseDataImpl<*>.updateFromNullable(nullable: T) : Int {
         if (it.name.lowercase() == "id") return@forEach
         if (it.name.lowercase() == "version") return@forEach
         if (it.name.lowercase() == "createdat") return@forEach
+        if (it.name.lowercase() == "updatedat") return@forEach
+        if (it.name.lowercase() == "deleted") return@forEach
 
         it.isAccessible = true
         val value = it.get(nullable)
@@ -182,6 +184,7 @@ data class DataLogError(
     val code: Int,
     val message: String,
 )
+
 fun <T> logObjectProperties(obj: Any, sample: T): Collection<String> {
     val list = ArrayList<DataLogError>()
     obj::class.memberProperties.forEach { prop ->

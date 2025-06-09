@@ -2,7 +2,6 @@ package com.example.datamodel.feedbacks
 
 import com.example.helpers.CommentField
 import com.example.currectDatetime
-import com.example.basemodel.BaseRepository
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
@@ -32,9 +31,9 @@ data class FeedBacks(
     @KomapperColumn(name = "feedback_id")
     override val id: Int = 0,
     @CommentField("Имя клиента оставившего отзыв")
-    var firstName: String? = null,
+    var first_name: String? = null,
     @CommentField("Фамилия клиента оставившего отзыв")
-    var lastName: String? = null,
+    var last_name: String? = null,
     @CommentField("Идентификатор клиента оставившего отзыв")
     var id_client_from: Int? = null,
     @CommentField("Идентификатор сотрудника кому оставили отзыв")
@@ -47,21 +46,19 @@ data class FeedBacks(
     @KomapperVersion
     override val version: Int = 0,
     @CommentField("Дата создания строки")
-    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val created_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     @KomapperUpdatedAt
-    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val updated_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntBaseDataImpl<FeedBacks>() {
 
     companion object {
         val tbl_feedbacks = Meta.feedBacks
-        val repo_feedbacks = BaseRepository(FeedBacks())
     }
 
     override fun getTable() = tbl_feedbacks
-    override fun getRepository() = repo_feedbacks
     override fun isValidLine(): Boolean {
         return id_client_from != null && id_employee_to != null
     }

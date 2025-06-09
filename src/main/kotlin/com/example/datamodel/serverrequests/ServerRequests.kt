@@ -34,20 +34,20 @@ data class ServerRequests(
     @KomapperColumn(name = "serverrequests_id")
     override val id: Int = 0,
     var url: String? = null,
-    var clientUrl: String? = null,
-    var uniqueKey: String? = null,
+    var client_url: String? = null,
+    var unique_key: String? = null,
     var code: Int = 0,
-    var errorMessage: String? = null,
-    var dateInRequest: LocalDateTime? = null,
-    var dateOutRequest: LocalDateTime? = null,
+    var error_message: String? = null,
+    var date_in_request: LocalDateTime? = null,
+    var date_out_request: LocalDateTime? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
     @Transient
-    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val created_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     @KomapperUpdatedAt
-    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val updated_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntPostgreTable<ServerRequests> {
@@ -64,12 +64,12 @@ data class ServerRequests(
 
             val request = ServerRequests(
                 url = call.request.path(),
-                clientUrl = "${call.request.local.remoteAddress}::${call.request.httpMethod.value}",
-                uniqueKey = call.response.headers["ERA-key"],
+                client_url = "${call.request.local.remoteAddress}::${call.request.httpMethod.value}",
+                unique_key = call.response.headers["ERA-key"],
                 code = call.response.status()?.value?:0,
-                dateInRequest = call.response.headers["Request-TimeStamp"]?.toLocalDateTime(),
-                dateOutRequest = call.response.headers["Answer-TimeStamp"]?.toLocalDateTime(),
-                errorMessage = answer_error
+                date_in_request = call.response.headers["Request-TimeStamp"]?.toLocalDateTime(),
+                date_out_request = call.response.headers["Answer-TimeStamp"]?.toLocalDateTime(),
+                error_message = answer_error
             )
             array_requests.add(request)
         }

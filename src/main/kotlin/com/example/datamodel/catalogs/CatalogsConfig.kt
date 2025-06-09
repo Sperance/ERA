@@ -6,6 +6,7 @@ import com.example.datamodel.authentications.secureDelete
 import com.example.datamodel.authentications.secureGet
 import com.example.datamodel.authentications.securePost
 import com.example.enums.EnumBearerRoles
+import com.example.helpers.clearTable
 import com.example.helpers.getDataPagination
 import com.example.helpers.restoreSafe
 import com.example.logObjectProperties
@@ -26,7 +27,7 @@ fun Application.configureCatalogs() {
             }
 
             get("/clearTable") {
-                Catalogs.repo_catalogs.clearTable()
+                Catalogs().clearTable()
                 call.respond(ResultResponse.Success("Таблица успешно очищена"))
             }
 

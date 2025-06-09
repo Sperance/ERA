@@ -1,10 +1,8 @@
 package com.example.datamodel.catalogs
 
 import com.example.basemodel.CheckObjCondition
-import com.example.datamodel.catalogs.Catalogs.Companion.repo_catalogs
-import com.example.logging.DailyLogger.printTextLog
-import kotlin.reflect.full.memberProperties
-import kotlin.reflect.jvm.isAccessible
+import com.example.datamodel.catalogs.Catalogs.Companion.tbl_catalogs
+import com.example.helpers.getDataOne
 
 object CatalogsErrors {
 
@@ -26,5 +24,5 @@ object CatalogsErrors {
 
     val ERROR_DUPLICATE_ALL = CheckObjCondition<Catalogs>(203,
         { "В БД уже присутствует категория '${it.category}' со значением '${it.value}'. Добавление дубля отменено сервером" },
-        { repo_catalogs.getRepositoryData().find { fin -> fin.category == it.category && fin.value == it.value } != null })
+        { Catalogs().getDataOne({ tbl_catalogs.category eq it.category ; tbl_catalogs.value eq it.value }) != null })
 }

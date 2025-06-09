@@ -2,7 +2,6 @@ package com.example.datamodel.stockfiles
 
 import com.example.helpers.CommentField
 import com.example.currectDatetime
-import com.example.basemodel.BaseRepository
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
@@ -35,31 +34,29 @@ data class Stockfiles(
     @CommentField("Категория файла")
     var category: String? = null,
     @CommentField("Ссылка на файл")
-    var imageLink: String? = null,
+    var image_link: String? = null,
     @Transient
-    var imageFormat: String? = null,
+    var image_format: String? = null,
     @Transient
     @KomapperVersion
     override val version: Int = 0,
     @Transient
     @CommentField("Дата создания строки")
-    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val created_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     @KomapperUpdatedAt
-    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val updated_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntBaseDataImpl<Stockfiles>() {
 
     companion object {
         val tbl_stockfiles = Meta.stockfiles
-        val repo_stockfiles = BaseRepository(Stockfiles())
     }
 
     override fun getTable() = tbl_stockfiles
-    override fun getRepository() = repo_stockfiles
     override fun isValidLine(): Boolean {
-        return service != null && imageLink != null && imageFormat != null
+        return service != null && image_link != null && image_format != null
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Stockfiles>, serializer: KSerializer<List<Stockfiles>>): ResultResponse {

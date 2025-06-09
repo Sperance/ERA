@@ -3,13 +3,10 @@ package com.example.datamodel.clients
 import com.example.setToken
 import com.example.helpers.CommentField
 import com.example.currectDatetime
-import com.example.basemodel.BaseRepository
-import com.example.basemodel.CheckObj
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.RequestParams
 import com.example.basemodel.ResultResponse
 import com.example.datamodel.authentications.Authentications
-import com.example.datamodel.authentications.Authentications.Companion.tbl_authentications
 import com.example.datamodel.feedbacks.FeedBacks
 import com.example.helpers.getSize
 import com.example.datamodel.records.Records
@@ -17,7 +14,9 @@ import com.example.enums.EnumBearerRoles
 import com.example.generateMapError
 import com.example.helpers.update
 import com.example.helpers.GMailSender
+import com.example.helpers.clearLinks
 import com.example.helpers.delete
+import com.example.helpers.getDataFromId
 import com.example.helpers.getDataOne
 import com.example.helpers.getField
 import com.example.helpers.haveField
@@ -54,9 +53,9 @@ data class Clients(
     @KomapperColumn(name = "client_id")
     override val id: Int = 0,
     @CommentField("Имя клиента")
-    var firstName: String? = null,
+    var first_name: String? = null,
     @CommentField("Фамилия клиента")
-    var lastName: String? = null,
+    var last_name: String? = null,
     @CommentField("Отчество клиента")
     var patronymic: String? = null,
     @CommentField("Логин от личного кабинета")
@@ -74,9 +73,9 @@ data class Clients(
     @CommentField("Пол клиента")
     var gender: Byte? = null,
     @CommentField("Прямая ссылка на картинку")
-    var imageLink: String? = null,
+    var image_link: String? = null,
     @Transient
-    var imageFormat: String? = null,
+    var image_format: String? = null,
     @Transient
     var salt: String? = null,
     @Transient
@@ -84,23 +83,21 @@ data class Clients(
     override val version: Int = 0,
     @Transient
     @CommentField("Дата создания строки")
-    override val createdAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val created_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     @KomapperUpdatedAt
-    override val updatedAt: LocalDateTime = LocalDateTime.currectDatetime(),
+    override val updated_at: LocalDateTime = LocalDateTime.currectDatetime(),
     @Transient
     override val deleted: Boolean = false
 ) : IntBaseDataImpl<Clients>() {
 
     companion object {
         val tbl_clients = Meta.clients
-        val repo_clients = BaseRepository(Clients())
     }
 
     override fun getTable() = tbl_clients
-    override fun getRepository() = repo_clients
     override fun isValidLine(): Boolean {
-        return firstName != null && login != null && password != null && role != null && salt != null
+        return first_name != null && login != null && password != null && role != null && salt != null
     }
 
     override suspend fun post(call: ApplicationCall, params: RequestParams<Clients>, serializer: KSerializer<List<Clients>>): ResultResponse {
@@ -116,8 +113,8 @@ data class Clients(
 
         params.onBeforeCompleted = { obj ->
             val size = Clients().getSize()
-            if (obj.lastName != null) obj.lastName = AESEncryption.encrypt(obj.lastName)
-            if (obj.firstName != null) obj.firstName = AESEncryption.encrypt(obj.firstName)
+            if (obj.last_name != null) obj.last_name = AESEncryption.encrypt(obj.last_name)
+            if (obj.first_name != null) obj.first_name = AESEncryption.encrypt(obj.first_name)
             if (obj.patronymic != null) obj.patronymic = AESEncryption.encrypt(obj.patronymic)
             if (obj.email != null) obj.email = AESEncryption.encrypt(obj.email)
             if (obj.phone != null) obj.phone = AESEncryption.encrypt(obj.phone)
@@ -149,12 +146,14 @@ data class Clients(
             if (user.password.isNullOrEmpty())
                 return ClientsErrors.ERROR_PASSWORD.toResultResponse(call, user)
 
-            val client = repo_clients.getRepositoryData().find { it.login?.lowercase() == user.login?.lowercase() && verifyPassword(it.password, it.salt, user.password) }
+            val client = getDataOne({ tbl_clients.login eq user.login })
             if (client == null)
+                return ClientsErrors.ERROR_LOGINPASSWORD.toResultResponse(call, user)
+            val verifyPass = verifyPassword(client.password, client.salt, user.password)
+            if (!verifyPass)
                 return ClientsErrors.ERROR_LOGINPASSWORD.toResultResponse(call, user)
 
             var token = Authentications.getTokenFromClient(client)
-            printTextLog("[Clients::auth] token: $token")
             if (token == null) {
                 token = Authentications.createToken(client.id, false, client.getRoleAsEnum(), call)
             } else {
@@ -165,11 +164,11 @@ data class Clients(
                 }
             }
 
-            call.response.setToken(token.token?:"", GMTDate(token.dateExpired!!.toInstant(TimeZone.UTC).toEpochMilliseconds()))
+            call.response.setToken(token.token?:"", GMTDate(token.date_expired!!.toInstant(TimeZone.UTC).toEpochMilliseconds()))
 
             return ResultResponse.Success(client)
         } catch (e: Exception) {
-            e.printStackTrace()
+            printTextLog("[ERROR] ${e.localizedMessage}")
             return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage))
         }
     }
@@ -184,14 +183,12 @@ data class Clients(
             if (password.isNullOrEmpty())
                 return ClientsErrors.ERROR_PASSWORD.toResultResponse(call, this)
 
-            val findedClient = repo_clients.getRepositoryData().find { it.email == AESEncryption.encrypt(email) }
+            val findedClient = getDataOne({ tbl_clients.email eq AESEncryption.encrypt(email) })
             if (findedClient == null)
                 return ClientsErrors.ERROR_EMAIL_DONTFIND.toResultResponse(call, this)
 
             findedClient.setNewPassword(password)
             val updated = findedClient.update("Clients::changePasswordFromEmail")
-
-            repo_clients.updateData(updated)
 
             return ResultResponse.Success(updated)
         } catch (e: Exception) {
@@ -208,7 +205,7 @@ data class Clients(
             if (!id.toIntPossible())
                 return ClientsErrors.ERROR_ID_NOT_INT_PARAMETER.toResultResponse(call, this)
 
-            val findedClient = repo_clients.getDataFromId(id.toIntOrNull())
+            val findedClient = getDataFromId(id.toIntOrNull())
             if (findedClient == null)
                 return ClientsErrors.ERROR_ID_DONTFIND.toResultResponse(call, this)
 
@@ -232,7 +229,7 @@ data class Clients(
             if (email.isNullOrEmpty())
                 return ClientsErrors.ERROR_EMAIL.toResultResponse(call, this)
 
-            val findedClient = repo_clients.getRepositoryData().find { it.email == AESEncryption.encrypt(email) }
+            val findedClient = getDataOne({ tbl_clients.email eq AESEncryption.encrypt(email) })
             if (findedClient == null)
                 return ClientsErrors.ERROR_EMAIL_DONTFIND.toResultResponse(call, this)
 
@@ -255,11 +252,10 @@ data class Clients(
 
     override suspend fun delete(call: ApplicationCall, params: RequestParams<Clients>): ResultResponse {
         params.onBeforeCompleted = { obj ->
-            Records.repo_records.clearLinkEqual(Records::id_client_from, obj.id)
-            FeedBacks.repo_feedbacks.clearLinkEqual(FeedBacks::id_client_from, obj.id)
+            Records().clearLinks(Records::id_client_from, obj.id)
+            FeedBacks().clearLinks(FeedBacks::id_client_from, obj.id)
 
-            val token = Authentications.getTokenFromClient(obj)
-            token?.delete()
+            Authentications.getTokenFromClient(obj)?.delete()
             true
         }
 
@@ -274,8 +270,8 @@ data class Clients(
         params.checkings.add { ClientsErrors.ERROR_EMAIL_DUPLICATE_NOTNULL.toCheckObj(it) }
 
         params.onBeforeCompleted = { obj ->
-            if (obj.lastName != null) obj.lastName = AESEncryption.encrypt(obj.lastName)
-            if (obj.firstName != null) obj.firstName = AESEncryption.encrypt(obj.firstName)
+            if (obj.last_name != null) obj.last_name = AESEncryption.encrypt(obj.last_name)
+            if (obj.first_name != null) obj.first_name = AESEncryption.encrypt(obj.first_name)
             if (obj.patronymic != null) obj.patronymic = AESEncryption.encrypt(obj.patronymic)
             if (obj.email != null) obj.email = AESEncryption.encrypt(obj.email)
             if (obj.phone != null) obj.phone = AESEncryption.encrypt(obj.phone)
@@ -307,6 +303,6 @@ data class Clients(
     }
 
     override fun toString(): String {
-        return "Clients(id=$id, firstName=$firstName, lastName=$lastName, patronymic=$patronymic, login=$login, password=$password, phone=$phone, email=$email, description=$description, imageLink=$imageLink)"
+        return "Clients(id=$id, first_name=$first_name, last_name=$last_name, patronymic=$patronymic, login=$login, password=$password, phone=$phone, email=$email, role=$role, image_link=$image_link, image_format=$image_format, deleted=$deleted)"
     }
 }

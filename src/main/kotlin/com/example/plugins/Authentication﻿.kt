@@ -17,6 +17,7 @@ import com.example.datamodel.employees.Employees
 import com.example.enums.EnumBearerRoles
 import com.example.generateMapError
 import com.example.helpers.AUTH_ERROR_KEY
+import com.example.helpers.getDataFromId
 import com.example.logging.DailyLogger.printTextLog
 import com.example.respond
 import com.example.toIntPossible
@@ -71,7 +72,7 @@ fun Application.configureAuthentication() {
                 val findedId: Int
                 val role: EnumBearerRoles
                 if (isEmployee) {
-                    val findedEmployee = Employees.repo_employees.getDataFromId(userid.toIntOrNull())
+                    val findedEmployee = Employees().getDataFromId(userid.toIntOrNull())
                     if (findedEmployee == null) {
                         printTextLog("[Authentication::validate] dont find Employee with id '$userid'")
                         attributes.put(AUTH_ERROR_KEY, "Dont find Employee with id '$userid'")
@@ -80,7 +81,7 @@ fun Application.configureAuthentication() {
                     findedId = findedEmployee.id
                     role = findedEmployee.getRoleAsEnum()
                 } else {
-                    val findedClient = Clients.repo_clients.getDataFromId(userid.toIntOrNull())
+                    val findedClient = Clients().getDataFromId(userid.toIntOrNull())
                     if (findedClient == null) {
                         printTextLog("[Authentication::validate] dont find Clients with id '$userid'")
                         attributes.put(AUTH_ERROR_KEY, "Dont find Clients with id '$userid'")
