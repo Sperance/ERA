@@ -41,7 +41,12 @@ import org.komapper.r2dbc.R2dbcDatabase
 import io.ktor.server.routing.get
 import java.io.File
 import com.example.respond
+import io.ktor.server.routing.application
+import io.ktor.server.routing.getAllRoutes
+import io.ktor.util.AttributeKey
 import kotlinx.serialization.json.Json
+import java.sql.DriverManager
+import java.util.Properties
 
 private val connectionFactory: ConnectionFactoryOptions = ConnectionFactoryOptions.builder()
     .option(ConnectionFactoryOptions.DRIVER, "postgresql")
@@ -51,6 +56,13 @@ private val connectionFactory: ConnectionFactoryOptions = ConnectionFactoryOptio
     .option(ConnectionFactoryOptions.PASSWORD, applicationTomlSettings?.DATABASE?.PASSWORD?:"22322137")
     .option(ConnectionFactoryOptions.DATABASE, applicationTomlSettings?.DATABASE?.DATABASE?:"postgres_rpg")
     .build()
+
+private val jdbcUrl = "jdbc:postgresql://localhost:${applicationTomlSettings!!.DATABASE.PORT}/${applicationTomlSettings!!.DATABASE.DATABASE}"
+private val props = Properties().apply {
+    setProperty("user", applicationTomlSettings!!.DATABASE.USER)
+    setProperty("password", applicationTomlSettings!!.DATABASE.PASSWORD)
+}
+val jdbcConnection = DriverManager.getConnection(jdbcUrl, props)
 
 val db = R2dbcDatabase(connectionFactory, executionOptions = ExecutionOptions(suppressLogging = true))
 
@@ -75,6 +87,7 @@ fun Application.configureDatabases() {
             db.runQuery { QueryDsl.create(tbl_serverrequests) }
         }
         routing {
+            this.attributes.put(AttributeKey("Sample"), "WWW")
             staticFiles("/files", File("files"))
         }
         configureClients()

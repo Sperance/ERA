@@ -16,6 +16,7 @@ import com.example.helpers.getDataFromId
 import com.example.helpers.getDataOne
 import com.example.helpers.getDataPagination
 import com.example.helpers.getField
+import com.example.helpers.getSize
 import com.example.helpers.getWhereDeclarationFilter
 import com.example.helpers.haveField
 import com.example.helpers.putField
@@ -43,7 +44,7 @@ import kotlin.io.path.absolutePathString
 import kotlin.reflect.KMutableProperty0
 
 sealed class ResultResponse {
-    class Success(val data: Any?, val headers: Map<String, String>? = null) : ResultResponse()
+    class Success(val data: Any?, val headers: Map<String, Any?>? = null) : ResultResponse()
     class Error(val message: MutableMap<String, String>) : ResultResponse()
 }
 
@@ -149,12 +150,13 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 return ResultResponse.Error(generateMapError(call, 305 to "Incorrect parameter 'state'(${state}). This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"))
             }
             val page = call.parameters["page"]?.toIntOrNull()
+            val tableSize = getSize { (getTable()["deleted"] as PropertyMetamodel<T, Any, *>) eq false }
             if (page == null) {
                 val resultList = getData(declaration = getWhereDeclarationFilter(field, stateEnum, value))
-                return ResultResponse.Success(resultList as Collection<*>)
+                return ResultResponse.Success(resultList as Collection<*>, headers = mapOf("Content-count" to tableSize))
             } else {
                 val resultList = getDataPagination(declaration = getWhereDeclarationFilter(field, stateEnum, value), page)
-                return ResultResponse.Success(resultList as Collection<*>)
+                return ResultResponse.Success(resultList as Collection<*>, headers = mapOf("Content-count" to tableSize))
             }
         } catch (e: Exception) {
             return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
@@ -497,38 +499,6 @@ abstract class IntBaseDataImpl<T : IntBaseDataImpl<T>> : IntPostgreTableReposito
                 }
 
                 return@withTransaction ResultResponse.Success(finishObject as Any)
-            } catch (e: Exception) {
-                tx.setRollbackOnly()
-                return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
-            }
-        }
-    }
-
-    suspend fun getDataFilterPagination(call: ApplicationCall): ResultResponse {
-        val field = call.parameters["field"]
-        if (field.isNullOrEmpty()) {
-            return ResultResponse.Error(generateMapError(call, 301 to "Incorrect parameter 'field'. This parameter must be 'String' type"))
-        }
-        val _state = call.parameters["state"]
-        if (_state.isNullOrEmpty()) {
-            return ResultResponse.Error(generateMapError(call, 302 to "Incorrect parameter 'state'. This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"))
-        }
-
-        val state = EnumDataFilter.entries.find { it.name == _state.uppercase() }
-        if (state == null) {
-            return ResultResponse.Error(generateMapError(call, 303 to "Incorrect parameter 'state'(${_state}). This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"))
-        }
-
-        val value = call.parameters["value"]
-        val page = call.parameters["page"]?.toIntOrNull()
-        if (page == null) {
-            return ResultResponse.Error(generateMapError(call, 303 to "Incorrect parameter 'page'. This parameter must be 'Int' type"))
-        }
-
-        val withDeleted = call.parameters["withDeleted"]?.toBooleanStrictOrNull()?:false
-        return db.withTransaction { tx ->
-            try {
-                return@withTransaction ResultResponse.Success(getDataPagination(declaration = getWhereDeclarationFilter(field, state, value, withDeleted), page = page))
             } catch (e: Exception) {
                 tx.setRollbackOnly()
                 return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))

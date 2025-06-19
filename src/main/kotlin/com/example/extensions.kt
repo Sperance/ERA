@@ -3,18 +3,24 @@ package com.example
 import com.example.basemodel.CheckObjCondition
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.ResultResponse
+import com.example.enums.EnumBearerRoles
 import com.example.helpers.getField
 import com.example.helpers.putField
 import com.example.helpers.CommentField
 import com.example.logging.DailyLogger.printTextLog
 import io.ktor.http.Cookie
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.uri
 import io.ktor.server.response.ApplicationResponse
 import io.ktor.server.response.respond
+import io.ktor.server.routing.getAllRoutes
+import io.ktor.server.routing.routing
 import io.ktor.server.util.toZonedDateTime
+import io.ktor.util.AttributeKey
+import io.ktor.util.Attributes
 import io.ktor.util.date.GMTDate
 import io.ktor.util.date.toJvmDate
 import io.ktor.utils.io.InternalAPI
@@ -95,7 +101,7 @@ suspend fun ApplicationCall.respond(response: ResultResponse) {
             is ResultResponse.Success -> {
                 this.response.headers.append("Answer-TimeStamp", LocalDateTime.currectDatetime().toString())
                 response.headers?.forEach { (key, value) ->
-                    this.response.headers.append(key, value)
+                    this.response.headers.append(key, value.toString())
                 }
                 respond(status = HttpStatusCode.OK, message = response.data ?: "")
             }
@@ -200,4 +206,54 @@ fun <T> logObjectProperties(obj: Any, sample: T): Collection<String> {
         } catch (_: Exception) {}
     }
     return list.sortedBy { it.code }.map { it.code.toString() + " -> " + it.message }
+}
+
+fun getRouteAttributes(title: String, description: String = "", role: EnumBearerRoles? = null, params: String = ""): Attributes {
+    val atrs = Attributes(true)
+    val textRole = role?.name ?: "ANY"
+
+    atrs.put(AttributeKey("Role"), textRole)
+    atrs.put(AttributeKey("Comment"), title)
+
+    if (description.isNotEmpty()) atrs.put(AttributeKey("Description"), description)
+    if (params.isNotEmpty()) atrs.put(AttributeKey("Params"), params)
+
+    return atrs
+}
+
+fun Application.getRoutesInfo(routeStr: String): ArrayList<String> {
+    val arrayData = ArrayList<String>()
+    routing {  }.run {
+        val allMyBase = getAllRoutes()
+        val atrsData = ArrayList<String>()
+        allMyBase.filter { rt -> rt.toString().contains(routeStr) }.forEach { rt ->
+            atrsData.clear()
+            rt.attributes.allKeys.forEach { atr ->
+                atrsData.add("${atr.name}: ${rt.attributes[atr]}")
+            }
+            val str = "Route: ${rt.toString().replace("/(authenticate auth-jwt-cookie)", "")} ${atrsData.joinToString(", ")}"
+            arrayData.add(str)
+        }
+    }
+    return arrayData
+}
+
+fun ApplicationCall.getClientIp(): String? {
+
+    val headers = listOf(
+        "X-User-IP",
+        "X-Forwarded-For",
+        "Proxy-Client-IP",
+        "WL-Proxy-Client-IP",
+        "HTTP_CLIENT_IP",
+        "HTTP_X_FORWARDED_FOR"
+    )
+
+    for (header in headers) {
+        request.headers[header]?.takeIf { it.isNotBlank() }?.let {
+            return it.split(",").first().trim()
+        }
+    }
+
+    return null
 }

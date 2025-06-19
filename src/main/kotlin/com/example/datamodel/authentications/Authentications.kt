@@ -8,10 +8,12 @@ import com.example.datamodel.clients.Clients
 import com.example.datamodel.employees.Employees
 import com.example.enums.EnumBearerRoles
 import com.example.generateMapError
+import com.example.getClientIp
 import com.example.helpers.create
 import com.example.helpers.delete
 import com.example.helpers.getData
 import com.example.helpers.getDataOne
+import com.example.helpers.getLocationByIp
 import com.example.interfaces.IntPostgreTable
 import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.JWT_AUDIENCE
@@ -60,7 +62,7 @@ data class Authentications(
     var date_used: LocalDateTime? = null,
     var role: String? = null,
     var employee: Boolean? = null,
-    var request_ip: String? = null,
+//    var request_ip: String? = null,
     var request_geo: String? = null,
     var request_user_agent: String? = null,
     var request_os: String? = null,
@@ -81,16 +83,23 @@ data class Authentications(
         val tbl_authentications = Meta.authentications
 
         suspend fun createToken(userId: Int, employee: Boolean, role: EnumBearerRoles, call: ApplicationCall): Authentications {
-            printTextLog("[Authentications::createToken::Clients] Создаем токен для пользователя $userId employee: $employee role: $role")
 
-            val _addressIP = call.request.header("X-User-IP")
+//            val _addressIP = call.request.header("X-User-IP")
+            val _addressIP = call.getClientIp()
             val _addressGeo = call.request.header("X-User-Geo")
+
             var decodedGeo = ""
             try {
                 decodedGeo = _addressGeo?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }?:""
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+
+            if (decodedGeo.isEmpty() && _addressIP != null) {
+                decodedGeo = getLocationByIp(_addressIP).toFormatString()
+            }
+
+            printTextLog("[Authentications::createToken::Clients] Создаем токен для пользователя $userId employee: $employee role: $role\nGEO: $decodedGeo")
 
             val userAgent = call.request.headers["User-Agent"]
             val parser = Parser().parse(userAgent)
@@ -111,7 +120,7 @@ data class Authentications(
                 date_used = LocalDateTime.currectDatetime(),
                 role = role.name,
                 employee = employee,
-                request_ip = _addressIP,
+//                request_ip = _addressIP,
                 request_geo = decodedGeo,
                 request_user_agent = _requestUserAgent,
                 request_os = _requestOS,
@@ -185,6 +194,6 @@ data class Authentications(
     }
 
     override fun toString(): String {
-        return "Authentications(id=$id, client_id=$client_id, token=$token, date_expired=$date_expired, date_used=$date_used, role=$role, employee=$employee, request_ip=$request_ip, request_geo=$request_geo, request_user_agent=$request_user_agent, request_os=$request_os, request_device=$request_device, deleted=$deleted)"
+        return "Authentications(id=$id, client_id=$client_id, token=$token, date_expired=$date_expired, date_used=$date_used, role=$role, employee=$employee, request_geo=$request_geo, request_user_agent=$request_user_agent, request_os=$request_os, request_device=$request_device, deleted=$deleted)"
     }
 }

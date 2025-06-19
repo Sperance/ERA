@@ -1,18 +1,12 @@
 package com.example.basemodel
 
-import com.example.datamodel.authentications.Authentications
-import com.example.datamodel.authentications.secureGet
-import com.example.datamodel.authentications.securePost
 import com.example.datamodel.clients.Clients
-import com.example.enums.EnumBearerRoles
 import com.example.enums.EnumSQLTypes
 import com.example.minus
 import com.example.helpers.GMailSender
-import com.example.helpers.clearTable
 import com.example.helpers.executeAddColumn
 import com.example.helpers.executeDelColumn
 import com.example.plus
-import com.example.respond
 import com.example.toIntPossible
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -104,22 +98,6 @@ fun Application.configureTests() {
                     resultString += "$it\n"
                 }
                 call.respond(HttpStatusCode.OK, resultString)
-            }
-
-            route("/bearer") {
-                secureGet("/getData") { userId ->
-                    call.respond(HttpStatusCode.OK, "Hello $userId")
-                }
-                secureGet("/getData_admin", EnumBearerRoles.ADMIN) { userId ->
-                    call.respond(HttpStatusCode.OK, "Hello $userId")
-                }
-
-                securePost("/postData") { userId ->
-                    call.respond(HttpStatusCode.OK, "Hello $userId")
-                }
-                securePost("/postData_admin", EnumBearerRoles.ADMIN) { userId ->
-                    call.respond(HttpStatusCode.OK, "Hello $userId")
-                }
             }
         }
     }

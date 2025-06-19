@@ -1,9 +1,9 @@
 package com.example.datamodel.records
 
-import com.example.applicationTomlSettings
 import com.example.helpers.Recordsdata
 import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.db
+import com.example.plugins.jdbcConnection
 import com.example.plugins.jsonParser
 import com.example.plugins.sockets.socketsRecords
 import io.r2dbc.postgresql.api.PostgresqlConnection
@@ -12,12 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.serialization.Serializable
-import org.komapper.core.dsl.QueryDsl
-import org.komapper.core.dsl.QueryDsl.Companion.executeScript
-import org.komapper.core.dsl.QueryDsl.Companion.executeTemplate
-import org.komapper.core.dsl.query.get
-import java.sql.DriverManager
-import java.util.Properties
 
 @Serializable
 data class RecordChangeEvent(
@@ -33,14 +27,10 @@ data class RecordsDataEvent(
 
 object RecordsChanged {
 
-    private fun createTrigger() {
-        val jdbcUrl = "jdbc:postgresql://localhost:${applicationTomlSettings!!.DATABASE.PORT}/${applicationTomlSettings!!.DATABASE.DATABASE}"
-        val props = Properties().apply {
-            setProperty("user", applicationTomlSettings!!.DATABASE.USER)
-            setProperty("password", applicationTomlSettings!!.DATABASE.PASSWORD)
-        }
+    private const val listenChannel = "record_changes"
 
-        DriverManager.getConnection(jdbcUrl, props).use { conn ->
+    private fun createTrigger() {
+        jdbcConnection.use { conn ->
             conn.createStatement().use { stmt ->
                 stmt.execute("""
                 CREATE OR REPLACE FUNCTION notify_record_change()
@@ -55,7 +45,7 @@ object RecordsChanged {
                             ELSE to_jsonb(NEW)
                         END
                     );
-                    PERFORM pg_notify('record_changes', notification_json::text);
+                    PERFORM pg_notify('$listenChannel', notification_json::text);
                     RETURN NEW;
                 END;
                 $$ LANGUAGE plpgsql;
@@ -73,7 +63,7 @@ object RecordsChanged {
     fun watchOrders() = CoroutineScope(Dispatchers.IO).launch {
         createTrigger()
         val connection = db.config.connectionFactory.create().awaitFirstOrNull() as? PostgresqlConnection ?: error("Не удалось подключиться к PostgreSQL")
-        connection.createStatement("LISTEN record_changes").execute().awaitFirstOrNull()
+        connection.createStatement("LISTEN $listenChannel").execute().awaitFirstOrNull()
         connection.notifications.doOnNext { notification ->
             val params = notification.parameter?.replace("record_id", "id")!!
             val res = jsonParser.decodeFromString<RecordChangeEvent>(params)

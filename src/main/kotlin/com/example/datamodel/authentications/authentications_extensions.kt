@@ -8,6 +8,7 @@ import com.example.currectDatetime
 import com.example.datamodel.authentications.Authentications.Companion.tbl_authentications
 import com.example.enums.EnumBearerRoles
 import com.example.generateMapError
+import com.example.getRouteAttributes
 import com.example.helpers.getDataOne
 import com.example.helpers.update
 import com.example.plugins.JWT_AUTH_NAME
@@ -22,9 +23,10 @@ import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.util.date.GMTDate
+import io.ktor.util.putAll
 import kotlinx.datetime.LocalDateTime
 
-fun Route.secureGet(path: String, role: EnumBearerRoles? = null, body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
+fun Route.secureGet(path: String, role: EnumBearerRoles? = null, title: String, description: String = "", params: String = "", body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
     authenticate(JWT_AUTH_NAME) {
         get(path) {
             val principal = call.principal<RoleAwareJWT>()
@@ -36,11 +38,13 @@ fun Route.secureGet(path: String, role: EnumBearerRoles? = null, body: suspend R
             try { body.invoke(this, principal) } catch (e: Exception) {
                 call.respond(response = ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage)))
             }
+        }.apply {
+            attributes.putAll(getRouteAttributes(title, description, role, params))
         }
     }
 }
 
-fun Route.securePost(path: String, role: EnumBearerRoles? = null, body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
+fun Route.securePost(path: String, role: EnumBearerRoles? = null, title: String, description: String = "", params: String = "", body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
     authenticate(JWT_AUTH_NAME) {
         post(path) {
             val principal = call.principal<RoleAwareJWT>()
@@ -52,11 +56,13 @@ fun Route.securePost(path: String, role: EnumBearerRoles? = null, body: suspend 
             try { body.invoke(this, principal) } catch (e: Exception) {
                 call.respond(response = ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage)))
             }
+        }.apply {
+            attributes.putAll(getRouteAttributes(title, description, role, params))
         }
     }
 }
 
-fun Route.secureDelete(path: String, role: EnumBearerRoles? = null, body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
+fun Route.secureDelete(path: String, role: EnumBearerRoles? = null, title: String, description: String = "", params: String = "", body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
     authenticate(JWT_AUTH_NAME) {
         delete(path) {
             val principal = call.principal<RoleAwareJWT>()
@@ -68,6 +74,8 @@ fun Route.secureDelete(path: String, role: EnumBearerRoles? = null, body: suspen
             try { body.invoke(this, principal) } catch (e: Exception) {
                 call.respond(response = ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage)))
             }
+        }.apply {
+            attributes.putAll(getRouteAttributes(title, description, role, params))
         }
     }
 }
