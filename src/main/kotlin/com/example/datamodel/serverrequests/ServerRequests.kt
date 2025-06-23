@@ -1,15 +1,13 @@
 package com.example.datamodel.serverrequests
 
 import com.example.currectDatetime
-import com.example.helpers.IpApiResponse
+import com.example.helpers.LocationInfo.attrGEO
 import com.example.helpers.createBatch
 import com.example.interfaces.IntPostgreTable
 import com.example.logging.DailyLogger.printTextLog
-import com.example.plugins.attrGEO
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
-import io.ktor.util.AttributeKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -74,7 +72,7 @@ data class ServerRequests(
                 date_in_request = call.response.headers["Request-TimeStamp"]?.toLocalDateTime(),
                 date_out_request = call.response.headers["Answer-TimeStamp"]?.toLocalDateTime(),
                 error_message = answer_error,
-                geo_info = call.attributes.getOrNull(attrGEO)?.toFormatString()?:""
+//                geo_info = call.attributes.getOrNull(attrGEO)?.toFormatString()?:""
             )
             array_requests.add(request)
         }

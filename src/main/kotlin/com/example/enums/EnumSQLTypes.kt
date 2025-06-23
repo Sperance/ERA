@@ -10,5 +10,11 @@ enum class EnumSQLTypes(val textValue: String) {
     INTEGER("INTEGER"),
     DECIMAL("DECIMAL"),
     SMALLINT("SMALLINT"),
-    TIMESTAMP("timestamp without time zone"),
+    TIMESTAMP("timestamp without time zone");
+
+    companion object {
+        fun getFromName(value: String, defaultValue: EnumSQLTypes? = null): EnumSQLTypes? {
+            return entries.find { it.name.uppercase() == value.trim().uppercase() }?:defaultValue
+        }
+    }
 }

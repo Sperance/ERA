@@ -8,5 +8,11 @@ enum class EnumDataFilter {
     LE,
     GE,
     CONTAINS,
-    NOT_CONTAINS
+    NOT_CONTAINS;
+
+    companion object {
+        fun getFromName(value: String, defaultValue: EnumDataFilter? = null): EnumDataFilter? {
+            return entries.find { it.name.uppercase() == value.trim().uppercase() }?:defaultValue
+        }
+    }
 }

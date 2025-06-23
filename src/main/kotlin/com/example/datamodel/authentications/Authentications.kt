@@ -9,11 +9,11 @@ import com.example.datamodel.employees.Employees
 import com.example.enums.EnumBearerRoles
 import com.example.generateMapError
 import com.example.getClientIp
+import com.example.helpers.LocationInfo
 import com.example.helpers.create
 import com.example.helpers.delete
 import com.example.helpers.getData
 import com.example.helpers.getDataOne
-import com.example.helpers.getLocationByIp
 import com.example.interfaces.IntPostgreTable
 import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.JWT_AUDIENCE
@@ -96,7 +96,7 @@ data class Authentications(
             }
 
             if (decodedGeo.isEmpty() && _addressIP != null) {
-                decodedGeo = getLocationByIp(_addressIP).toFormatString()
+                decodedGeo = LocationInfo.getLocationByIp(_addressIP).toFormatString()
             }
 
             printTextLog("[Authentications::createToken::Clients] Создаем токен для пользователя $userId employee: $employee role: $role\nGEO: $decodedGeo")

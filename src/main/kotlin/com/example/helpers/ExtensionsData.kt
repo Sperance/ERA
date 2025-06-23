@@ -3,10 +3,13 @@ package com.example.helpers
 import com.example.applicationTomlSettings
 import com.example.datamodel.records.Records
 import com.example.enums.EnumDataFilter
+import com.example.enums.EnumDataTypes
 import com.example.enums.EnumSQLTypes
 import com.example.interfaces.IntPostgreTable
 import com.example.logging.DailyLogger.printTextLog
 import com.example.plugins.db
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toLocalDateTime
 import org.komapper.core.dsl.QueryDsl
 import org.komapper.core.dsl.expression.SortExpression
 import org.komapper.core.dsl.expression.WhereDeclaration
@@ -18,6 +21,9 @@ import org.komapper.core.dsl.operator.count
 import org.komapper.core.dsl.query.get
 import org.komapper.core.dsl.query.singleOrNull
 import kotlin.reflect.KMutableProperty1
+import kotlin.reflect.javaType
+import kotlin.reflect.jvm.javaType
+import kotlin.reflect.safeCast
 
 fun Any.haveField(name: String) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name } != null
 fun Any.getField(name: String) = this::class.java.declaredFields.find { it.isAccessible = true ; it.name == name }?.get(this)
@@ -132,19 +138,34 @@ suspend fun <TYPE: Any, META : EntityMetamodel<Any, Any, META>> IntPostgreTable<
 }
 
 @Suppress("UNCHECKED_CAST")
-fun <T: Any> IntPostgreTable<T>.getWhereDeclarationFilter(field: String, state: EnumDataFilter, value: Any?, withDeleted: Boolean = false): WhereDeclaration {
-    val whereExpr: WhereDeclaration = when (state) {
-        EnumDataFilter.EQ -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).eq(value)} }
-        EnumDataFilter.NE -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).notEq(value)} }
-        EnumDataFilter.LT -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).less(value)} }
-        EnumDataFilter.GT ->  { {(getTable()[field] as PropertyMetamodel<T, Any, *>).greater(value)} }
-        EnumDataFilter.LE -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).lessEq(value)} }
-        EnumDataFilter.GE -> { {(getTable()[field] as PropertyMetamodel<T, Any, *>).greaterEq(value)} }
-        EnumDataFilter.CONTAINS -> { {(getTable()[field] as PropertyMetamodel<T, Any, String>).contains(value.toString())} }
-        EnumDataFilter.NOT_CONTAINS -> { {(getTable()[field] as PropertyMetamodel<T, Any, String>).notContains(value.toString())} }
+fun <T: Any> IntPostgreTable<T>.getWhereDeclarationFilter(field: String, state: EnumDataFilter, value: Any?): WhereDeclaration {
+
+    val property = getTable()[field] as PropertyMetamodel<T, Any, Any>
+    val extType = property.exteriorType.javaType
+
+    val innerValue = when (extType) {
+        Int::class.java -> value?.toString()?.toIntOrNull()
+        Double::class.java -> value?.toString()?.toDoubleOrNull()
+        Long::class.java -> value?.toString()?.toLongOrNull()
+        String::class.java -> value?.toString()
+        LocalDateTime::class.java -> value?.toString()?.toLocalDateTime()
+        else -> throw IllegalArgumentException("Value $value cannot be converted to $extType")
     }
-    val deleteExpr: WhereDeclaration = {(getTable()["deleted"] as PropertyMetamodel<T, Any, Boolean>).eq(withDeleted)}
-    return whereExpr.and(deleteExpr)
+
+    if ((state == EnumDataFilter.CONTAINS || state == EnumDataFilter.NOT_CONTAINS) && extType != String::class.java) {
+        throw IllegalArgumentException("State $state only works with STRING type field $field")
+    }
+
+    return when (state) {
+        EnumDataFilter.EQ -> { { property.eq(innerValue) } }
+        EnumDataFilter.NE -> { { property.notEq(innerValue) } }
+        EnumDataFilter.LT -> { { property.less(innerValue) } }
+        EnumDataFilter.GT -> { { property.greater(innerValue) } }
+        EnumDataFilter.LE -> { { property.lessEq(innerValue) } }
+        EnumDataFilter.GE -> { { property.greaterEq(innerValue) } }
+        EnumDataFilter.CONTAINS -> { { (property as PropertyMetamodel<T, Any, String>).contains(innerValue.toString()) } }
+        EnumDataFilter.NOT_CONTAINS -> { { (property as PropertyMetamodel<T, Any, String>).notContains(innerValue.toString()) } }
+    }
 }
 
 @Suppress("UNCHECKED_CAST")

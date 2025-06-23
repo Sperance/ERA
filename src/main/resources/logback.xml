@@ -35,6 +35,7 @@
     <logger name="io.ktor.server.plugins.partialcontent" level="OFF" />
     <logger name="io.ktor.server.plugins.ratelimit" level="OFF"/>
     <logger name="io.ktor.server.plugins.statuspages" level="OFF"/>
+    <logger name="io.ktor.server.plugins.websocket" level="OFF"/>
     <logger name="io.ktor.websocket" level="OFF"/>
     <logger name="i.k.c.p.c" level="OFF"/>
     <logger name="i.k.c.p.c.ContentNegotiation" level="OFF"/>
@@ -42,7 +43,9 @@
     <logger name="i.ktor.client.plugins" level="OFF"/>
     <logger name="i.k.client" level="OFF"/>
     <logger name="i.k.client.plugins" level="OFF"/>
+    <logger name="io.ktor.server.websocket" level="OFF"/>
+    <logger name="io.ktor.server" level="OFF"/>
 
-    <logger name="org.komapper" level="DEBUG" />
+    <logger name="org.komapper" level="OFF" />
     <logger name="ktor.application" level="INFO" />
 </configuration>

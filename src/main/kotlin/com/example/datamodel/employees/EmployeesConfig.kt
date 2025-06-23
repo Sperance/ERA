@@ -54,8 +54,8 @@ fun Application.configureEmployees() {
             secureGet("/timeslot/{clientId}/{servceLength}",
                 EnumBearerRoles.USER,
                 title = "Получить свободные таймслоты по выбранному Сотруднику и Продолжительности работы",
-                params = "'clientId'(Integer) - id клиента для которого нужно получить слоты\n" +
-                        "'servceLength'(Integer) - продолжительность услуги"
+                params = mapOf("'clientId'(Integer)" to "id клиента для которого нужно получить слоты",
+                        "'servceLength'(Integer)" to "продолжительность услуги")
             ) {
                 call.respond(Employees().getTimeSlots(call))
             }
@@ -78,7 +78,7 @@ fun Application.configureEmployees() {
                     getRouteAttributes(
                         title = "Получить список всех Клиентов",
                         description = "Возвращаются только Не удаленные (поле deleted = false). Временный метод",
-                        params = "'page'(Int) - не обязательный параметр. Указание страницы для Пагинации"
+                        params = mapOf("'page'(Int)" to "не обязательный параметр. Указание страницы для Пагинации")
                     )
                 )
             }
@@ -98,10 +98,11 @@ fun Application.configureEmployees() {
                     getRouteAttributes(
                         title = "Получить список всех Сотрудников с Фильтрами",
                         description = "Возвращаются только Не удаленные (поле deleted = false)",
-                        params = "'field'(String) - поле, по которому будет работать фильтр\n" +
-                                "'state'(String) - команда, по которой будет обрабатываться фильтр (eq, ne, lt, gt, le, ge, contains, not_contains)\n" +
-                                "'value'(Any) - значение, которое обрабатывается в поле 'field' по команде 'state'\n" +
-                                "'page'(Int) - не обязательный параметр, позволяет получить страницы данных\n"
+                        params = mapOf(
+                            "'field'(String)" to "поле, по которому будет работать фильтр",
+                            "'state'(String)" to "команда, по которой будет обрабатываться фильтр (eq, ne, lt, gt, le, ge, contains, not_contains)",
+                            "'value'(Any)" to "значение, которое обрабатывается в поле 'field' по команде 'state'",
+                            "'page'(Int)" to "не обязательный параметр, позволяет получить страницы данных")
                     )
                 )
             }
@@ -115,8 +116,9 @@ fun Application.configureEmployees() {
             secureGet("/slots/{id}/{data}",
                 EnumBearerRoles.USER,
                 title = "Получить заказы Сотрудника по его id на указаннаю дату",
-                params = "'id'(Integer) - id Сотрудника\n" +
-                        "'data'(DateTime) - дата, на которую нужно получить заказы"
+                params = mapOf(
+                    "'id'(Integer)" to "id Сотрудника",
+                    "'data'(DateTime)" to "дата, на которую нужно получить заказы")
             ) {
                 call.respond(Employees().getSlots(call))
             }
@@ -151,7 +153,7 @@ fun Application.configureEmployees() {
             securePost("/onExit",
                 EnumBearerRoles.USER,
                 title = "Удаление токена авторизации для указанного Сотрудника",
-                params = "'id'(Integer) - id Сотрудника, которого нужно деавторизовать"
+                params = mapOf("'id'(Integer)" to "id Сотрудника, которого нужно деавторизовать")
             ) {
                 call.respond(Employees().onExitSite(call))
             }

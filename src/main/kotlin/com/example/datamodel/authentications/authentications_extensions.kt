@@ -26,7 +26,7 @@ import io.ktor.util.date.GMTDate
 import io.ktor.util.putAll
 import kotlinx.datetime.LocalDateTime
 
-fun Route.secureGet(path: String, role: EnumBearerRoles? = null, title: String, description: String = "", params: String = "", body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
+fun Route.secureGet(path: String, role: EnumBearerRoles? = null, title: String, description: String = "", params: Map<String, String> = mapOf(), body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
     authenticate(JWT_AUTH_NAME) {
         get(path) {
             val principal = call.principal<RoleAwareJWT>()
@@ -44,7 +44,7 @@ fun Route.secureGet(path: String, role: EnumBearerRoles? = null, title: String, 
     }
 }
 
-fun Route.securePost(path: String, role: EnumBearerRoles? = null, title: String, description: String = "", params: String = "", body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
+fun Route.securePost(path: String, role: EnumBearerRoles? = null, title: String, description: String = "", params: Map<String, String> = mapOf(), body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
     authenticate(JWT_AUTH_NAME) {
         post(path) {
             val principal = call.principal<RoleAwareJWT>()
@@ -62,7 +62,7 @@ fun Route.securePost(path: String, role: EnumBearerRoles? = null, title: String,
     }
 }
 
-fun Route.secureDelete(path: String, role: EnumBearerRoles? = null, title: String, description: String = "", params: String = "", body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
+fun Route.secureDelete(path: String, role: EnumBearerRoles? = null, title: String, description: String = "", params: Map<String, String> = mapOf(), body: suspend RoutingContext.(roleAwareJWT: RoleAwareJWT?) -> Unit) {
     authenticate(JWT_AUTH_NAME) {
         delete(path) {
             val principal = call.principal<RoleAwareJWT>()

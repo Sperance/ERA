@@ -70,7 +70,7 @@ fun Application.configureCatalogs() {
                     getRouteAttributes(
                         title = "Получение всех объектов таблицы",
                         description = "Возвращаются только Не удаленные (поле deleted = false). Временный метод",
-                        params = "'page'(Int) - не обязательный параметр. Указание страницы для Пагинации"
+                        params = mapOf("'page'(Int)" to "не обязательный параметр. Указание страницы для Пагинации")
                     )
                 )
             }
@@ -90,10 +90,11 @@ fun Application.configureCatalogs() {
                     getRouteAttributes(
                         title = "Получение всех объектов таблицы по указанным фильтрам",
                         description = "Возвращаются только Не удаленные (поле deleted = false)",
-                        params = "'field'(String) - поле, по которому будет работать фильтр\n" +
-                                "'state'(String) - команда, по которой будет обрабатываться фильтр (eq, ne, lt, gt, le, ge, contains, not_contains)\n" +
-                                "'value'(Any) - значение, которое обрабатывается в поле 'field' по команде 'state'\n" +
-                                "'page'(Int) - не обязательный параметр, позволяет получить страницы данных\n"
+                        params = mapOf(
+                            "'field'(String)" to "поле, по которому будет работать фильтр",
+                            "'state'(String)" to "команда, по которой будет обрабатываться фильтр (eq, ne, lt, gt, le, ge, contains, not_contains)",
+                            "'value'(Any)" to "значение, которое обрабатывается в поле 'field' по команде 'state'",
+                            "'page'(Int)" to "не обязательный параметр, позволяет получить страницы данных")
                     )
                 )
             }

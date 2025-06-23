@@ -4,6 +4,7 @@ import com.example.basemodel.CheckObjCondition
 import com.example.basemodel.IntBaseDataImpl
 import com.example.basemodel.ResultResponse
 import com.example.enums.EnumBearerRoles
+import com.example.enums.EnumDataTypes
 import com.example.helpers.getField
 import com.example.helpers.putField
 import com.example.helpers.CommentField
@@ -208,7 +209,7 @@ fun <T> logObjectProperties(obj: Any, sample: T): Collection<String> {
     return list.sortedBy { it.code }.map { it.code.toString() + " -> " + it.message }
 }
 
-fun getRouteAttributes(title: String, description: String = "", role: EnumBearerRoles? = null, params: String = ""): Attributes {
+fun getRouteAttributes(title: String, description: String = "", role: EnumBearerRoles? = null, params: Map<String, String> = mapOf()): Attributes {
     val atrs = Attributes(true)
     val textRole = role?.name ?: "ANY"
 
@@ -216,23 +217,25 @@ fun getRouteAttributes(title: String, description: String = "", role: EnumBearer
     atrs.put(AttributeKey("Comment"), title)
 
     if (description.isNotEmpty()) atrs.put(AttributeKey("Description"), description)
-    if (params.isNotEmpty()) atrs.put(AttributeKey("Params"), params)
+    if (params.isNotEmpty()) atrs.put(AttributeKey<Map<String, String>>("Params"), params)
 
     return atrs
 }
 
-fun Application.getRoutesInfo(routeStr: String): ArrayList<String> {
-    val arrayData = ArrayList<String>()
+fun Application.getRoutesInfo(routeStr: String): ArrayList<HashMap<String, String>> {
+    val arrayData = ArrayList<HashMap<String, String>>()
     routing {  }.run {
         val allMyBase = getAllRoutes()
-        val atrsData = ArrayList<String>()
         allMyBase.filter { rt -> rt.toString().contains(routeStr) }.forEach { rt ->
-            atrsData.clear()
+            val temoMap = HashMap<String, String>()
+            temoMap["Route"] = rt.toString().replace("/(authenticate auth-jwt-cookie)", "")
             rt.attributes.allKeys.forEach { atr ->
-                atrsData.add("${atr.name}: ${rt.attributes[atr]}")
+                if (rt.attributes[atr] is Map<*, *>) {
+                    printTextLog("VALUE: ${rt.attributes[atr]}")
+                }
+                temoMap[atr.name] = rt.attributes[atr].toString()
             }
-            val str = "Route: ${rt.toString().replace("/(authenticate auth-jwt-cookie)", "")} ${atrsData.joinToString(", ")}"
-            arrayData.add(str)
+            arrayData.add(temoMap)
         }
     }
     return arrayData

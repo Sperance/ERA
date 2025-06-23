@@ -5,7 +5,6 @@ import com.example.basemodel.ResultResponse
 import com.example.datamodel.authentications.secureDelete
 import com.example.datamodel.authentications.secureGet
 import com.example.datamodel.authentications.securePost
-import com.example.datamodel.catalogs.Catalogs
 import com.example.enums.EnumBearerRoles
 import com.example.getRouteAttributes
 import com.example.getRoutesInfo
@@ -68,7 +67,7 @@ fun Application.configureClients() {
                 EnumBearerRoles.MODERATOR,
                 title = "Получить список всех Клиентов",
                 description = "Возвращаются только Не удаленные (поле deleted = false). Временный метод",
-                params = "'page'(Int) - не обязательный параметр. Указание страницы для Пагинации"
+                params = mapOf("'page'(Int)" to "не обязательный параметр. Указание страницы для Пагинации")
             ) {
                 call.respond(Clients().get(call))
             }
@@ -85,10 +84,11 @@ fun Application.configureClients() {
                 EnumBearerRoles.USER,
                 title = "Получить список всех Клиентов с Фильтрами",
                 description = "Возвращаются только Не удаленные (поле deleted = false)",
-                params = "'field'(String) - поле, по которому будет работать фильтр\n" +
-                        "'state'(String) - команда, по которой будет обрабатываться фильтр (eq, ne, lt, gt, le, ge, contains, not_contains)\n" +
-                        "'value'(Any) - значение, которое обрабатывается в поле 'field' по команде 'state'\n" +
-                        "'page'(Int) - не обязательный параметр, позволяет получить страницы данных\n"
+                params = mapOf(
+                    "'field'(String)" to "поле, по которому будет работать фильтр",
+                    "'state'(String)" to "команда, по которой будет обрабатываться фильтр (eq, ne, lt, gt, le, ge, contains, not_contains)",
+                    "'value'(Any)" to "значение, которое обрабатывается в поле 'field' по команде 'state'",
+                    "'page'(Int)" to "не обязательный параметр, позволяет получить страницы данных")
             ) {
                 call.respond(Clients().getFilter(call))
             }
@@ -134,8 +134,8 @@ fun Application.configureClients() {
                 EnumBearerRoles.USER,
                 title = "Отправка письма клиенту на его Почтовый адрес",
                 description = "Возвращает сгенерированный код для восстановления пароля",
-                params = "'email'(String) - email, на который будет отправлено письмо\n" +
-                        "'send'(Boolean) - отправлять ли письмо на почту"
+                params = mapOf("'email'(String)" to "email, на который будет отправлено письмо",
+                        "'send'(Boolean)" to "отправлять ли письмо на почту")
             ) {
                 call.respond(Clients().postRecoveryPassword(call))
             }
@@ -143,8 +143,8 @@ fun Application.configureClients() {
             securePost("/changePasswordFromEmail",
                 EnumBearerRoles.USER,
                 title = "Установка нового пароля для Клиента",
-                params = "'email'(String) - email Клиента, для которого будем указывать новый пароль\n" +
-                        "'password'(String) - новый пароль для Клиента"
+                params = mapOf("'email'(String)" to "email Клиента, для которого будем указывать новый пароль",
+                        "'password'(String)" to "новый пароль для Клиента")
             ) {
                 call.respond(Clients().changePasswordFromEmail(call))
             }
@@ -152,7 +152,7 @@ fun Application.configureClients() {
             securePost("/onExit",
                 EnumBearerRoles.USER,
                 title = "Удаление токена авторизации для указанного Клиента",
-                params = "'id'(Integer) - id Клиента, которого нужно деавторизовать"
+                params = mapOf("'id'(Integer)" to "id Клиента, которого нужно деавторизовать")
             ) {
                 call.respond(Clients().onExitSite(call))
             }

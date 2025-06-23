@@ -154,6 +154,7 @@ data class Clients(
                 return ClientsErrors.ERROR_LOGINPASSWORD.toResultResponse(call, user)
 
             var token = Authentications.getTokenFromClient(client)
+            printTextLog("[Clients::auth] token: $token")
             if (token == null) {
                 token = Authentications.createToken(client.id, false, client.getRoleAsEnum(), call)
             } else {

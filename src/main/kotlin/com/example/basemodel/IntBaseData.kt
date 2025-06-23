@@ -2,6 +2,7 @@ package com.example.basemodel
 
 import com.example.applicationTomlSettings
 import com.example.enums.EnumDataFilter
+import com.example.enums.EnumDataTypes
 import com.example.enums.EnumSQLTypes
 import com.example.generateMapError
 import com.example.helpers.SYS_FIELDS_ARRAY

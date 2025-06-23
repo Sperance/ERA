@@ -14,6 +14,7 @@ import com.example.helpers.getSize
 import com.example.datamodel.services.Services
 import com.example.datamodel.services.Services.Companion.tbl_services
 import com.example.enums.EnumDataFilter
+import com.example.enums.EnumDataTypes
 import com.example.generateMapError
 import com.example.helpers.getData
 import com.example.helpers.getDataFromId
@@ -100,6 +101,30 @@ data class Records(
         return (Recordsdata(clientFrom = listClients, employeeTo = listEmployees, service = listServices, record = this))
     }
 
+    suspend fun getRecordsDataFromCollection(collection: Collection<Records>): ArrayList<Recordsdata> {
+        val listResults = ArrayList<Recordsdata>()
+
+        val listRecords = getData({ tbl_records.id inList collection.map { it.id } })
+        val setClients = listRecords.map { it.id_client_from }.toSet().toList()
+        val setEmployees = listRecords.map { it.id_employee_to }.toSet().toList()
+        val setServices = listRecords.map { it.id_service }.toSet().toList()
+
+        val listClients = Clients().getData({ tbl_clients.id inList setClients })
+        val listEmployees = Employees().getData({ tbl_employees.id inList setEmployees })
+        val listServices = Services().getData({ tbl_services.id inList setServices })
+
+        listRecords.forEach {
+            listResults.add(
+                Recordsdata(
+                    clientFrom = listClients.find { f -> f.id == it.id_client_from },
+                    employeeTo = listEmployees.find { f -> f.id == it.id_employee_to },
+                    service = listServices.find { f -> f.id == it.id_service },
+                    record = it)
+            )
+        }
+        return listResults
+    }
+
     suspend fun getFilledRecords(statuses: List<Int>? = null) : ArrayList<Recordsdata> {
         val listResults = ArrayList<Recordsdata>()
 
@@ -137,12 +162,13 @@ data class Records(
         return try {
             val page = call.parameters["page"]?.toIntOrNull()
             if (page == null) {
-                ResultResponse.Success(getFilledRecords())
+                ResultResponse.Success(getFilledRecords(statuses = listOf(0, 100)))
             } else {
-                ResultResponse.Success(getDataPagination(page = page).map { it.toRecordsData() })
+                ResultResponse.Success(getRecordsDataFromCollection(getDataPagination(page = page)))
             }
         } catch (e: Exception) {
-            ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
+            e.printStackTrace()
+            ResultResponse.Error(generateMapError(call, 440 to (e.message?.substringBefore("\n")?:"Empty Error")))
         }
     }
 
@@ -181,44 +207,40 @@ data class Records(
     }
 
     override suspend fun getFilter(call: ApplicationCall): ResultResponse {
-        return db.withTransaction { tx ->
-            try {
-                val field = call.parameters["field"]
-                if (field.isNullOrEmpty()) {
-                    tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(generateMapError(call, 301 to "Incorrect parameter 'field'. This parameter must be 'String' type"))
-                }
-
-                val state = call.parameters["state"]
-                if (state.isNullOrEmpty()) {
-                    tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(generateMapError(call, 302 to "Incorrect parameter 'state'. This parameter must be 'String' type"))
-                }
-
-                val value = call.parameters["value"]
-                if (value.isNullOrEmpty()) {
-                    tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(generateMapError(call, 303 to "Incorrect parameter 'value'. This parameter must be 'String' type"))
-                }
-
-                if (!this.haveField(field)) {
-                    tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(generateMapError(call, 304 to "Class ${this::class.simpleName} dont have field '$field'"))
-                }
-
-                val stateEnum = EnumDataFilter.entries.find { it.name == state.uppercase() }
-                if (stateEnum == null) {
-                    tx.setRollbackOnly()
-                    return@withTransaction ResultResponse.Error(generateMapError(call, 305 to "Incorrect parameter 'state'(${state}). This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"))
-                }
-                val page = call.parameters["page"]?.toIntOrNull()?:0
-
-                val resultList = getDataPagination(declaration = getWhereDeclarationFilter(field, stateEnum, value), page).map { it.toRecordsData() }
-                return@withTransaction ResultResponse.Success(resultList as Collection<*>)
-            } catch (e: Exception) {
-                tx.setRollbackOnly()
-                return@withTransaction ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
+        try {
+            val field = call.parameters["field"]
+            if (field.isNullOrEmpty()) {
+                return ResultResponse.Error(generateMapError(call, 301 to "Incorrect parameter 'field'. This parameter must be 'String' type"))
             }
+
+            val state = call.parameters["state"]
+            if (state.isNullOrEmpty()) {
+                return ResultResponse.Error(generateMapError(call, 302 to "Incorrect parameter 'state'. This parameter must be 'String' type"))
+            }
+
+            val value = call.parameters["value"]
+            if (value.isNullOrEmpty()) {
+                return ResultResponse.Error(generateMapError(call, 303 to "Incorrect parameter 'value'. This parameter must be 'String' type"))
+            }
+
+            if (!this.haveField(field)) {
+                return ResultResponse.Error(generateMapError(call, 304 to "Class ${this::class.simpleName} dont have field '$field'"))
+            }
+
+            val stateEnum = EnumDataFilter.getFromName(state)
+            if (stateEnum == null) {
+                return ResultResponse.Error(generateMapError(call, 305 to "Incorrect parameter 'state'(${state}). This parameter must be 'String' type. Allowed: eq, ne, lt, gt, le, ge, contains, not_contains"))
+            }
+
+            val page = call.parameters["page"]?.toIntOrNull() ?: 0
+            val declatation = getWhereDeclarationFilter(field, stateEnum, value)
+            val allSize = getSize(declatation)
+
+            val resultList = getRecordsDataFromCollection(getDataPagination(declaration = declatation, page))
+            return ResultResponse.Success(resultList, headers = mapOf("Size" to allSize))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return ResultResponse.Error(generateMapError(call, 440 to e.localizedMessage.substringBefore("\n")))
         }
     }
 
